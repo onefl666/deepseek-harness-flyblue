@@ -2097,14 +2097,14 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
   },
   {
     key: 'usageStats',
-    summary: 'Derives browser-safe historical accounting from every local session log.',
-    description: 'Derives browser-safe historical accounting from every local session log. The service reads no credentials, plans, balances, prices, or quotas.',
+    summary: 'Derives browser-safe historical accounting from every interpretable local session log.',
+    description: 'Derives browser-safe historical accounting from every interpretable local session log. Uninterpretable session logs are excluded and reported in `skippedSessions`. The service reads no credentials, plans, balances, prices, or quotas.',
     methods: [
       {
         signature: '@Remote async stats(request: UsageStatsRequest): Promise<UsageStatsSnapshot>',
         description: 'Read one consistent per-session scan for the requested Host calendar range.',
         parameters: [{ name: 'request', description: 'Seven- or thirty-day inclusive range.' }],
-        returns: 'Dense daily activity and provider-reported usage.',
+        returns: 'Dense daily activity and provider-reported usage, with excluded sessions in `skippedSessions`.',
       },
     ],
   },

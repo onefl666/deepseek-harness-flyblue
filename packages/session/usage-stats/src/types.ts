@@ -45,6 +45,14 @@ export interface UsageStatsModel extends UsageTokenBuckets {
   sessionCount: number
 }
 
+/** One session log that could not be interpreted and was excluded from the snapshot. */
+export interface UsageStatsSkippedSession {
+  /** Opaque local session id. */
+  id: string
+  /** The interpretation failure as reported by session persistence or the projection. */
+  error: string
+}
+
 /** Complete browser-safe usage snapshot derived from local session logs. */
 export interface UsageStatsSnapshot extends UsageTokenBuckets {
   /** Selected inclusive history window. */
@@ -71,4 +79,6 @@ export interface UsageStatsSnapshot extends UsageTokenBuckets {
   daily: UsageStatsDay[]
   /** Provider/model usage ordered by tokens then identity. */
   models: UsageStatsModel[]
+  /** Sessions excluded because their logs could not be interpreted; every other count omits them. */
+  skippedSessions: UsageStatsSkippedSession[]
 }

@@ -19,7 +19,7 @@ Host 插件，从全部本机会话日志派生可安全发送给浏览器的用
     inspectConcurrency: 4
 ```
 
-`inspectConcurrency` 限制冷会话持久化读取并发数，范围为 1–32，默认值为 4。插件注入 `sessions` 与 `sessionPersistence`，按 Session ID 合并实时会话和持久化快照，优先读取实时会话的不可变事件切面，冷会话通过 inspect 读取。实时缓存按 Session 对象和 seq 增量推进，冷缓存按持久化 revision 失效；两个来源中都已不存在的条目会被清理。任意列表或 inspect 错误都会使整次请求失败，客户端可以保留旧结果并重试。
+`inspectConcurrency` 限制冷会话持久化读取并发数，范围为 1–32，默认值为 4。插件注入 `sessions` 与 `sessionPersistence`，按 Session ID 合并实时会话和持久化快照，优先读取实时会话的不可变事件切面，冷会话通过 inspect 读取。实时缓存按 Session 对象和 seq 增量推进，冷缓存按持久化 revision 失效；两个来源中都已不存在的条目会被清理。无法解释的会话会被跳过，连同失败原因写入 `snapshot.skippedSessions`，其余计数均不包含它；该会话产生新 revision 后会重新 inspect。列出实时会话或快照失败仍会使整次请求失败，客户端可以保留旧结果并重试。
 
 ## 模型体验
 

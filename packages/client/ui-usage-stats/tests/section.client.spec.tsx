@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { UsageStatsSection, modelSegments } from '../src/client/section.tsx'
 import type { ModelUsage, Stats, UsageDay, UsageStatsInjected } from '../src/client/section.tsx'
@@ -18,6 +18,7 @@ const snapshot = (days: 7 | 30 = 30): Stats => ({
   ...buckets, totalTokens: 20, sessionCount: 2, messageCount: 4, activeDays: 2, currentStreakDays: 1,
   daily: Array.from({ length: days }, (_, index) => day(dateAt(days, index), index === days - 1 ? 20 : 0)),
   models: [model(1, 10), model(2, 4), model(3, 3), model(4, 2), model(5, 1)],
+  skippedSessions: [],
 })
 
 function ok(value: Stats) { return Promise.resolve({ ok: true as const, value }) }
@@ -84,6 +85,41 @@ describe('UsageStatsSection', () => {
     pending[0]?.({ ok: true, value: { ...snapshot(7), messageCount: 7 } })
     await waitFor(() => { expect(screen.getByLabelText('30')).toBeTruthy() })
     expect(screen.queryByLabelText('7')).toBeNull()
+  })
+
+  it('pops a toast and lists skipped sessions while keeping the dashboard', async () => {
+    const skippedSessions = [{ id: 's-1', error: 'contains unknown event type' }]
+    renderSection(() => ok({ ...snapshot(), skippedSessions }))
+    await screen.findByText('kpi.tokens')
+    expect(screen.getByRole('alert').textContent).toContain('skipped.toast')
+    const notice = screen.getByRole('status')
+    expect(notice.textContent).toContain('skipped.notice')
+    expect(notice.textContent).toContain('s-1: contains unknown event type')
+    expect(screen.getByText('kpi.tokens')).toBeTruthy()
+  })
+
+  it('clears the notice when the next load skips nothing', async () => {
+    const stats = vi.fn()
+      .mockImplementationOnce(() => ok({ ...snapshot(), skippedSessions: [{ id: 's-1', error: 'bad' }] }))
+      .mockImplementationOnce(() => ok(snapshot()))
+    renderSection(stats as UsageStatsInjected['stats'])
+    await screen.findByText('kpi.tokens')
+    expect(screen.getByRole('status')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'refresh' }))
+    await waitFor(() => { expect(screen.queryByRole('status')).toBeNull() })
+  })
+
+  it('dismisses the toast after its display cycle', async () => {
+    vi.useFakeTimers()
+    try {
+      renderSection(() => ok({ ...snapshot(), skippedSessions: [{ id: 's-1', error: 'bad' }] }))
+      await act(async () => {})
+      expect(screen.getByRole('alert')).toBeTruthy()
+      act(() => { vi.advanceTimersByTime(4000) })
+      expect(screen.queryByRole('alert')).toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('shows explicit no-usage copy while retaining message activity', async () => {

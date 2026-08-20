@@ -19,7 +19,7 @@ The selected range includes today and uses the Host timezone returned in the res
     inspectConcurrency: 4
 ```
 
-`inspectConcurrency` bounds cold persistence reads from 1 through 32 and defaults to 4. The plugin injects `sessions` and `sessionPersistence`. It unions live sessions with persistence snapshots by Session ID, prefers the immutable live event slice, and inspects cold logs. Live cache entries advance by Session object and seq; cold entries invalidate by persistence revision. Entries absent from both sources are removed. Any listing or inspection error rejects the complete request, so clients can keep the prior result and retry.
+`inspectConcurrency` bounds cold persistence reads from 1 through 32 and defaults to 4. The plugin injects `sessions` and `sessionPersistence`. It unions live sessions with persistence snapshots by Session ID, prefers the immutable live event slice, and inspects cold logs. Live cache entries advance by Session object and seq; cold entries invalidate by persistence revision. Entries absent from both sources are removed. A session whose log cannot be interpreted is skipped and listed in `snapshot.skippedSessions` with the failure message; every other count omits it, and a later revision of the same session is inspected again. Failures to list live sessions or snapshots still reject the complete request, so clients can keep the prior result and retry.
 
 ## Model Experience
 

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import { createMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
 import SessionStore, { SESSION_FORMAT_VERSION, SessionId } from '@deepseek-ai/dsh-session'
 import type { SessionEvent, SessionHeader } from '@deepseek-ai/dsh-session'
 import SessionPersistence, { SessionPersistenceRevision } from '@deepseek-ai/dsh-session-persistence'
@@ -14,7 +14,7 @@ class FakePersistence extends SessionPersistence {
   inspections = 0
   active = 0
   maxActive = 0
-  fail?: Error
+  fail?: unknown
   locate(): undefined { return undefined }
   async create(): Promise<void> {}
   async append(): Promise<void> {}
@@ -81,7 +81,7 @@ describe('UsageStatsService', () => {
     expect(persistence.inspections).toBe(2)
   })
 
-  it('bounds cold inspection concurrency and propagates storage failures', async () => {
+  it('bounds cold inspection concurrency and skips failed inspections', async () => {
     const { ctx, persistence } = await harness(2)
     const now = Date.now()
     for (let index = 0; index < 6; index++) persistence.stored.set(`s${index}`, stored(`s${index}`, 'r1', now))
@@ -89,7 +89,64 @@ describe('UsageStatsService', () => {
     expect(persistence.maxActive).toBe(2)
     persistence.stored.get('s0')!.revision = 'r2'
     persistence.fail = new Error('inspection failed')
-    await expect(ctx.usageStats.stats({ days: 30 })).rejects.toThrow('inspection failed')
+    const snapshot = await ctx.usageStats.stats({ days: 30 })
+    expect(snapshot.skippedSessions).toEqual([{ id: 's0', error: 'inspection failed' }])
+    expect(snapshot.messageCount).toBe(5)
+    const inspections = persistence.inspections
+    await ctx.usageStats.stats({ days: 30 })
+    expect(persistence.inspections).toBe(inspections)
+    expect(persistence.maxActive).toBe(2)
+  })
+
+  it('re-inspects a failed session once its revision changes', async () => {
+    const { ctx, persistence } = await harness()
+    const now = Date.now()
+    persistence.stored.set('s0', stored('s0', 'r1', now))
+    persistence.stored.set('s1', stored('s1', 'r1', now))
+    persistence.fail = new Error('inspection failed')
+    const failed = await ctx.usageStats.stats({ days: 7 })
+    expect(failed.skippedSessions).toEqual([
+      { id: 's0', error: 'inspection failed' },
+      { id: 's1', error: 'inspection failed' },
+    ])
+    expect(persistence.inspections).toBe(2)
+    persistence.fail = undefined
+    persistence.stored.get('s0')!.revision = 'r2'
+    const partiallyHealed = await ctx.usageStats.stats({ days: 7 })
+    expect(partiallyHealed.skippedSessions).toEqual([{ id: 's1', error: 'inspection failed' }])
+    expect(partiallyHealed.messageCount).toBe(1)
+    expect(persistence.inspections).toBe(3)
+    persistence.stored.get('s1')!.revision = 'r2'
+    const healed = await ctx.usageStats.stats({ days: 7 })
+    expect(healed.skippedSessions).toEqual([])
+    expect(healed.messageCount).toBe(2)
+  })
+
+  it('reports non-Error inspection failures through String()', async () => {
+    const { ctx, persistence } = await harness()
+    persistence.stored.set('s0', stored('s0', 'r1', Date.now()))
+    persistence.fail = 'broken'
+    const snapshot = await ctx.usageStats.stats({ days: 7 })
+    expect(snapshot.skippedSessions).toEqual([{ id: 's0', error: 'broken' }])
+  })
+
+  it('skips a live session whose fold fails', async () => {
+    const { ctx, persistence } = await harness()
+    const now = Date.now()
+    const live = ctx.sessions.create(SessionId('broken-live'))
+    live.append('assistant/message', {
+      turn: 0,
+      step: 0,
+      message: createMessage({ role: 'assistant', content: [], source: { kind: 'model', provider: 'p', model: 'm' } }),
+      usage: { inputTokens: -1, outputTokens: 0 },
+    }, { surfaceOp: 'append' })
+    persistence.stored.set('good', stored('good', 'r1', now))
+    const first = await ctx.usageStats.stats({ days: 7 })
+    expect(first.skippedSessions).toEqual([{ id: 'broken-live', error: 'usage-stats: event 0 has invalid token usage' }])
+    expect(first.messageCount).toBe(1)
+    const second = await ctx.usageStats.stats({ days: 7 })
+    expect(second.skippedSessions).toEqual(first.skippedSessions)
+    expect(second.messageCount).toBe(1)
   })
 
   it('prunes disappeared cache entries', async () => {

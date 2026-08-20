@@ -10,6 +10,9 @@
 .refresh:focus-visible, .error button:focus-visible, .heatmap li:focus-visible, .bars li:focus-visible, summary:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 2px; }
 .error { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border: 1px solid var(--dsw-alias-state-error-primary); border-radius: 10px; color: var(--dsw-alias-state-error-primary); font-size: 12px; }
 .error button { padding: 2px 8px; color: inherit; }
+.skipped { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border: 1px solid var(--dsw-alias-state-warn-primary); border-radius: 10px; color: var(--dsw-alias-state-warn-primary); font-size: 12px; line-height: 18px; }
+.skipped ul { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.skipped li { overflow-wrap: anywhere; }
 .kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .kpis article, .panel { border: 1px solid var(--dsw-alias-border-l2); border-radius: 12px; background: var(--dsw-alias-bg-layer-2); }
 .kpis article { display: flex; flex-direction: column; min-height: 74px; padding: 11px 12px; box-sizing: border-box; }

@@ -10,7 +10,7 @@ A running-process counter cannot answer how this device was used over time: it l
 
 ## Decision
 
-`@deepseek-ai/dsh-usage-stats` derives history from the durable session vocabulary. It unions live `sessions.list()` identities with `sessionPersistence.listSnapshots()`, deduplicates by Session ID, prefers the live immutable event slice, and inspects only cold logs. The cache advances live projections by object identity and seq and invalidates cold projections by persistence revision. Cold inspection has a configurable concurrency bound. A storage error rejects the request instead of returning a partial total.
+`@deepseek-ai/dsh-usage-stats` derives history from the durable session vocabulary. It unions live `sessions.list()` identities with `sessionPersistence.listSnapshots()`, deduplicates by Session ID, prefers the live immutable event slice, and inspects only cold logs. The cache advances live projections by object identity and seq and invalidates cold projections by persistence revision. Cold inspection has a configurable concurrency bound. A session log that cannot be interpreted is skipped and reported in `skippedSessions`, and every other count omits it; failures to list live sessions or snapshots still reject the request ([skip contract](../bug-fix/2026-08-21-usage-stats-skips-unreadable-sessions.md)).
 
 Accounting follows token-meter replacement semantics. A usage chunk remains after a failed request, while the final sample for the same turn and step replaces it. Chunk attribution follows the active request header and a final assistant message can replace the route. Total Token includes the four disjoint billing buckets; reasoning remains an output subset. Activity counts only direct-user and non-empty assistant messages.
 

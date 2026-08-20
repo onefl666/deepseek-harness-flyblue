@@ -16,6 +16,7 @@ import { ZH_BROWSER_LOCALE, saveFailureShot } from './support.ts'
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/usage-stats', import.meta.url))
 const THIRTY_EXPECTED = join(SNAPSHOT_DIR, '30-days.expected.md')
 const SEVEN_EXPECTED = join(SNAPSHOT_DIR, '7-days.expected.md')
+const SKIPPED_EXPECTED = join(SNAPSHOT_DIR, 'skipped.expected.md')
 const MODE = webSnapshotMode()
 const now = vi.spyOn(Date, 'now')
 
@@ -84,6 +85,39 @@ describe('web e2e: local usage history dashboard', () => {
     await page.evaluate(() => { document.body.removeAttribute('data-ds-dark-theme') })
     expect(tripwire.pageErrors).toEqual([])
     expect(tripwire.warnings).toEqual([])
-    await assertFixtureInventory(SNAPSHOT_DIR, ['30-days.expected.md', '7-days.expected.md'])
+  }, 60_000)
+
+  it('skips an unreadable session, reports it, and keeps counting the rest', async () => {
+    onTestFailed(() => saveFailureShot(page, 'web-e2e-usage-stats-skipped'))
+    // A log written by a newer harness: the write path accepts unknown event
+    // types, so the forged record flushes and only the read side refuses it.
+    const poisoned = scaffold.ctx.sessions.prepare(SessionId('usage-poisoned'))
+    const detach = scaffold.ctx.sessions.enter(poisoned)
+    scaffold.ctx.sessions.announce(poisoned)
+    // The write path accepts unknown event types (the read side refuses
+    // them), but `Session.append` has no type for one; cast the erased
+    // signature instead of widening the product API. bind() keeps the
+    // method's `this` so the append runs against this Session.
+    const forgedAppend = poisoned.append.bind(poisoned) as unknown as (type: string, data: unknown) => unknown
+    forgedAppend('vision/describe', { url: 'https://example.invalid/a.png' })
+    await scaffold.ctx.sessions.flush(poisoned)
+    detach()
+    const section = page.locator('[data-usage-stats]')
+    await section.getByRole('button', { name: '刷新' }).click()
+    await page.getByRole('alert').filter({ hasText: '已跳过 1 个无法统计的会话' }).waitFor({ timeout: 15_000 })
+    await section.getByText('以下会话无法统计，已从结果中排除：').waitFor({ timeout: 15_000 })
+    const captured = await captureStableAria(page, '[data-usage-stats]', scaffold.workspaceCwd)
+    // The notice quotes the raw log path under a run-local temp root; the
+    // aria snapshot escapes backslashes, and the separator after the root
+    // differs across platforms, so normalize both to one stable form. Only
+    // doubled backslashes are path separators — `\"` stays a quote escape.
+    const normalized = captured
+      .split(scaffold.persistenceRoot.replace(/\\/g, '\\\\')).join('{{sessions}}')
+      .split(scaffold.persistenceRoot).join('{{sessions}}')
+      .split('\\\\').join('/')
+    await compareOrRefreshGolden(SKIPPED_EXPECTED, normalized, MODE)
+    expect(tripwire.pageErrors).toEqual([])
+    expect(tripwire.warnings).toEqual([])
+    await assertFixtureInventory(SNAPSHOT_DIR, ['30-days.expected.md', '7-days.expected.md', 'skipped.expected.md'])
   }, 60_000)
 })

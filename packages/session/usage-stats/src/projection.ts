@@ -181,6 +181,8 @@ const totalOf = (value: UsageTokenBuckets): number => value.uncachedInputTokens
 
 /**
  * Build the selected-range snapshot from all per-session projections.
+ * The returned object omits `skippedSessions`; the caller appends the
+ * excluded-session list, which the pure fold cannot know.
  * @param projections - Complete current projections for distinct local sessions.
  * @param days - Inclusive seven- or thirty-day range ending today.
  * @param generatedAt - Timestamp that fixes today and the response generation time.
@@ -190,7 +192,7 @@ export function buildUsageSnapshot(
   projections: readonly SessionUsageProjection[],
   days: UsageStatsDays,
   generatedAt = Date.now(),
-): UsageStatsSnapshot {
+): Omit<UsageStatsSnapshot, 'skippedSessions'> {
   const today = new Date(generatedAt)
   today.setHours(0, 0, 0, 0)
   const first = addDays(today, -(days - 1))

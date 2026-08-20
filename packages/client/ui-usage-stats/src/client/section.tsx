@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { SegmentedRange } from '@deepseek-ai/dsh-client-ui-primitives'
+import { SegmentedRange, Toast } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale, InjectFace } from '@deepseek-ai/dsh-client-ui-slots'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import css from './section.module.css'
@@ -36,6 +36,11 @@ export interface ModelUsage extends TokenBuckets {
   totalTokens: number
   sessionCount: number
 }
+/** One session log the Host could not interpret, excluded from every count. */
+export interface SkippedSession {
+  id: string
+  error: string
+}
 /** Browser copy of the historical Host snapshot. */
 export interface Stats extends TokenBuckets {
   days: UsageDays
@@ -50,6 +55,7 @@ export interface Stats extends TokenBuckets {
   currentStreakDays: number
   daily: UsageDay[]
   models: ModelUsage[]
+  skippedSessions: SkippedSession[]
 }
 /** Remote dependency used by the usage panel. */
 export interface UsageStatsInjected { stats: (request: { days: UsageDays }) => Promise<RemoteResult<Stats>> }
@@ -86,6 +92,12 @@ export function UsageStatsSection({ t, stats }: PropsLocale<'usageStats'> & Inje
   const [requestedDays, setRequestedDays] = useState<UsageDays>(30)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string>()
+  const [skipped, setSkipped] = useState<readonly SkippedSession[]>([])
+  // Transient skip banner: the seq keys the Toast so a repeated refresh
+  // restarts the hold-then-fade cycle instead of reusing the faded one.
+  const [toast, setToast] = useState<{ seq: number; text: string } | null>(null)
+  const toastSeq = useRef(0)
+  const dismissToast = useCallback(() => { setToast(null) }, [])
   const requestSequence = useRef(0)
   const committedDays = useRef<UsageDays>(30)
   const load = useCallback((days: UsageDays) => {
@@ -95,10 +107,19 @@ export function UsageStatsSection({ t, stats }: PropsLocale<'usageStats'> & Inje
     void stats({ days }).then((result) => {
       if (sequence !== requestSequence.current) return
       setBusy(false)
-      if (result.ok) { committedDays.current = result.value.days; setSnapshot(result.value); setRequestedDays(result.value.days) }
+      if (result.ok) {
+        committedDays.current = result.value.days
+        setSnapshot(result.value)
+        setRequestedDays(result.value.days)
+        setSkipped(result.value.skippedSessions)
+        if (result.value.skippedSessions.length > 0) {
+          toastSeq.current += 1
+          setToast({ seq: toastSeq.current, text: t('skipped.toast', { count: result.value.skippedSessions.length }) })
+        }
+      }
       else { setError(result.error.message); setRequestedDays(committedDays.current) }
     })
-  }, [stats])
+  }, [stats, t])
   useEffect(() => { load(30) }, [load])
 
   const segments = useMemo(() => modelSegments(snapshot?.models ?? []), [snapshot?.models])
@@ -130,6 +151,7 @@ export function UsageStatsSection({ t, stats }: PropsLocale<'usageStats'> & Inje
       />
       {busy && snapshot !== undefined && <p className={css.status} role="status">{t('updating')}</p>}
       {error !== undefined && <div className={css.error} role="alert"><span>{t('error')}: {error}</span><button type="button" onClick={retry}>{t('retry')}</button></div>}
+      {skipped.length > 0 && <div className={css.skipped} role="status"><span>{t('skipped.notice')}</span><ul>{skipped.map(item => <li key={item.id}>{item.id}: {item.error}</li>)}</ul></div>}
       {snapshot === undefined ? <div className={css.empty}>{t('error.empty')}</div> : <>
         <div className={css.kpis}>
           <article><span>{t('kpi.tokens')}</span><strong><Value value={snapshot.totalTokens} /></strong></article>
@@ -157,6 +179,7 @@ export function UsageStatsSection({ t, stats }: PropsLocale<'usageStats'> & Inje
         <details className={css.details}><summary>{t('details')}</summary><div className={css.tableWrap}><table><caption>{t('models.table')}</caption><thead><tr><th>{t('provider')}</th><th>{t('model')}</th><th>{t('tokens')}</th><th>{t('sessions')}</th></tr></thead><tbody>{snapshot.models.map(model => <tr key={`${model.provider}/${model.model}`}><td>{model.provider}</td><td>{model.model}</td><td>{exactNumber(model.totalTokens)}</td><td>{exactNumber(model.sessionCount)}</td></tr>)}</tbody></table><table><caption>{t('daily.table')}</caption><thead><tr><th>{t('date')}</th><th>{t('tokens')}</th><th>{t('messages')}</th><th>{t('sessions')}</th></tr></thead><tbody>{snapshot.daily.map(day => <tr key={day.date}><td>{dateLabel(day.date, true)}</td><td>{exactNumber(day.totalTokens)}</td><td>{exactNumber(day.messageCount)}</td><td>{exactNumber(day.sessionCount)}</td></tr>)}</tbody></table></div></details>
         <p className={css.footer}>{t('updated')} {new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short', timeZone: snapshot.timeZone }).format(snapshot.generatedAt)} · {snapshot.timeZone}</p>
       </>}
+      {toast !== null && <Toast key={toast.seq} text={toast.text} onDone={dismissToast} />}
     </section>
   )
 }

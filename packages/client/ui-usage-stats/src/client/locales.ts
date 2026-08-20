@@ -2,6 +2,7 @@
 export const zh = {
   nav: '用量统计', title: '用量统计', intro: '基于此设备上的全部会话日志统计，不包含费用、余额或套餐信息。',
   loading: '正在加载用量统计', refresh: '刷新', refreshing: '刷新中…', updating: '正在更新，当前仍显示上次结果。', retry: '重试', error: '无法更新统计', 'error.empty': '暂时无法显示统计。',
+  'skipped.toast': '已跳过 {count} 个无法统计的会话', 'skipped.notice': '以下会话无法统计，已从结果中排除：',
   'range.label': '统计范围', 'range.7': '最近 7 天', 'range.30': '最近 30 天', days: '天', messages: '条消息', none: '暂无', noUsage: '未报告 Token',
   'kpi.tokens': 'Token 总量', 'kpi.sessions': '会话数', 'kpi.messages': '消息数', 'kpi.activeDays': '活跃天数', 'kpi.streak': '当前连续活跃', 'kpi.model': '最常用模型',
   'activity.title': '消息活跃度', 'activity.help': '每格代表一个 Host 日历日，颜色越深表示可见消息越多。', 'activity.empty': '所选范围内没有可见消息。',
@@ -15,6 +16,7 @@ export const zh = {
 export const en: Record<keyof typeof zh, string> = {
   nav: 'Usage statistics', title: 'Usage statistics', intro: 'Derived from every local session log on this device. Costs, balances, and plans are not included.',
   loading: 'Loading usage statistics', refresh: 'Refresh', refreshing: 'Refreshing…', updating: 'Updating; the previous result remains visible.', retry: 'Retry', error: 'Could not update statistics', 'error.empty': 'Statistics are temporarily unavailable.',
+  'skipped.toast': '{count} sessions could not be counted and were skipped', 'skipped.notice': 'These sessions could not be counted and were excluded:',
   'range.label': 'Statistics range', 'range.7': 'Last 7 days', 'range.30': 'Last 30 days', days: 'days', messages: 'messages', none: 'None', noUsage: 'No Token usage',
   'kpi.tokens': 'Total Tokens', 'kpi.sessions': 'Sessions', 'kpi.messages': 'Messages', 'kpi.activeDays': 'Active days', 'kpi.streak': 'Current streak', 'kpi.model': 'Top model',
   'activity.title': 'Message activity', 'activity.help': 'Each cell is one Host calendar day; darker cells have more visible messages.', 'activity.empty': 'No visible messages in this range.',
