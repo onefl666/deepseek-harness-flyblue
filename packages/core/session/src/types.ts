@@ -239,6 +239,8 @@ export interface SessionEventMap {
    * Rejection, empty input, cancellation, or failure may close it with no
    * step; otherwise the following identified `user/message` event or batch
    * records the messages entering the step.
+   * @mode emit
+   * @param payload - turn number
    */
   'turn/start': { turn: number }
   /**
@@ -248,11 +250,21 @@ export interface SessionEventMap {
    * per-request durability checkpoint, and consumers that read storage after
    * `whenIdle()` flush themselves. Success commits the turn; rejection is
    * reported live and does not prevent later work.
+   * @mode emit
+   * @param payload - turn number and end reason
    */
   'turn/end': { turn: number; reason: TurnEndReason }
-  /** Opens step `step` of turn `turn` — one model call plus the tool executions it requested. */
+  /**
+   * Opens step `step` of turn `turn` — one model call plus the tool executions it requested.
+   * @mode emit
+   * @param payload - turn and step numbers
+   */
   'step/start': { turn: number; step: number }
-  /** Closes step `step` of turn `turn`. */
+  /**
+   * Closes step `step` of turn `turn`.
+   * @mode emit
+   * @param payload - turn and step numbers
+   */
   'step/end': { turn: number; step: number }
   /**
    * A user-role message on the model-visible surface: a direct human prompt
@@ -260,21 +272,31 @@ export interface SessionEventMap {
    * context (file-change notices, subdir AGENTS.md, skill content, cron
    * notifications, …), or an entered goal continuation round. All three
    * project their `content` verbatim; `source` tells them apart.
+   * @mode emit
+   * @param payload - user message data
    */
   'user/message': UserMessage
-  /** Raw stream chunk — token-level replay fidelity. */
+  /**
+   * Raw stream chunk — token-level replay fidelity.
+   * @mode emit
+   * @param payload - turn, step, and chunk data
+   */
   'assistant/chunk': { turn: number; step: number; chunk: StreamChunk }
   /**
    * Assembled assistant message for one step (derived history uses this).
    * Carries the step's `usage` when the adapter reported token accounting, so
    * the model output and its accounting travel together (there is no separate
    * usage record). `usage` is absent when the adapter reported none.
+   * @mode emit
+   * @param payload - turn, step, message, and optional usage
    */
   'assistant/message': { turn: number; step: number; message: AssistantMessage; usage?: TokenUsage }
   /**
    * The model requested one tool invocation: `name` with the raw `arguments`
    * JSON string exactly as the model produced it (unparsed). `callId` pairs the
    * call with its `tool/result`.
+   * @mode emit
+   * @param payload - turn, step, call ID, tool name, and arguments
    */
   'tool/call': { turn: number; step: number; callId: CallId; name: string; arguments: string }
   /**
@@ -287,6 +309,8 @@ export interface SessionEventMap {
    * identical card on replay. Absent
    * unless the tool attaches one (e.g. `dsh-tool-fs` carries its result-time
    * contextual diff here).
+   * @mode emit
+   * @param payload - turn, step, result message, optional error, and optional meta
    */
   'tool/result': {
     turn: number
@@ -295,16 +319,24 @@ export interface SessionEventMap {
     error?: { name: string; code: string }
     meta?: JsonValue
   }
-  /** Whole-list snapshot; latest write wins on replay. Log-only UI state; never derived history. */
+  /**
+   * Whole-list snapshot; latest write wins on replay. Log-only UI state; never derived history.
+   * @mode emit
+   * @param payload - todo items array
+   */
   'todo/write': { todos: TodoItem[] }
   /**
    * Full header for the next request, appended inside its step before dispatch.
    * It is log-only; the latest snapshot reconstructs the request header.
+   * @mode emit
+   * @param payload - epoch header and reason
    */
   'request/header': { header: EpochHeader; reason: RequestHeaderReason }
   /**
    * Route metadata for the next request, logged only when the route or capacity
    * changes. It does not participate in request reconstruction or header equality.
+   * @mode emit
+   * @param payload - request context
    */
   'request/context': RequestContext
   /**
@@ -328,6 +360,8 @@ export interface SessionEventMap {
    * an ended lifecycle, whatever ended it. NOT a liveness signal about other
    * writers — a concurrently live session holds its own boundary elsewhere,
    * so tolerating concurrent writers needs a signal beyond the log.
+   * @mode emit
+   * @param payload - empty payload
    */
   'session/end-seed': Record<string, never>
 }

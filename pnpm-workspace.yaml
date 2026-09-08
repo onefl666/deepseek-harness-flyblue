@@ -8,6 +8,8 @@ packages:
   # Product assemblies over the package tier; apps/cli owns the `dsh` bin.
   - apps/*
   - website
+  # Third-party local packages that need to be built as part of the workspace.
+  - third-party/*
   # The runnable demo leaves join as ONE workspace member: examples/package.json
   # declares the union of every leaf's cordis.yml plugins as workspace:*, so a
   # plain-node (`:lib`) boot of any leaf (examples/<leaf>/cordis.yml) resolves its
