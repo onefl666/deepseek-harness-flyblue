@@ -102,4 +102,24 @@ estimateMessage(message: Message): number
 Types: [EpochHeader](session.md) · [Message](llm-streaming.md) · [Session](session.md)
 
 Source: [`packages/llm/token-meter/src/index.ts`](../../packages/llm/token-meter/src/index.ts)
+
+<a id="ctxusagestats--usagestatsservice"></a>
+
+### `ctx.usageStats` — `UsageStatsService`
+
+Derives browser-safe historical accounting from every interpretable local session log. The service reads no credentials, plans, balances, prices, or quotas.
+
+```ts cordis-catalog
+/**
+ * Read one consistent per-session scan for the requested Host calendar range.
+ * A session whose log cannot be interpreted is skipped and listed in
+ * `skippedSessions`; every other count omits it. Failures to list live
+ * sessions or stored snapshots still reject the request.
+ * @param request - Seven- or thirty-day inclusive range.
+ * @returns Dense daily activity and provider-reported usage.
+ */
+@Remote async stats(request: UsageStatsRequest): Promise<UsageStatsSnapshot>
+```
+
+Source: [`packages/session/usage-stats/src/index.ts`](../../packages/session/usage-stats/src/index.ts)
 <!-- END GENERATED cordis-surface -->

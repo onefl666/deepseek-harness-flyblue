@@ -2080,6 +2080,16 @@
       "doc": "packages/client/ui-conversation/README.md",
       "symbol": "ComposerChainProps",
       "source": "packages/client/ui-conversation/src/client/contract/slots.ts"
+    },
+    {
+      "doc": "docs/subsystems/ssh.md",
+      "symbol": "SshHost",
+      "source": "packages/ssh/ssh/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/ssh.md",
+      "symbol": "SshHostSummary",
+      "source": "packages/ssh/ssh/src/types.ts"
     }
   ]
 }

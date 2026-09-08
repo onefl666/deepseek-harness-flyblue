@@ -1,10 +1,25 @@
+---
+description: "Model-facing SSH host listing and command execution tools; for users and maintainers of the SSH subsystem."
+kind: "package-reference"
+---
 # @deepseek-ai/dsh-tool-ssh
 
 English | [中文](README.zh.md)
 
+## Summary
+
+
 Optional model-facing consumer of `ctx.ssh`. When the SSH service is present, the plugin registers `ssh_list` for secret-free host discovery and `ssh_exec` for one-shot remote command execution. When the service is absent, it registers no tools.
 
 `ssh_exec` forwards one configured host id and command to the service. It returns captured stdout followed by stderr and appends `[result unknown]` when the connection is lost after dispatch. That marker instructs callers not to repeat a potentially non-idempotent command automatically.
+
+
+-----
+
+## Table of Contents
+
+- [Model Experience](#model-experience)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
 
 ## Model Experience
 
@@ -54,3 +69,13 @@ None; UI presentation is outside the model request.
 
 - The tool cannot create or edit host records; host configuration remains a loopback browser operation.
 - SSH private-key execution remains unavailable until the host service loads configured key material.
+
+<a id="dev-note"></a>
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>

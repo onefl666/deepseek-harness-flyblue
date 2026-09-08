@@ -1,11 +1,28 @@
+---
+description: "本地任务板的浏览器设置区块；面向任务板体验的使用者与维护者。"
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-client-ui-task-board
 
 [English](README.md) | 中文
+
+## 概述
+
 
 用于 Host 持久化任务账本的浏览器设置区段。插件在 `settings.section` 中注册 `task-board`，通过生成的 Typert remote 以进行中/已归档分段看板列出任务，创建去除首尾空白的标题，行内重命名与归档，并在二次确认后永久删除已归档任务。
 
 每项变更都接收浏览器生成的 UUID 作为请求 ID。变更先乐观应用，再以 Host 响应校准，随后重新加载 Host 投影以保持账本权威；RPC 失败渲染为带重试的警报横幅。
 
+
+-----
+
+## 目录
+
+- [模型体验](#model-experience)
+- [已知限制与暂缓事项](#known-limitations-and-deferred-work)
+
+<a id="model-experience"></a>
 ## 模型体验
 
 无，因为该浏览器端任务看板投影不注册模型可见内容。
@@ -14,7 +31,18 @@
 
 无；任务看板渲染和变更不参与提供方请求。
 
+<a id="known-limitations-and-deferred-work"></a>
 ## 已知限制与暂缓事项
 
 - 区段不提供已归档任务的恢复操作。
 - 任务列表只在本地变更后刷新；其他客户端的变更不会实时推送。
+
+<a id="dev-note"></a>
+### 开发备注
+
+<details>
+<summary>维护者工作上下文——点击展开</summary>
+
+None.
+
+</details>

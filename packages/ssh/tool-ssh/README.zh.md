@@ -1,11 +1,27 @@
+---
+description: "面向模型的 SSH 主机列举与命令执行工具；面向 SSH 子系统的使用者与维护者。"
+kind: "package-reference"
+---
 # @deepseek-ai/dsh-tool-ssh
 
 [English](README.md) | 中文
+
+## 概述
+
 
 `ctx.ssh` 的可选模型消费者。SSH 服务存在时，插件注册用于无密钥主机发现的 `ssh_list` 和用于单次远程命令执行的 `ssh_exec`；服务不存在时不注册任何工具。
 
 `ssh_exec` 把一个已配置主机 ID 和命令转发给服务。它依次返回捕获的 stdout 与 stderr；如果连接在分发后丢失，还会追加 `[result unknown]`。该标记提示调用方不要自动重复可能非幂等的命令。
 
+
+-----
+
+## 目录
+
+- [模型体验](#model-experience)
+- [已知限制与暂缓事项](#known-limitations-and-deferred-work)
+
+<a id="model-experience"></a>
 ## 模型体验
 
 ### 工具 schema
@@ -50,7 +66,18 @@
 
 无；UI 呈现位于模型请求之外。
 
+<a id="known-limitations-and-deferred-work"></a>
 ## 已知限制与暂缓事项
 
 - 工具不能创建或编辑主机记录；主机配置仍由 loopback 浏览器操作完成。
 - 在 Host 服务支持加载已配置密钥材料之前，SSH 私钥执行不可用。
+
+<a id="dev-note"></a>
+### 开发备注
+
+<details>
+<summary>维护者工作上下文——点击展开</summary>
+
+None.
+
+</details>

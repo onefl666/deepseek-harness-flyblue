@@ -380,7 +380,7 @@ const SERVICE_ROLES: ServiceRole[] = [
   },
   {
     key: 'planMode',
-    pkg: 'plan-mode',
+    pkg: 'plan-handoff',
     title: 'Plan collaboration state',
     mode: 'core',
     note: 'Folds logged plan/mode state, flushes user selections at turn boundaries, renders deployment-owned guidance, registers /plan, and keeps the plan-exit schema stable across transitions.',
@@ -696,7 +696,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'Derives cached daily and model aggregates from the union of live and persisted local sessions.',
   },
   {
-    key: 'workspaceFiles',
+    key: 'workspaceInspector',
     pkg: 'workspace-files',
     title: 'Workspace file operations',
     mode: 'core',

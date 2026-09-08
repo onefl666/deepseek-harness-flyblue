@@ -6,8 +6,10 @@ const at = (date: string): number => new Date(`${date}T12:00:00`).getTime()
 const event = (type: string, seq: number, time: number, data: unknown): SessionEvent => ({ type, seq, time, data } as SessionEvent)
 const user = (seq: number, date: string, kind: 'user' | 'plugin' = 'user') => event('user/message', seq, at(date), { id: `u${seq}`, role: 'user', content: [{ type: 'text', text: 'hello' }], source: kind === 'user' ? { kind } : { kind, plugin: 'test' }, surfaceOp: 'append' })
 const header = (seq: number, date: string, provider: string, model: string) => event('request/header', seq, at(date), { header: { config: { provider, model }, system: [], tools: [] }, reason: 'initial' })
-const usage = (seq: number, date: string, turn: number, step: number, inputTokens: number, outputTokens: number, reasoningTokens = 0) => event('assistant/chunk', seq, at(date), { turn, step, chunk: { type: 'usage', usage: { inputTokens, outputTokens, reasoningTokens } } })
-const assistant = (seq: number, date: string, turn: number, step: number, provider: string, model: string, tokens?: { inputTokens: number; outputTokens: number; reasoningTokens?: number }, text = 'answer') => event('assistant/message', seq, at(date), { turn, step, message: { id: `a${seq}`, role: 'assistant', content: text === '' ? [] : [{ type: 'text', text }], source: { kind: 'model', provider, model } }, ...(tokens === undefined ? {} : { usage: tokens }), surfaceOp: 'append', sourceEventSeqs: [] })
+// An attempt that committed no surface message (failed/retried/cancelled): its
+// usage rides the compact stream, exactly as a real attempt settlement carries it.
+const usage = (seq: number, date: string, turn: number, step: number, inputTokens: number, outputTokens: number, reasoningTokens = 0) => event('assistant/attempt', seq, at(date), { turn, step, stream: [{ type: 'chunk', time: at(date), chunk: { type: 'usage', usage: { inputTokens, outputTokens, reasoningTokens } } }] })
+const assistant = (seq: number, date: string, turn: number, step: number, provider: string, model: string, tokens?: { inputTokens: number; outputTokens: number; reasoningTokens?: number }, text = 'answer') => event('assistant/message', seq, at(date), { turn, step, message: { id: `a${seq}`, role: 'assistant', content: text === '' ? [] : [{ type: 'text', text }], source: { kind: 'model', provider, model } }, stream: [], ...(tokens === undefined ? {} : { usage: tokens }) })
 
 afterEach(() => { vi.useRealTimers() })
 

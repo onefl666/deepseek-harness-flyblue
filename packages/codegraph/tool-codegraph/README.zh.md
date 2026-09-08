@@ -1,6 +1,13 @@
+---
+description: "基于项目索引的面向模型 CodeGraph 探索工具；面向 CodeGraph 子系统的使用者与维护者。"
+kind: "package-reference"
+---
 # @deepseek-ai/dsh-tool-codegraph
 
 [English](README.md) | 中文
+
+## 概述
+
 
 面向模型的 **CodeGraph 工具集**，基于发行版附带的 [`@colbymchenry/codegraph`](https://www.npmjs.com/package/@colbymchenry/codegraph) 引擎。本包负责工具名、JSON schema、`tool:codegraph` 提示词段、项目路径约束和 UI 呈现。引擎是本包钉死的运行时依赖；没有 `ctx.codegraph` 服务，也不走 host MCP 客户端。
 
@@ -8,6 +15,17 @@
 
 注册不要求已有 `.codegraph/` 索引。缺少索引或引擎加载失败时，工具仍返回成功形态的指引，让模型改用 `read`/`grep`/`glob`。本插件从不执行 `codegraph init`。Web GUI 与可选的自动 init 在 `@deepseek-ai/dsh-codegraph-index`，只由用户点击、`/codegraph-init` 或 `autoInit` 设置启动。
 
+
+-----
+
+## 目录
+
+- [工具](#tools)
+- [配置](#configuration)
+- [模型体验](#model-experience)
+- [已知限制与延期工作](#known-limitations-and-deferred-work)
+
+<a id="tools"></a>
 ## 工具
 
 | 工具 | 默认 | 参数 | 行为 |
@@ -22,6 +40,7 @@
 
 规范值为 `{ text, projectPath, indexed }`。Native 渲染只输出 `text`。Code Mode 可直接读 `indexed`，不必解析正文。
 
+<a id="configuration"></a>
 ## 配置
 
 | 键 | 默认 | 含义 |
@@ -35,6 +54,7 @@
   name: '@deepseek-ai/dsh-tool-codegraph'
 ```
 
+<a id="model-experience"></a>
 ## 模型体验
 
 ### 系统提示词
@@ -114,9 +134,20 @@ Codegraph is a local SQLite symbol graph. Call `codegraph_explore` first on inde
 
 无；UI 呈现不进入模型请求。
 
+<a id="known-limitations-and-deferred-work"></a>
 ## 已知限制与延期工作
 
 - **每个 workspace 仍需要 `.codegraph/` 索引** — harness 附带引擎和工具，不附带每个仓库的索引。建索引是用户的决定：Web「代码索引」页、`/codegraph-init`、自动 init，或 `codegraph init`。Agent 仍然不得自行 init。
 - **Explore 按 token 匹配查询** — 开放散文、单独路径和负例探查会 fail-open。`tool:codegraph` 提示词就是查询约定；默认不开 extras，因为它们重复 explore 且消耗 schema token。
 - **进程内 `ToolHandler` 是钉版本的内部导入** — `@colbymchenry/codegraph` 的公开入口导出 `CodeGraph` 但不导出 `ToolHandler`；本包从对应平台包的 `lib/dist/mcp/index.js` 加载 `ToolHandler`，并钉死 `1.5.0`。这些导出若移动，契约测试会失败。子进程路径运行包内的 `npm-shim.js`，由随包 Node 24 执行 CLI。
 - **没有 host 平面的图缓存** — 每个已挂载 preset fiber 持有自己的只读打开。共享的 `ctx.codegraph` 服务延期。
+
+<a id="dev-note"></a>
+### 开发备注
+
+<details>
+<summary>维护者工作上下文——点击展开</summary>
+
+None.
+
+</details>

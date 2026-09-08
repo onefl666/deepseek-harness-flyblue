@@ -8,7 +8,7 @@
 // Discuss dismisses the request so the composer returns. Refine stays in plan
 // mode. Each approve label leaves plan mode on a different execution path.
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Button, IconEditOutline16, MarkdownText } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PendingQuestion, PlanReview, QuestionComposerProps } from './contract/slots.ts'
 import css from './PlanReviewPanel.module.css'
@@ -53,6 +53,12 @@ export function PlanReviewPanel({ pending, review, t }: PlanReviewPanelProps) {
   // when the host's resolved frame lands, so until then a second click must
   // not re-fire. A failed send (rejected receipt / transport) re-arms it and
   // shows why, since nothing else would tell the user the click was lost.
+  const markdownLabels = useMemo(() => ({
+    code: { copyLabel: t('copy'), copiedLabel: t('copied') },
+    footnotes: t('markdown.footnotes'),
+  }), [t])
+  // The panel waits for the host's resolved frame before leaving, so repeated
+  // clicks must not resubmit. A failed send re-enables it and shows the error.
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const settle = (send: () => Promise<void>): void => {
@@ -76,7 +82,7 @@ export function PlanReviewPanel({ pending, review, t }: PlanReviewPanelProps) {
           {t('plan.header')}
         </div>
         <div className={css.body} data-plan-review-scroll>
-          <MarkdownText text={review.plan} />
+          <MarkdownText text={review.plan} labels={markdownLabels} />
         </div>
         <div className={css.footer}>
           <div className={css.feedback} role="status">{error}</div>

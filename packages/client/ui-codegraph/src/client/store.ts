@@ -1,7 +1,7 @@
 /**
  * Session-scoped dock store: whether this blank session dismissed the prompt.
  */
-import { defineStore, type EngineStoreHandle } from '@deepseek-ai/dsh-client-runtime/client'
+import { defineStore, type EngineStoreHandle } from '@deepseek-ai/dsh-client-store'
 
 /** Dock store state. */
 export interface CodegraphDockState {

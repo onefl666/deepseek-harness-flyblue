@@ -8,7 +8,7 @@ import { resolve } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type { Session, SessionId } from '@deepseek-ai/dsh-session'
-import { settingsNamespace, type SettingsScope } from '@deepseek-ai/dsh-settings'
+import type { SettingsScope } from '@deepseek-ai/dsh-settings'
 import {
   buildInitArgv,
   createSpawnRunner,
@@ -29,7 +29,7 @@ export type Config = Readonly<Record<string, never>>
 export const Config = z.object({}) as unknown as z<Config>
 
 /** Settings namespace written by the Web「代码索引」page. */
-export const CODEGRAPH_SETTINGS_NAMESPACE = settingsNamespace('codegraph')
+export const CODEGRAPH_SETTINGS_NAMESPACE = 'codegraph'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {

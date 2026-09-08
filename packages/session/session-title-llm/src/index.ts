@@ -43,7 +43,6 @@ declare module '@deepseek-ai/dsh-session/types' {
   interface SessionEventMap {
     /**
      * Log-only pre-dispatch record of one session-title model request.
-     * @mode emit
      * @param payload - session title LLM request event data
      */
     'session/title-llm-request': SessionTitleLlmRequestEventData

@@ -566,6 +566,33 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 
 ### `plan/*`
 
+<a id="planapproved--log-only"></a>
+
+#### `plan/approved` — log-only
+
+```ts persistence-catalog
+/**
+ * Recorded when a review approves a plan: log-only. The plan markdown
+ * stays on the `exit_plan_mode` tool argument.
+ */
+'plan/approved': { execution: PlanExecution; title: string }
+```
+
+来源：[`packages/plan/plan-handoff/src/types.ts:31`](../packages/plan/plan-handoff/src/types.ts)
+
+<a id="planhandoff--log-only"></a>
+
+#### `plan/handoff` — log-only
+
+```ts persistence-catalog
+/**
+ * An approved plan left this session for a fresh sibling: log-only.
+ */
+'plan/handoff': { childSessionId: import('@deepseek-ai/dsh-session/types').SessionId; mode: 'clear' }
+```
+
+来源：[`packages/plan/plan-handoff/src/types.ts:26`](../packages/plan/plan-handoff/src/types.ts)
+
 <a id="planmode--log-only"></a>
 
 #### `plan/mode` — log-only
@@ -574,12 +601,12 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 /**
  * Whether plan mode is in force from this point on: log-only, non-surface,
  * whole-value replace. The last `plan/mode` wins; a log with none folds to
- * inactive through the projection unit's fold.
+ * inactive.
  */
 'plan/mode': { active: boolean }
 ```
 
-来源：[`packages/plan/plan-mode/src/index.ts:46`](../packages/plan/plan-mode/src/index.ts)
+来源：[`packages/plan/plan-handoff/src/types.ts:22`](../packages/plan/plan-handoff/src/types.ts)
 
 ### `request/*`
 
@@ -699,26 +726,30 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 /**
  * Latest-wins session title snapshot. Log-only: it never enters the model
  * surface or derived history.
+ * @param payload - session title event data
  */
 'session/title': SessionTitleEventData
 ```
 
 类型：[SessionTitleEventData](subsystems/session-title.zh.md)
 
-来源：[`packages/session/session-title/src/index.ts:77`](../packages/session/session-title/src/index.ts)
+来源：[`packages/session/session-title/src/index.ts:78`](../packages/session/session-title/src/index.ts)
 
 <a id="sessiontitle-llm-request--log-only"></a>
 
 #### `session/title-llm-request` — log-only
 
 ```ts persistence-catalog
-/** Log-only pre-dispatch record of one session-title model request. */
+/**
+ * Log-only pre-dispatch record of one session-title model request.
+ * @param payload - session title LLM request event data
+ */
 'session/title-llm-request': SessionTitleLlmRequestEventData
 ```
 
 类型：[SessionTitleLlmRequestEventData](subsystems/session-title.zh.md)
 
-来源：[`packages/session/session-title-llm/src/index.ts:45`](../packages/session/session-title-llm/src/index.ts)
+来源：[`packages/session/session-title-llm/src/index.ts:48`](../packages/session/session-title-llm/src/index.ts)
 
 ### `session-log-deepseek/*`
 

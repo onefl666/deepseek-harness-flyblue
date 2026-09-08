@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { SessionId } from '@deepseek-ai/dsh-client-runtime/client'
-import type { SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { CodegraphIndexStatus, CodegraphSettings } from '@deepseek-ai/dsh-codegraph-index/client'
 import { makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
 import { zh as commonZh } from '@deepseek-ai/dsh-client-locale/src/locales/zh.ts'
@@ -45,6 +45,8 @@ function renderSection(options: {
     <CodegraphSection
       close={() => {}}
       useWorkspaces={selector => selector({} as never)}
+      useResource={(() => ({ status: 'none', value: undefined, failure: undefined, reload: () => {} })) as never}
+      useSessionPendingInteraction={((selector: (value: never) => unknown) => selector(new Map() as never)) as never}
       useSessions={selector => selector({
         ids: [SID],
         byId: {

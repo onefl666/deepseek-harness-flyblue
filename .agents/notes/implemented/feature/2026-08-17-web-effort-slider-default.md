@@ -36,5 +36,5 @@ A new or existing web profile that still loads `dsh-web-app` shows the slider on
 
 ## Related
 
-- [Session model selection in the Web composer](2026-07-24-web-session-model-selector.md)
-- [Default model follows the picker](2026-08-07-default-model-follows-the-picker.md)
+- [Session model selection in the Web composer](../../archived/feature/2026-07-24-web-session-model-selector.md)
+- [Default model follows the picker](../../archived/feature/2026-08-07-default-model-follows-the-picker.md)

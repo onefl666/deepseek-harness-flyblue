@@ -1,25 +1,42 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { createMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
-import SessionStore, { SESSION_FORMAT_VERSION, SessionId } from '@deepseek-ai/dsh-session'
+import SessionStore, { SESSION_FORMAT_VERSION, SessionId, SessionLogOffset } from '@deepseek-ai/dsh-session'
 import type { SessionEvent, SessionHeader } from '@deepseek-ai/dsh-session'
 import SessionPersistence, { SessionPersistenceRevision } from '@deepseek-ai/dsh-session-persistence'
+import type { SessionHandle, SessionPersistenceSnapshot } from '@deepseek-ai/dsh-session-persistence'
 import UsageStatsService from '../src/index.ts'
 
 interface Stored { header: SessionHeader; revision: string; events: SessionEvent[] }
 
 class FakePersistence extends SessionPersistence {
-  readonly supportsRawArtifacts = false
   readonly stored = new Map<string, Stored>()
   inspections = 0
   active = 0
   maxActive = 0
   fail?: unknown
-  locate(): undefined { return undefined }
-  async create(): Promise<void> {}
-  async append(): Promise<void> {}
-  async load(id: ReturnType<typeof SessionId>) { return this.inspect(id) }
-  async inspect(id: ReturnType<typeof SessionId>) {
+
+  create(): Promise<SessionHandle> { return Promise.reject(new Error('not used')) }
+  flush(): Promise<void> { return Promise.resolve() }
+  stat(): Promise<SessionPersistenceSnapshot | undefined> { return Promise.resolve(undefined) }
+
+  async open(id: ReturnType<typeof SessionId>): Promise<SessionHandle> {
+    const value = this.stored.get(id)
+    if (value === undefined) throw new Error('missing')
+    return {
+      id,
+      header: value.header,
+      inheritedEventCount: SessionLogOffset(0),
+      access: 'read' as const,
+      read: () => this.inspect(id).then(inspected => ({ eventState: 'shared' as const, events: inspected.events })),
+      append: () => Promise.reject(new Error('read-only')),
+      flush: () => Promise.resolve(),
+      close: () => Promise.resolve(),
+      [Symbol.asyncDispose]: () => Promise.resolve(),
+    } as unknown as SessionHandle
+  }
+
+  private async inspect(id: ReturnType<typeof SessionId>) {
     this.inspections++
     this.active++
     this.maxActive = Math.max(this.maxActive, this.active)
@@ -30,12 +47,8 @@ class FakePersistence extends SessionPersistence {
     if (value === undefined) throw new Error('missing')
     return { meta: value.header, events: value.events }
   }
-  async readFrom(id: ReturnType<typeof SessionId>, fromSeq: number) {
-    const value = await this.inspect(id)
-    return { meta: value.meta, events: [...value.events.slice(fromSeq)] }
-  }
-  async list(): Promise<SessionHeader[]> { return [...this.stored.values()].map(value => value.header) }
-  async listSnapshots() {
+
+  async list(): Promise<readonly SessionPersistenceSnapshot[]> {
     return [...this.stored.values()].map(value => ({
       header: value.header,
       revision: SessionPersistenceRevision(value.revision),
@@ -58,7 +71,7 @@ async function harness(concurrency = 2) {
 function stored(id: string, revision: string, time: number): Stored {
   const sessionId = SessionId(id)
   return {
-    header: { version: SESSION_FORMAT_VERSION, id: sessionId, createdAt: time }, revision,
+    header: { version: SESSION_FORMAT_VERSION, id: sessionId, createdAt: time, isSeeded: false }, revision,
     events: [{ type: 'user/message', seq: 0, time, data: { id: `m-${id}`, role: 'user', content: [{ type: 'text', text: id }], source: { kind: 'user' } }, surfaceOp: 'append' } as SessionEvent],
   }
 }
@@ -138,6 +151,7 @@ describe('UsageStatsService', () => {
       turn: 0,
       step: 0,
       message: createMessage({ role: 'assistant', content: [], source: { kind: 'model', provider: 'p', model: 'm' } }),
+      stream: [],
       usage: { inputTokens: -1, outputTokens: 0 },
     }, { surfaceOp: 'append' })
     persistence.stored.set('good', stored('good', 'r1', now))

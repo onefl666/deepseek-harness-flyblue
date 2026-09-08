@@ -1,8 +1,26 @@
+---
+description: "Historical local-session usage statistics derived from session logs; for users and maintainers of the usage-stats experience."
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-usage-stats
 
 English | [中文](README.zh.md)
 
+## Summary
+
+
 Host plugin deriving a browser-safe usage history from every local session log. `usageStats.stats({ days: 7 | 30 })` returns Host-calendar daily activity, five provider-reported Token buckets, distinct session and visible-message counts, the true current activity streak, and provider/model aggregates. The service reads no credentials, prices, plans, balances, quotas, or Workspace registry.
+
+
+-----
+
+## Table of Contents
+
+- [Accounting](#accounting)
+- [Composition](#composition)
+- [Model Experience](#model-experience)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
 
 ## Accounting
 
@@ -34,3 +52,13 @@ None; it never assembles or sends a model request.
 - Statistics are provider-reported accounting, not estimated cost. A model that reports no usage can still contribute visible-message activity.
 - One response is a consistent slice per session, not an atomic snapshot across all sessions. Events created during a scan appear on the next refresh.
 - Calendar boundaries follow the Host process timezone. Changing that timezone changes subsequent day attribution.
+
+<a id="dev-note"></a>
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>

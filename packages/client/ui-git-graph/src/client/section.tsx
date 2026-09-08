@@ -14,6 +14,8 @@ import {
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
+// Type-only: pulls the Workspace UI's GlobalStandardProps merge (props.useWorkspaces).
+import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
 import css from './section.module.css'
 
 interface Commit { hash: string; parents: string[]; subject: string; refs: string[] }

@@ -1,12 +1,29 @@
+---
+description: "Model-facing CodeGraph exploration tool over the project index; for users and maintainers of the CodeGraph subsystem."
+kind: "package-reference"
+---
 # @deepseek-ai/dsh-tool-codegraph
 
 English | [中文](README.zh.md)
+
+## Summary
+
 
 The model-facing **CodeGraph tool suite** over the bundled [`@colbymchenry/codegraph`](https://www.npmjs.com/package/@colbymchenry/codegraph) engine. It owns tool names, JSON schemas, the `tool:codegraph` prompt section, project-path confinement, and UI presentation. The engine is a pinned runtime dependency of this package; there is no `ctx.codegraph` service and no host MCP client.
 
 Namespace plugin (`name` / `inject` / `Config` / `apply`, no default export). Injects `tools` and `systemPrompt`.
 
 Registration does not require a `.codegraph/` index. A missing index or a failed engine load stays a successful tool result that tells the model to use `read`/`grep`/`glob`. The plugin never runs `codegraph init`. The Web GUI and optional auto-init live in `@deepseek-ai/dsh-codegraph-index` and start only from a user click, `/codegraph-init`, or the `autoInit` setting.
+
+
+-----
+
+## Table of Contents
+
+- [Tools](#tools)
+- [Configuration](#configuration)
+- [Model Experience](#model-experience)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
 
 ## Tools
 
@@ -120,3 +137,13 @@ None; UI presentation is outside the model request.
 - **Explore token-matches the query** — open prose, a lone path, and negative lookups fail open. The `tool:codegraph` prompt is the query contract; extras stay off by default because they duplicate explore and spend schema tokens.
 - **In-process `ToolHandler` is a version-pinned internal import** — `@colbymchenry/codegraph`'s public entry exports `CodeGraph` but not `ToolHandler`; this package loads `ToolHandler` from the matching platform bundle (`lib/dist/mcp/index.js`) and pins `1.5.0`. A contract test fails if those exports move. The subprocess path runs the package's `npm-shim.js` so the bundled Node 24 executes the CLI.
 - **No host-plane graph cache** — each mounted preset fiber holds its own read-only opens. A later shared `ctx.codegraph` service is deferred.
+
+<a id="dev-note"></a>
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>

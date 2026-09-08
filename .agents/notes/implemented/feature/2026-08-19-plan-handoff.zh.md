@@ -28,7 +28,7 @@ Status: implemented
 
 ## Consequences
 
-批准不再只是「在这里继续」。压缩和清空依赖会话工厂或压缩服务；没有它们时插件降级而不是闭死。审阅卡不再是二元，因此[把计划审阅当成决策](2026-07-30-plan-review-presentation-intent.md)现在点名一组批准标签。[计划专属协作状态](../simplification/2026-07-22-plan-specific-collaboration-state.zh.md)里的软指引和只写入日志的 `plan/mode` 折叠仍然成立。
+批准不再只是「在这里继续」。压缩和清空依赖会话工厂或压缩服务；没有它们时插件降级而不是闭死。审阅卡不再是二元，因此[把计划审阅当成决策](../../archived/feature/2026-07-30-plan-review-presentation-intent.md)现在点名一组批准标签。[计划专属协作状态](../simplification/2026-07-22-plan-specific-collaboration-state.zh.md)里的软指引和只写入日志的 `plan/mode` 折叠仍然成立。
 
 ## Testing
 

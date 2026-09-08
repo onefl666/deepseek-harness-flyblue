@@ -80,6 +80,7 @@ describe('command-codegraph-init real Loader composition', () => {
     const execution = await context.commands.execute(
       agent,
       '/codegraph-init',
+      [],
       new AbortController().signal,
     )
     if (execution === undefined) throw new Error('Loader composition did not resolve /codegraph-init')
@@ -87,7 +88,7 @@ describe('command-codegraph-init real Loader composition', () => {
       kind: 'success',
       text: `Started CodeGraph indexing for ${PROJECT}.`,
     })
-    expect(session.events.map(event => ({ type: event.type, data: event.data }))).toEqual([
+    expect(session.snapshotEvents().map(event => ({ type: event.type, data: event.data }))).toEqual([
       {
         type: 'command/run',
         data: {

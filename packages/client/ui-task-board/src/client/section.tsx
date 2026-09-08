@@ -12,6 +12,7 @@ import {
   IconPlusOutline16, IconRefreshOutline16, Input, SegmentedRange,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
+import { randomUUID } from '@deepseek-ai/dsh-util-crypto'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import css from './section.module.css'
 
@@ -60,7 +61,7 @@ export function TaskBoardSection({ t, list, create, archive, update, remove }: P
   const [editingTitle, setEditingTitle] = useState('')
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | undefined>(undefined)
   const sequence = useRef(0)
-  const requestId = (): string => crypto.randomUUID()
+  const requestId = (): string => randomUUID()
 
   const refresh = useCallback(() => {
     const seq = ++sequence.current

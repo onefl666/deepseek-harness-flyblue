@@ -28,7 +28,7 @@ The plan markdown stays on the tool argument and is copied into the execution pr
 
 ## Consequences
 
-Approval is no longer a single continue-here step. Compact and clear cost a session factory or compaction service; without them the plugin degrades instead of failing closed. The review card is no longer binary, so [plan review as a decision](2026-07-30-plan-review-presentation-intent.md) now names a set of approve labels. Soft guidance and the log-only `plan/mode` fold from [plan-specific collaboration state](../simplification/2026-07-22-plan-specific-collaboration-state.md) still hold.
+Approval is no longer a single continue-here step. Compact and clear cost a session factory or compaction service; without them the plugin degrades instead of failing closed. The review card is no longer binary, so [plan review as a decision](../../archived/feature/2026-07-30-plan-review-presentation-intent.md) now names a set of approve labels. Soft guidance and the log-only `plan/mode` fold from [plan-specific collaboration state](../simplification/2026-07-22-plan-specific-collaboration-state.md) still hold.
 
 ## Testing
 

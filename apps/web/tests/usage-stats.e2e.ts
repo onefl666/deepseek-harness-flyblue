@@ -5,6 +5,7 @@ import type { Browser, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed, vi } from 'vitest'
 import { createAssistantMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
+import type { AssistantStreamRecord } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import type { Session } from '@deepseek-ai/dsh-session'
 import {
@@ -27,8 +28,9 @@ function appendUsage(session: Session, date: string, provider: string, model: st
   session.append('assistant/message', {
     turn: session.seq, step: 1,
     message: createAssistantMessage({ content: [{ type: 'text', text: `${model} answer` }], source: { provider, model } }),
+    stream: [] as AssistantStreamRecord[],
     usage: { inputTokens, outputTokens, cacheReadTokens: 3, reasoningTokens: 2 },
-  }, { surfaceOp: 'append', sourceEventSeqs: [] })
+  }, { surfaceOp: 'append' })
 }
 
 describe('web e2e: local usage history dashboard', () => {

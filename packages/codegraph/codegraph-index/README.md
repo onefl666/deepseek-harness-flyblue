@@ -1,6 +1,13 @@
+---
+description: "Host-plane CodeGraph index lifecycle: status, spawn, and optional auto-init; for users and maintainers of the CodeGraph subsystem."
+kind: "package-reference"
+---
 # @deepseek-ai/dsh-codegraph-index
 
 English | [中文](README.zh.md)
+
+## Summary
+
 
 Host-plane CodeGraph index lifecycle for the Web GUI. `ctx.codegraphIndex` exposes `status(sessionId)` and `init(sessionId)`. Both methods read `session.header.cwd` on the host and ignore any client-supplied path. `init` starts `codegraph init` and returns immediately; the UI polls `status` until `indexed` or `error`. The same resolved cwd shares one in-flight job. Disposing the service fiber aborts unfinished spawns.
 
@@ -12,6 +19,15 @@ The model-facing `@deepseek-ai/dsh-tool-codegraph` plugin still never runs init.
 - id: codegraph-index
   name: '@deepseek-ai/dsh-codegraph-index'
 ```
+
+
+-----
+
+## Table of Contents
+
+- [Service contract](#service-contract)
+- [Model Experience](#model-experience)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
 
 ## Service contract
 
@@ -29,3 +45,13 @@ None; this package never writes session events or prompt sections.
 
 - **Web host only** — CLI and headless users still run `codegraph init` themselves. Auto-init is absent unless this plugin is mounted.
 - **Ignore is not stored here** — dismissing the new-session prompt is a client-session fact. Permanent silence is auto-init or an existing index.
+
+<a id="dev-note"></a>
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>

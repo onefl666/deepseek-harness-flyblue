@@ -5,6 +5,7 @@ import UserQuestionService, {
   UserQuestionError,
   type AskUserQuestionAnswer,
   type AskUserQuestionRequest,
+  type AskUserQuestionIntent,
 } from '@deepseek-ai/dsh-user-questions'
 
 interface QuestionAnswerer {
@@ -333,7 +334,7 @@ describe('UserQuestionService', () => {
     await ctx.plugin(UserQuestionService)
     const p = provider('Approve')
     registerAnswerer(ctx, p)
-    const intent = { kind: 'plan-review', approve: ['Approve'] } as const
+    const intent: AskUserQuestionIntent = { kind: 'plan-review', approve: ['Approve'] }
 
     const result = await ctx.userQuestions.ask({
       questions: [

@@ -4,7 +4,7 @@
  * dismiss is a session-scoped store. Auto-init is the `codegraph` settings
  * namespace owned by the host index manager.
  */
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type { CodegraphSettings } from '@deepseek-ai/dsh-codegraph-index/client'
 // Type-only: generated Remote API and ctx.remote merge.
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
@@ -12,6 +12,8 @@ import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 // Type-only: settings.section SlotMap merge and ctx.settingsScope.
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+// Type-only: pulls the renderer-owned slots service merge (ctx.slots).
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 // Type-only: ctx.locale.
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import { CodegraphDock } from './CodegraphDock.tsx'

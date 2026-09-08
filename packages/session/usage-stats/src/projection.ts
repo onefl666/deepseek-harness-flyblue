@@ -107,12 +107,30 @@ export function localDateKey(timestamp: number): string {
   return `${year}-${month}-${day}`
 }
 
+/** The compact stream carried by one Assistant settlement event. */
+type AssistantStream = SessionEvent<'assistant/message'>['data']['stream']
+
+/** The last usage sample embedded in one attempt's compact stream, if any. */
+function lastStreamUsage(stream: AssistantStream) {
+  for (const record of [...stream].reverse()) {
+    if (record.type === 'chunk' && record.chunk.type === 'usage') return record.chunk.usage
+  }
+  return undefined
+}
+
+/**
+ * The usage one Assistant settlement reports for its attempt: the final
+ * message's own sample, or the last sample embedded in the stream.
+ */
+function usageOf(event: SessionEvent<'assistant/message'> | SessionEvent<'assistant/attempt'>) {
+  if (event.type === 'assistant/message' && event.data.usage !== undefined) return event.data.usage
+  return lastStreamUsage(event.data.stream)
+}
+
 function checkedUsage(
-  event: SessionEvent<'assistant/chunk'> | SessionEvent<'assistant/message'>,
+  usage: ReturnType<typeof usageOf>,
+  seq: number,
 ): UsageTokenBuckets | undefined {
-  const usage = event.type === 'assistant/chunk' && event.data.chunk.type === 'usage'
-    ? event.data.chunk.usage
-    : event.type === 'assistant/message' ? event.data.usage : undefined
   if (usage === undefined) return undefined
   const fields = [
     usage.inputTokens,
@@ -122,7 +140,7 @@ function checkedUsage(
     usage.reasoningTokens ?? 0,
   ]
   if (fields.some(value => !Number.isSafeInteger(value) || value < 0)) {
-    throw new Error(`usage-stats: event ${event.seq} has invalid token usage`)
+    throw new Error(`usage-stats: event ${seq} has invalid token usage`)
   }
   return {
     uncachedInputTokens: usage.inputTokens,
@@ -154,8 +172,8 @@ export function foldSessionUsage(state: SessionUsageProjection, events: readonly
     if (event.type === 'assistant/message' && event.data.message.content.length > 0) {
       dayFor(state, localDateKey(event.time)).messageCount++
     }
-    if (event.type !== 'assistant/chunk' && event.type !== 'assistant/message') continue
-    const buckets = checkedUsage(event)
+    if (event.type !== 'assistant/message' && event.type !== 'assistant/attempt') continue
+    const buckets = checkedUsage(usageOf(event), event.seq)
     if (buckets === undefined) continue
     const finalRoute = event.type === 'assistant/message' ? event.data.message.source : undefined
     const route = finalRoute ?? state.route ?? { provider: 'unknown', model: 'unknown' }

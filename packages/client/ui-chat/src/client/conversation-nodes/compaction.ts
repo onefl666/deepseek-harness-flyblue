@@ -3,7 +3,6 @@ import type {
   ConversationMatch, ConversationNodeContext, ConversationNodeDefinition,
 } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-compaction/types'
-import type { CompactionChatData } from '../contract/chat-nodes.ts'
 import { chatNode } from './common.ts'
 import { compactionEvidence, compactSource, compactSummary, updateCompactionState } from './command.ts'
 

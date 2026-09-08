@@ -1,17 +1,38 @@
+---
+description: "带退出工具、审阅交接与 /plan 命令的已记录计划模式协作状态；面向规划体验的使用者与维护者。"
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-plan-handoff
 
 [English](README.md) | 中文
+
+## 概述
+
 
 按 agent（智能体）记录的 plan 协作状态：部署持有的指引、`/plan [message]` 进入、`/plan off` 退出，以及审阅后可选保留 / 压缩 / 清空上下文再执行的 `exit_plan_mode`。Plan mode 是软性指引；沙箱模式与审批策略独立强制限制。
 
 本包在已交付组合中替换 `@deepseek-ai/dsh-plan-mode`。`ctx.planMode`、`plan/mode`、`/plan` 与 `exit_plan_mode` 名称不变。
 
+
+-----
+
+## 目录
+
+- [持久状态](#durable-state)
+- [审阅与执行](#review-and-execution)
+- [配置](#configuration)
+- [Model Experience](#model-experience)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+
+<a id="durable-state"></a>
 ## 持久状态
 
 `plan/mode`（`{ active: boolean }`）是只写入日志、整值替换的 `SessionEventMap` 成员。`foldPlanMode(events)` 返回最后一条记录，没有则返回 `false`。`ctx.planMode.set` / `get` 与旧包相同：空闲时立即提交；打开的轮次等到下一个被接受的轮内 pre-step。
 
 批准审阅还会追加 `plan/approved` `{ execution, title }`。清空交接在源会话追加 `plan/handoff` `{ childSessionId, mode: 'clear' }`。
 
+<a id="review-and-execution"></a>
 ## 审阅与执行
 
 `exit_plan_mode` 在两种状态下都保持注册。在 plan mode 中，它要求以 `#` 标题开头的 markdown 计划，并通过 `ctx.userQuestions` 提供四个选项：
@@ -25,6 +46,7 @@
 
 Web 客户端在当前会话上看到实时 `plan/handoff` 时选中子会话；若子会话稍后才进入列表，也会在出现时选中。历史回放不会切换。
 
+<a id="configuration"></a>
 ## 配置
 
 ```yaml
@@ -84,3 +106,13 @@ through exit_plan_mode.
 - **仍写 `@deepseek-ai/dsh-plan-mode` 的用户复制 preset** 在改行名之前会加载失败。
 - 在一轮最后一个被接受的 pre-step 之后作出的选择，若进程在下一个被接受的轮内 pre-step 之前退出，就会丢失。
 - 压缩使用通用摘要器；压缩后以 steer 进去的计划为权威来源。
+
+<a id="dev-note"></a>
+### 开发备注
+
+<details>
+<summary>维护者工作上下文——点击展开</summary>
+
+None.
+
+</details>

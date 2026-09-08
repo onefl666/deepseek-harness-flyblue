@@ -438,6 +438,19 @@ export interface Config {
 
 来源：[`packages/code-runtime/code-runtime-worker-thread/src/index.ts:25`](../packages/code-runtime/code-runtime-worker-thread/src/index.ts)
 
+<a id="deepseek-aidsh-codegraph-index"></a>
+
+## `@deepseek-ai/dsh-codegraph-index`
+
+需要：`sessions`
+
+```ts config-catalog
+/** This host service has no loader config; settings live in the `codegraph` namespace. */
+export type Config = Readonly<Record<string, never>>
+```
+
+来源：[`packages/codegraph/codegraph-index/src/index.ts:26`](../packages/codegraph/codegraph-index/src/index.ts)
+
 <a id="deepseek-aidsh-compaction-basic"></a>
 
 ## `@deepseek-ai/dsh-compaction-basic`
@@ -1654,11 +1667,11 @@ export interface Config {
 
 来源：[`packages/preset/persona/src/index.ts:30`](../packages/preset/persona/src/index.ts)
 
-<a id="deepseek-aidsh-plan-mode"></a>
+<a id="deepseek-aidsh-plan-handoff"></a>
 
-## `@deepseek-ai/dsh-plan-mode`
+## `@deepseek-ai/dsh-plan-handoff`
 
-需要：`tools` · `systemPrompt` · `sessionProjections`
+需要：`tools` · `systemPrompt`
 
 ```ts config-catalog
 /** Deployment-owned plan guidance. */
@@ -1668,7 +1681,7 @@ export interface PlanModeConfig {
 }
 ```
 
-来源：[`packages/plan/plan-mode/src/index.ts:63`](../packages/plan/plan-mode/src/index.ts)
+来源：[`packages/plan/plan-handoff/src/index.ts:74`](../packages/plan/plan-handoff/src/index.ts)
 
 <a id="deepseek-aidsh-plugin-package-inventory-deepseek"></a>
 
@@ -2260,6 +2273,26 @@ export interface Config {
 
 来源：[`packages/spill/spill-policy/src/index.ts:61`](../packages/spill/spill-policy/src/index.ts)
 
+<a id="deepseek-aidsh-ssh"></a>
+
+## `@deepseek-ai/dsh-ssh`
+
+```ts config-catalog
+/** Configures SSH connection and output bounds. */
+export interface Config {
+  /** Maximum time in milliseconds to establish an SSH connection. */
+  connectTimeoutMs?: number
+  /** Maximum time in milliseconds for one dispatched command. */
+  execTimeoutMs?: number
+  /** Maximum captured bytes for each standard output stream. */
+  outputLimitBytes?: number
+  /** Reserved idle connection lifetime in milliseconds. */
+  idleTimeoutMs?: number
+}
+```
+
+来源：[`packages/ssh/ssh/src/index.ts:14`](../packages/ssh/ssh/src/index.ts)
+
 <a id="deepseek-aidsh-storage-domain"></a>
 
 ## `@deepseek-ai/dsh-storage-domain`
@@ -2601,6 +2634,20 @@ export interface Config {
 
 来源：[`packages/core/system-prompt/src/index.ts:242`](../packages/core/system-prompt/src/index.ts)
 
+<a id="deepseek-aidsh-task-board"></a>
+
+## `@deepseek-ai/dsh-task-board`
+
+```ts config-catalog
+/** Configures scheduler checks. */
+export interface Config {
+  /** Interval between scheduler checks in milliseconds. */
+  tickMs?: number
+}
+```
+
+来源：[`packages/schedule/task-board/src/index.ts:14`](../packages/schedule/task-board/src/index.ts)
+
 <a id="deepseek-aidsh-terminal-bash"></a>
 
 ## `@deepseek-ai/dsh-terminal-bash`
@@ -2735,6 +2782,35 @@ export interface Config {
 ```
 
 来源：[`packages/shell/tool-bash-persistent/src/index.ts:432`](../packages/shell/tool-bash-persistent/src/index.ts)
+
+<a id="deepseek-aidsh-tool-codegraph"></a>
+
+## `@deepseek-ai/dsh-tool-codegraph`
+
+需要：`tools` · `systemPrompt`
+
+```ts config-catalog
+/** Plugin configuration: extra tools, isolation, and the timeout budget. */
+export interface Config {
+  /**
+   * Extra short names to list besides `explore`. Empty by default because a
+   * single primary tool steers better than a menu of narrower ones.
+   */
+  extraTools?: string[]
+  /**
+   * How to run the bundled engine. `auto` uses in-process below Node 25 and a
+   * child process at Node 25+, where tree-sitter WASM can OOM the host.
+   */
+  isolation?: CodegraphIsolation
+  /** Tool-call timeout budget in ms (default 60000). */
+  timeoutMs?: number
+}
+
+/** Isolation mode for talking to the bundled CodeGraph engine. */
+export type CodegraphIsolation = 'auto' | 'in-process' | 'subprocess'
+```
+
+来源：[`packages/codegraph/tool-codegraph/src/index.ts:89`](../packages/codegraph/tool-codegraph/src/index.ts)
 
 <a id="deepseek-aidsh-tool-fs"></a>
 
@@ -3183,6 +3259,22 @@ export interface Config {
 
 来源：[`packages/typert/loader/src/index.ts:47`](../packages/typert/loader/src/index.ts)
 
+<a id="deepseek-aidsh-usage-stats"></a>
+
+## `@deepseek-ai/dsh-usage-stats`
+
+需要：`sessionPersistence` · `sessions`
+
+```ts config-catalog
+/** Configures bounded cold-session inspection. */
+export interface Config {
+  /** Maximum persistence inspections in flight. */
+  inspectConcurrency?: number
+}
+```
+
+来源：[`packages/session/usage-stats/src/index.ts:17`](../packages/session/usage-stats/src/index.ts)
+
 <a id="deepseek-aidsh-user-approval"></a>
 
 ## `@deepseek-ai/dsh-user-approval`
@@ -3414,6 +3506,44 @@ export interface Config {
 
 来源：[`packages/workflow/workflow-worker-thread/src/index.ts:32`](../packages/workflow/workflow-worker-thread/src/index.ts)
 
+<a id="deepseek-aidsh-workspace-files"></a>
+
+## `@deepseek-ai/dsh-workspace-files`
+
+需要：`workspaceRegistry`
+
+```ts config-catalog
+/** Configures bounded filesystem reads and searches. */
+export interface Config {
+  /** Maximum bytes read for one text preview. */
+  previewBytes?: number
+  /** Maximum matching entries returned by one search. */
+  searchResultLimit?: number
+  /** Maximum filesystem entries examined by one search. */
+  searchScanLimit?: number
+}
+```
+
+来源：[`packages/workspace/workspace-files/src/index.ts:21`](../packages/workspace/workspace-files/src/index.ts)
+
+<a id="deepseek-aidsh-workspace-git"></a>
+
+## `@deepseek-ai/dsh-workspace-git`
+
+需要：`workspaceRegistry`
+
+```ts config-catalog
+/** Limits Git process duration and graph size. */
+export interface Config {
+  /** Maximum duration in milliseconds for one Git subprocess. */
+  timeoutMs?: number
+  /** Maximum commits returned by one graph request. */
+  graphLimit?: number
+}
+```
+
+来源：[`packages/workspace/workspace-git/src/index.ts:14`](../packages/workspace/workspace-git/src/index.ts)
+
 ## 无配置的可加载插件
 
 这些插件通过 `cordis.yml` 中不含 `config:` 块的条目加载；它们未声明任何配置接口。
@@ -3432,12 +3562,14 @@ export interface Config {
 - `@deepseek-ai/dsh-client-ui-attachment`（[`packages/client/ui-attachment/src/index.ts`](../packages/client/ui-attachment/src/index.ts)）
 - `@deepseek-ai/dsh-client-ui-brand-official`（[`packages/client/ui-brand-official/src/index.ts`](../packages/client/ui-brand-official/src/index.ts)）
 - `@deepseek-ai/dsh-client-ui-chat`（[`packages/client/ui-chat/src/index.ts`](../packages/client/ui-chat/src/index.ts)）
+- `@deepseek-ai/dsh-client-ui-codegraph`（[`packages/client/ui-codegraph/src/index.ts`](../packages/client/ui-codegraph/src/index.ts)）
 - `@deepseek-ai/dsh-client-ui-commands`（[`packages/client/ui-commands/src/index.ts`](../packages/client/ui-commands/src/index.ts)）
 - `@deepseek-ai/dsh-client-ui-conversation`（[`packages/client/ui-conversation/src/index.ts`](../packages/client/ui-conversation/src/index.ts)）
 - `@deepseek-ai/dsh-client-ui-cordis`（[`packages/extensions/ui-cordis/src/index.ts`](../packages/extensions/ui-cordis/src/index.ts)）
 - `@deepseek-ai/dsh-client-ui-deliverables` — 需要 `systemPrompt`（[`packages/client/ui-deliverables/src/index.ts`](../packages/client/ui-deliverables/src/index.ts)）
 - `@deepseek-ai/dsh-client-ui-directory-picker-browse`（[`packages/client/ui-directory-picker-browse/src/index.ts`](../packages/client/ui-directory-picker-browse/src/index.ts)）
 - `@deepseek-ai/dsh-client-ui-directory-picker-native`（[`packages/client/ui-directory-picker-native/src/index.ts`](../packages/client/ui-directory-picker-native/src/index.ts)）
+- `@deepseek-ai/dsh-client-ui-git-graph`（[`packages/client/ui-git-graph/src/index.ts`](../packages/client/ui-git-graph/src/index.ts)）
 - `@deepseek-ai/dsh-client-ui-goal`（[`packages/client/ui-goal/src/index.ts`](../packages/client/ui-goal/src/index.ts)）
 - `@deepseek-ai/dsh-client-ui-input-trigger`（[`packages/client/ui-input-trigger/src/index.ts`](../packages/client/ui-input-trigger/src/index.ts)）
 - `@deepseek-ai/dsh-client-ui-jobs`（[`packages/client/ui-jobs/src/index.ts`](../packages/client/ui-jobs/src/index.ts)）
@@ -3461,14 +3593,19 @@ export interface Config {
 - `@deepseek-ai/dsh-client-ui-sidebar-right`（[`packages/client/ui-sidebar-right/src/index.ts`](../packages/client/ui-sidebar-right/src/index.ts)）
 - `@deepseek-ai/dsh-client-ui-sidebar-textpreview`（[`packages/client/ui-sidebar-textpreview/src/index.ts`](../packages/client/ui-sidebar-textpreview/src/index.ts)）
 - `@deepseek-ai/dsh-client-ui-skill`（[`packages/client/ui-skill/src/index.ts`](../packages/client/ui-skill/src/index.ts)）
+- `@deepseek-ai/dsh-client-ui-ssh`（[`packages/client/ui-ssh/src/index.ts`](../packages/client/ui-ssh/src/index.ts)）
 - `@deepseek-ai/dsh-client-ui-subagent`（[`packages/client/ui-subagent/src/index.ts`](../packages/client/ui-subagent/src/index.ts)）
+- `@deepseek-ai/dsh-client-ui-task-board`（[`packages/client/ui-task-board/src/index.ts`](../packages/client/ui-task-board/src/index.ts)）
 - `@deepseek-ai/dsh-client-ui-theme`（[`packages/client/ui-theme/src/index.ts`](../packages/client/ui-theme/src/index.ts)）
 - `@deepseek-ai/dsh-client-ui-tool`（[`packages/client/ui-tool/src/index.ts`](../packages/client/ui-tool/src/index.ts)）
 - `@deepseek-ai/dsh-client-ui-trajectory`（[`packages/client/ui-trajectory/src/index.ts`](../packages/client/ui-trajectory/src/index.ts)）
+- `@deepseek-ai/dsh-client-ui-usage-stats`（[`packages/client/ui-usage-stats/src/index.ts`](../packages/client/ui-usage-stats/src/index.ts)）
 - `@deepseek-ai/dsh-client-ui-user-questions`（[`packages/client/ui-user-questions/src/index.ts`](../packages/client/ui-user-questions/src/index.ts)）
 - `@deepseek-ai/dsh-client-ui-workflow-run`（[`packages/client/ui-workflow-run/src/index.ts`](../packages/client/ui-workflow-run/src/index.ts)）
 - `@deepseek-ai/dsh-client-ui-workspace`（[`packages/client/ui-workspace/src/index.ts`](../packages/client/ui-workspace/src/index.ts)）
-- `@deepseek-ai/dsh-command-compact` — 需要 `commands` · `compact`（[`packages/compaction/command-compact/src/index.ts`](../packages/compaction/command-compact/src/index.ts)）
+- `@deepseek-ai/dsh-client-ui-workspace-inspector`（[`packages/client/ui-workspace-inspector/src/index.ts`](../packages/client/ui-workspace-inspector/src/index.ts)）
+- `@deepseek-ai/dsh-command-codegraph-init` — 需要 `commands` · `codegraphIndex`（[`packages/codegraph/command-codegraph-init/src/index.ts`](../packages/codegraph/command-codegraph-init/src/index.ts)）
+- `@deepseek-ai/dsh-command-compact` — 需要 `commands` · `compaction`（[`packages/compaction/command-compact/src/index.ts`](../packages/compaction/command-compact/src/index.ts)）
 - `@deepseek-ai/dsh-command-feedback` — 需要 `commands`（[`packages/feedback/command-feedback/src/index.ts`](../packages/feedback/command-feedback/src/index.ts)）
 - `@deepseek-ai/dsh-command-goal` — 需要 `commands` · `goals`（[`packages/goal/command-goal/src/index.ts`](../packages/goal/command-goal/src/index.ts)）
 - `@deepseek-ai/dsh-commands`（[`packages/interaction/commands/src/index.ts`](../packages/interaction/commands/src/index.ts)）
@@ -3497,6 +3634,7 @@ export interface Config {
 - `@deepseek-ai/dsh-tool-ask-user` — 需要 `tools` · `userInteraction`（[`packages/interaction/tool-ask-user/src/index.ts`](../packages/interaction/tool-ask-user/src/index.ts)）
 - `@deepseek-ai/dsh-tool-call-timeout-policy` — 需要 `tools`（[`packages/guard/timeout-policy/src/index.ts`](../packages/guard/timeout-policy/src/index.ts)）
 - `@deepseek-ai/dsh-tool-cordis` — 需要 `tools` · `systemPrompt` · `dynamicCordisRunner` · `cordisInspect`（[`packages/extensions/tool-cordis/src/index.ts`](../packages/extensions/tool-cordis/src/index.ts)）
+- `@deepseek-ai/dsh-tool-ssh` — 需要 `tools`（[`packages/ssh/tool-ssh/src/index.ts`](../packages/ssh/tool-ssh/src/index.ts)）
 - `@deepseek-ai/dsh-tool-subagent-control` — 需要 `tools` · `subagents`（[`packages/subagent/tool-subagent-control/src/index.ts`](../packages/subagent/tool-subagent-control/src/index.ts)）
 - `@deepseek-ai/dsh-user-questions`（[`packages/interaction/user-questions/src/index.ts`](../packages/interaction/user-questions/src/index.ts)）
 - `@deepseek-ai/dsh-webhook` — 需要 `agents` · `agentDefaultModel` · `agentPresets` · `permissionPresets` · `sessionTitle` · `workspaceRegistry`（[`packages/webhook/webhook/src/index.ts`](../packages/webhook/webhook/src/index.ts)）

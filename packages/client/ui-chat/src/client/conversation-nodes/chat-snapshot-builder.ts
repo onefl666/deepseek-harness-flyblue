@@ -5,7 +5,7 @@ import type {
   ConversationViewDefinition, PartialAssistant, RunningToolCall,
 } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { ChatConversationViewNode, ChatNode } from '../contract/chat-nodes.ts'
-import { isRunningTool } from '../contract/chat-nodes.ts'
+import { isRunningCompaction, isRunningTool } from '../contract/chat-nodes.ts'
 import type {
   ChatLocationNodeIndex, ChatNodeProcessSource, ChatNodeSource, ChatNodeStore, ChatSnapshot,
   ChatTurnNavigationIndex, ChatTurnProcessPresentation, LegacyConversationSlice, TurnNavigationItem,
@@ -738,11 +738,16 @@ function legacyContribution(raw: ChatConversationViewNode): LegacyContribution {
     case 'steering':
     case 'context':
     case 'command':
-    case 'compaction':
     case 'turn-error':
     case 'turn-max-tokens':
     case 'unknown':
       return { anchorSeq: node.anchorSeq, nodes: [node.data], partial: null, running: null }
+    case 'compaction':
+      // A standalone compactNow running row is transient chrome, not transcript
+      // history: it contributes no finalized Node to the compatibility stream.
+      return isRunningCompaction(node.data)
+        ? EMPTY_CONTRIBUTION
+        : { anchorSeq: node.anchorSeq, nodes: [node.data], partial: null, running: null }
     case 'assistant-step': {
       const data = node.data
       if (data.status === 'running') {

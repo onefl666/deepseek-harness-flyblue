@@ -1,9 +1,9 @@
 import { Context, Service } from '@deepseek-ai/cordis'
 import { describe, expect, it, vi } from 'vitest'
 import { resolveSlotLabel } from '@deepseek-ai/dsh-client-ui-slots'
-import { SlotRegistry } from '@deepseek-ai/dsh-client-runtime/client'
+import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
-import { stubSettingsScope, usePinnedBrowserLanguages } from '@deepseek-ai/dsh-client-test-runtime'
+import { stubSettingsScope } from '@deepseek-ai/dsh-client-test-runtime'
 import type { CodegraphSettings } from '@deepseek-ai/dsh-codegraph-index/client'
 import { apply, inject } from '../src/client/index.ts'
 import { CodegraphDock } from '../src/client/CodegraphDock.tsx'
@@ -11,12 +11,12 @@ import { CodegraphSection } from '../src/client/CodegraphSection.tsx'
 import type { CodegraphDockInjected } from '../src/client/CodegraphDock.tsx'
 import type { CodegraphSectionInjected } from '../src/client/CodegraphSection.tsx'
 
-usePinnedBrowserLanguages('zh-CN')
-
 async function bench() {
   const ctx = new Context()
   await ctx.plugin(SlotRegistry).await()
-  ctx.provide('locale', new LocaleRuntime(ctx))
+  const locale = new LocaleRuntime(ctx)
+  locale.setLocale('zh')
+  ctx.provide('locale', locale)
   const scope = stubSettingsScope<CodegraphSettings>()
   ctx.provide('settingsScope', { bind: () => scope.scope } as never)
   const status = vi.fn(async () => ({
@@ -34,7 +34,7 @@ async function bench() {
   }
   new RemoteService(ctx)
   ctx.provide('remote.codegraphIndex', { status, init })
-  return { ctx, slots: ctx.get('slots') as SlotRegistry, scope, status, init }
+  return { ctx, locale, slots: ctx.get('slots') as SlotRegistry, scope, status, init }
 }
 
 function declare(slots: SlotRegistry): () => void {

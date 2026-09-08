@@ -1,10 +1,26 @@
+---
+description: "SSH host inventory and command execution capability; for users and maintainers of the SSH subsystem."
+kind: "package-reference"
+---
 # @deepseek-ai/dsh-ssh
 
 English | [中文](README.zh.md)
 
+## Summary
+
+
 Host-owned SSH host storage and one-shot command execution. The `ssh` Typert service exposes loopback-only list, put, remove, and exec methods. Host records are stored in `$DSH_HOME/dsh-ssh.json` with owner-only file and directory modes; browser listings omit passwords and private-key paths.
 
 `exec` dispatches a command at most once. A connection failure before dispatch rejects the call. A lost connection or timeout after dispatch returns `result: "result-unknown"`, so a caller can avoid replaying a command whose remote effect is uncertain.
+
+
+-----
+
+## Table of Contents
+
+- [Configuration](#configuration)
+- [Model Experience](#model-experience)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
 
 ## Configuration
 
@@ -28,3 +44,13 @@ The service adds no request tokens; loading or unloading its tool consumer can c
 - Private-key paths can be stored but are not yet loaded into `ssh2` command connections; current execution requires password-compatible server authentication.
 - `idleTimeoutMs` is reserved for connection pooling; commands currently open and close one connection per call.
 - Durable host loading begins asynchronously during service construction, so callers should not treat an immediate empty list during startup as proof that no hosts are configured.
+
+<a id="dev-note"></a>
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>

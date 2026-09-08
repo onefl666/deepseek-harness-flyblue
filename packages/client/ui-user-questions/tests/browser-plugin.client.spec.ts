@@ -17,7 +17,7 @@ const PLAN_QUESTIONS: PendingQuestion['questions'] = [{
   question: 'Approve this plan?',
   detail: '# Plan',
   options: [{ label: 'Approve' }, { label: 'Keep planning' }],
-  intent: { kind: 'plan-review' as const, approve: 'Approve' },
+  intent: { kind: 'plan-review' as const, approve: ['Approve'] },
 }]
 const ANSWER = { answers: [{ id: 'mode', selected: ['Fast'] }] }
 

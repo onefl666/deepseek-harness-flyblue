@@ -2,7 +2,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
-import type { Session, SessionId } from '@deepseek-ai/dsh-session'
+import type { Session, SessionEvent, SessionId } from '@deepseek-ai/dsh-session'
 import type { SessionPersistenceRevision, SessionPersistenceSnapshot } from '@deepseek-ai/dsh-session-persistence'
 import { buildUsageSnapshot, createSessionUsageProjection, foldSessionUsage } from './projection.ts'
 import type { SessionUsageProjection } from './projection.ts'
@@ -64,6 +64,21 @@ export class UsageStatsService extends TypertRemoteService {
   }
 
   /**
+   * Read one stored session's complete validated event log without taking
+   * write ownership.
+   * @param id - stored session to read.
+   * @returns the contiguous events from sequence zero.
+   */
+  private async readStoredEvents(id: SessionId): Promise<readonly SessionEvent[]> {
+    const handle = await this.ctx.sessionPersistence.open(id, 'read')
+    try {
+      return (await handle.read()).events
+    } finally {
+      await handle.close()
+    }
+  }
+
+  /**
    * Read one consistent per-session scan for the requested Host calendar range.
    * A session whose log cannot be interpreted is skipped and listed in
    * `skippedSessions`; every other count omits it. Failures to list live
@@ -76,7 +91,7 @@ export class UsageStatsService extends TypertRemoteService {
     const generatedAt = Date.now()
     const [liveSessions, storedSnapshots] = await Promise.all([
       Promise.resolve(this.ctx.sessions.list()),
-      this.ctx.sessionPersistence.listSnapshots(),
+      this.ctx.sessionPersistence.list(),
     ])
     const liveById = new Map(liveSessions.map(session => [session.id, session]))
     const storedById = new Map(storedSnapshots.map(snapshot => [snapshot.header.id, snapshot]))
@@ -88,7 +103,7 @@ export class UsageStatsService extends TypertRemoteService {
         ? cached.projection
         : createSessionUsageProjection()
       try {
-        foldSessionUsage(projection, session.events.slice(projection.seq))
+        foldSessionUsage(projection, session.snapshotEvents().slice(projection.seq))
       } catch (error) {
         // The projection may be partially folded; drop it so the next scan rebuilds from sequence zero.
         this.cache.delete(id)
@@ -107,8 +122,8 @@ export class UsageStatsService extends TypertRemoteService {
         return
       }
       try {
-        const inspected = await this.ctx.sessionPersistence.inspect(snapshot.header.id)
-        const projection = foldSessionUsage(createSessionUsageProjection(), inspected.events)
+        const inspected = await this.readStoredEvents(snapshot.header.id)
+        const projection = foldSessionUsage(createSessionUsageProjection(), inspected)
         this.cache.set(snapshot.header.id, { kind: 'cold', revision: snapshot.revision, projection })
       } catch (error) {
         const message = failureMessage(error)

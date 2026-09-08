@@ -1,10 +1,29 @@
+---
+description: "Logged plan-mode collaboration state with the exit tool, review handoff, and the /plan command; for users and maintainers of the planning experience."
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-plan-handoff
 
 English | [中文](README.zh.md)
 
+## Summary
+
+
 Logged, per-agent plan collaboration state with deployment-owned guidance, `/plan [message]` entry, `/plan off` exit, and a reviewed `exit_plan_mode` that offers keep / compact / clear execution after approval. Plan mode is soft guidance; sandbox mode and approval policy enforce restrictions independently.
 
 This package replaces `@deepseek-ai/dsh-plan-mode` in shipped compositions. `ctx.planMode`, `plan/mode`, `/plan`, and `exit_plan_mode` keep the same names.
+
+
+-----
+
+## Table of Contents
+
+- [Durable state](#durable-state)
+- [Review and execution](#review-and-execution)
+- [Configuration](#configuration)
+- [Model Experience](#model-experience)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
 
 ## Durable state
 
@@ -84,3 +103,13 @@ Mode transitions do not change the tool catalog. Compact replaces a surface pref
 - **User-copied presets that still name `@deepseek-ai/dsh-plan-mode`** fail to load until that row is renamed.
 - A selection made after the turn's final accepted pre-step is lost if the process exits before another accepted in-turn pre-step.
 - Compaction uses the generic summarizer; the steered plan is the authoritative source after compact.
+
+<a id="dev-note"></a>
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>

@@ -303,4 +303,41 @@ list(): BashEnvVariableInfo[]
 Types: [DshEnvironment](subprocess.zh.md) · [ToolExecution](tools.zh.md)
 
 Source: [`packages/shell/shell-env/src/index.ts`](../../packages/shell/shell-env/src/index.ts)
+
+<a id="ctxssh--sshservice"></a>
+
+### `ctx.ssh` — `SshService`
+
+Host SSH service. A connection loss after channel dispatch reports an unknown result and is never replayed.
+
+```ts cordis-catalog
+/**
+ * List configured hosts without passwords, passphrases, or key paths.
+ * @returns Secret-free copies of the configured host records.
+ */
+@Remote list(): SshHostSummary[]
+
+/**
+ * Save a host record. The complete secret-bearing configuration remains local.
+ * @param host - Complete local host configuration to insert or replace.
+ * @returns The saved host with secret fields removed.
+ */
+@Remote async put(host: SshHost): Promise<SshHostSummary>
+
+/**
+ * Remove a host record.
+ * @param id - Stable identifier of the host to remove.
+ */
+@Remote async remove(id: SshHostId): Promise<void>
+
+/**
+ * Execute one command once. A dropped dispatched channel returns `result-unknown`.
+ * @param id - Stable identifier of the configured host.
+ * @param command - Command text passed to the remote SSH server.
+ * @returns Captured streams, exit status, and whether the dispatched result is known.
+ */
+@Remote async exec(id: SshHostId, command: string): Promise<{ stdout: string; stderr: string; exitCode: number | null; result: 'known' | 'result-unknown' }>
+```
+
+Source: [`packages/ssh/ssh/src/index.ts`](../../packages/ssh/ssh/src/index.ts)
 <!-- END GENERATED cordis-surface -->

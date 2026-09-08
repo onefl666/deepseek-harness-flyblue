@@ -12,6 +12,7 @@ import {
   IconTrashOutline16, Input, TerminalBlock, type TerminalBlockLabels,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
+import { randomUUID } from '@deepseek-ai/dsh-util-crypto'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import css from './section.module.css'
 
@@ -142,7 +143,7 @@ export function SshSection({ t, list, put, remove, exec }: PropsLocale<'ssh'> & 
     event.preventDefault()
     if (saving) return
     const record: HostRecord = {
-      id: editingId ?? crypto.randomUUID(),
+      id: editingId ?? randomUUID(),
       alias: alias.trim(),
       host: host.trim(),
       port: Number(port),

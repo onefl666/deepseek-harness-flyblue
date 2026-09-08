@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { WorkspaceId } from '@deepseek-ai/dsh-client-connection/client'
-import type { WorkspaceListState } from '@deepseek-ai/dsh-client-runtime/client'
+import type { WorkspaceId } from '@deepseek-ai/dsh-workspace/types'
+import type { WorkspaceSnapshot } from '@deepseek-ai/dsh-api-workspace-controller/client'
 import type { SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots'
-import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
+import { RemoteError, type RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import {
   breadcrumbSegments, formatBytes, SEARCH_DEBOUNCE_MS, WorkspaceInspectorSection,
 } from '../src/client/section.tsx'
@@ -16,14 +16,14 @@ afterEach(() => {
 })
 const t = (key: string) => key
 const okValue = <T,>(value: T): RemoteResult<T> => ({ ok: true, value })
-const failValue = (message: string): RemoteResult<never> => ({ ok: false, error: { code: 'Error', message, details: {} } })
+const failValue = (message: string): RemoteResult<never> => ({ ok: false, error: new RemoteError('gateway/internal', message, {}) })
 const file = (path: string, name: string, size = 12) => ({ path, name, directory: false, size })
 const dir = (path: string, name: string) => ({ path, name, directory: true, size: 0 })
-const workspaceState = (path: string | undefined): WorkspaceListState => ({
+const workspaceState = (path: string | undefined): WorkspaceSnapshot => ({
   items: path === undefined ? [] : [{ workspaceId: 'ws-1' as WorkspaceId, path, title: 'proj', sessionIds: [], createdAt: '2026-08-01', updatedAt: '2026-08-01' }],
-  archivedSessionIds: [], state: 'idle', phase: 'ready', error: null, baselinesReady: true, recentWorkspaceId: path === undefined ? undefined : 'ws-1' as WorkspaceId,
+  archivedSessionIds: [], state: 'idle', phase: 'ready', error: null,
 })
-const useWorkspaces: SnapshotSelectorHook<WorkspaceListState> = selector => selector(workspaceState('/work/proj'))
+const useWorkspaces: SnapshotSelectorHook<WorkspaceSnapshot> = selector => selector(workspaceState('/work/proj'))
 const rootEntries = [dir('src', 'src'), file('README.md', 'README.md', 2400)]
 
 interface Verbs {
@@ -46,6 +46,8 @@ function renderSection(verbs: Verbs = {}) {
       close={() => {}}
       useSessions={(() => undefined) as never}
       useWorkspaces={useWorkspaces}
+      useResource={(() => ({ status: 'none', value: undefined, failure: undefined, reload: () => {} })) as never}
+      useSessionPendingInteraction={((selector: (value: never) => unknown) => selector(new Map() as never)) as never}
       {...resolved}
     />,
   )

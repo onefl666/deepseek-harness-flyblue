@@ -1,10 +1,26 @@
+---
+description: "Browser settings section for the local task board; for users and maintainers of the task-board experience."
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-client-ui-task-board
 
 English | [中文](README.zh.md)
 
+## Summary
+
+
 Browser settings section for the Host-owned durable task ledger. The plugin registers `task-board` in `settings.section`, lists active and archived tasks in a segmented board, creates trimmed titles, renames and archives inline, and permanently deletes archived tasks behind a two-step confirmation through generated Typert remotes.
 
 Each mutation receives a browser-generated UUID as its request id. Mutations apply optimistically and reconcile from the Host response, then reload the Host projection so the ledger stays authoritative; RPC failures render as an alert banner with retry.
+
+
+-----
+
+## Table of Contents
+
+- [Model Experience](#model-experience)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
 
 ## Model Experience
 
@@ -18,3 +34,13 @@ None; task-board rendering and mutations do not participate in provider requests
 
 - The section does not expose a restore action for archived tasks.
 - The task list refreshes after local mutations only; changes made by another client are not pushed live.
+
+<a id="dev-note"></a>
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>

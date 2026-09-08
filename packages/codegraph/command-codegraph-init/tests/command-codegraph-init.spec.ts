@@ -59,7 +59,7 @@ async function run(
   const execution = await test.ctx.commands.execute(
     test.agent,
     `/codegraph-init${suffix}`,
-    new AbortController().signal,
+    [], new AbortController().signal,
   )
   if (execution === undefined) throw new Error('codegraph-init command was not registered')
   return execution
@@ -67,7 +67,7 @@ async function run(
 
 /** Assert the executor-owned lifecycle pair and absence from model history. */
 function expectLastLifecycle(test: Harness, args: string, outcome: CommandResult): string {
-  const lifecycle = test.agent.session.events
+  const lifecycle = test.agent.session.snapshotEvents()
     .filter(event => event.type === 'command/run' || event.type === 'command/done')
     .slice(-2)
   const runEvent = lifecycle[0]

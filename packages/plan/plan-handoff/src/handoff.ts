@@ -129,7 +129,6 @@ export async function clearThenExecute(
       meta: {
         ...source.session.header.cwd === undefined ? {} : { cwd: source.session.header.cwd },
         parentSession: source.id,
-        seedLength: 0,
         ...presetId === undefined ? {} : { agentPreset: presetId },
       },
       agentOptions: { ...source.options },

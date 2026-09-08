@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
+import { RemoteError, type RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import { formatDate, TaskBoardSection } from '../src/client/section.tsx'
 import type { TaskBoardInjected } from '../src/client/section.tsx'
 
@@ -9,7 +9,7 @@ type Task = { id: string; title: string; archived: boolean; createdAt: number; u
 afterEach(cleanup)
 const t = (key: string) => key
 const okValue = <T,>(value: T): RemoteResult<T> => ({ ok: true, value })
-const failValue = (message: string): RemoteResult<never> => ({ ok: false, error: { code: 'Error', message, details: {} } })
+const failValue = (message: string): RemoteResult<never> => ({ ok: false, error: new RemoteError('gateway/internal', message, {}) })
 const task = (id: string, title: string, archived = false, createdAt = 1000) => (
   { id, title, archived, createdAt, updatedAt: createdAt + 100 }
 )

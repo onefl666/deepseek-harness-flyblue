@@ -36,5 +36,5 @@ Status: implemented
 
 ## 相关
 
-- [Web 输入框的会话模型选择](2026-07-24-web-session-model-selector.md)
-- [默认模型跟随选择器](2026-08-07-default-model-follows-the-picker.md)
+- [Web 输入框的会话模型选择](../../archived/feature/2026-07-24-web-session-model-selector.md)
+- [默认模型跟随选择器](../../archived/feature/2026-08-07-default-model-follows-the-picker.md)

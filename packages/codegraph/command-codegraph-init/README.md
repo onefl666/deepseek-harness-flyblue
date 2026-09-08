@@ -1,8 +1,25 @@
+---
+description: "The /codegraph-init command that starts a CodeGraph index build; for users and maintainers of the CodeGraph subsystem."
+kind: "package-reference"
+---
 # @deepseek-ai/dsh-command-codegraph-init
 
 English | [中文](README.zh.md)
 
+## Summary
+
+
 Human-facing `/codegraph-init` control over [`ctx.codegraphIndex`](../codegraph-index/README.md). The plugin registers one global command through [`ctx.commands`](../../interaction/commands/README.md), so every composed command adapter discovers and executes it without a model turn. The [Web `/codegraph-init` Agent Note](../../../.agents/notes/implemented/feature/2026-08-17-web-codegraph-init-command.md) owns the composition and result-text decisions.
+
+
+-----
+
+## Table of Contents
+
+- [Command contract](#command-contract)
+- [Composition](#composition)
+- [Model Experience](#model-experience)
+- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
 
 ## Command contract
 
@@ -52,3 +69,13 @@ Discovery and command bookkeeping do not affect the cache. A later successful ex
 - **Fire-and-forget** — the command reports that indexing started; it does not wait for `indexed` or `error`. Progress stays on the Web「代码索引」page and the blank-session dock.
 - **Web host only** — surfaces without `ctx.codegraphIndex` omit the command. CLI and headless users still run `codegraph init`.
 - **No path argument** — the manager always indexes `session.header.cwd`.
+
+<a id="dev-note"></a>
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>

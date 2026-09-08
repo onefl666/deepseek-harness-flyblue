@@ -18,9 +18,6 @@
       "path": "../../api/remotes/tsconfig.client.json"
     },
     {
-      "path": "../runtime"
-    },
-    {
       "path": "../ui-conversation"
     },
     {
@@ -40,6 +37,21 @@
     },
     {
       "path": "../../runtime-diagnostics/invariants"
+    },
+    {
+      "path": "../ui-renderer"
+    },
+    {
+      "path": "../store"
+    },
+    {
+      "path": "../../core/session"
+    },
+    {
+      "path": "../ui-workspace"
+    },
+    {
+      "path": "../ui-session"
     }
   ]
 }

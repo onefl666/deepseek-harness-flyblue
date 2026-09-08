@@ -1,6 +1,14 @@
+---
+description: "本地会话用量统计的 Web 设置仪表盘；面向用量统计体验的使用者与维护者。"
+kind: "package-reference"
+---
+
 # @deepseek-ai/dsh-client-ui-usage-stats
 
 [English](README.md) | 中文
+
+## 概述
+
 
 `@deepseek-ai/dsh-usage-stats` 的 Web 设置仪表盘。插件注册现有的 `settings.section` 项 `usage-stats`，不增加一级导航。
 
@@ -8,6 +16,15 @@
 
 仪表盘使用 CSS Modules，以及现有主题、阴影和动效 Token。`Intl.NumberFormat` 的紧凑值带有精确的无障碍名称，日期使用 `Intl.DateTimeFormat`。每日图表项可通过键盘聚焦，图表提供摘要，表格提供非视觉替代。初次加载保持结构稳定；刷新和范围切换保留旧结果并显示 busy 状态，请求序号会忽略过期响应。更新失败时保留已提交范围和数据，并提供重试。无活跃数据与提供方未报告 usage 使用不同说明。Host 无法解释的会话会从统计中排除；页面弹出瞬时提示告知数量，面板内提示持续列出每个会话 id 与失败原因，并在下一次无失败的加载后消失。
 
+
+-----
+
+## 目录
+
+- [模型体验](#model-experience)
+- [已知限制与后续工作](#known-limitations-and-deferred-work)
+
+<a id="model-experience"></a>
 ## 模型体验
 
 无，因为该浏览器插件只呈现 Host 派生数据，不增加模型可见内容。
@@ -16,8 +33,19 @@
 
 无；它不参与提供方请求。
 
+<a id="known-limitations-and-deferred-work"></a>
 ## 已知限制与后续工作
 
 - 页面只在挂载、切换范围或用户手动操作时刷新，不自动轮询。
 - 可视化使用五种现有语义系列色；标签、固定顺序、无障碍摘要和完整表格在不依赖颜色时保留相同区分。
 - 页面刻意不展示费用、余额、套餐、额度和模型价格，因为 Host 服务无法证实这些信息。
+
+<a id="dev-note"></a>
+### 开发备注
+
+<details>
+<summary>维护者工作上下文——点击展开</summary>
+
+None.
+
+</details>

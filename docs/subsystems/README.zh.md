@@ -37,6 +37,7 @@
 | [filesystem.md](filesystem.zh.md) | 文件系统 seam：`FsTarget`、读/写/编辑结果、观测到的文件状态、`FsErrorCode` |
 | [lsp.md](lsp.zh.md) | LSP 导航 seam：`LspQueryRequest`/`Result`、`LspProvider`/`Service`、四种操作、`LspError` |
 | [codegraph.md](codegraph.zh.md) | Web 宿主 CodeGraph 索引生命周期：`CodegraphIndexStatus`、`CodegraphSettings`、`ctx.codegraphIndex` |
+| [ssh.md](ssh.zh.md) | SSH 主机记录、一次性执行约定，以及至多一次派发边界（`SshHost`、`SshHostSummary`、`ctx.ssh`） |
 | [skills.md](skills.zh.md) | skill（技能）服务：发现优先级、`SkillSummary`/`SkillDefinition`、会话前缀目录、面向模型的 `skill` 加载 |
 | [compaction.md](compaction.zh.md) | 压缩（compaction）seam：`compaction/*` 会话事件、`CompactionResult`、`CompactionEngine` 接口 |
 | [subagent.md](subagent.zh.md) | subagent seam：命名提供方注册表、`SubagentStartRequest`/`Result`/`Run`、启动时与运行时能力拆分 |

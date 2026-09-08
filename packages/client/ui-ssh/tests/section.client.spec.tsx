@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
+import { RemoteError, type RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import { SshSection, terminalLabels } from '../src/client/section.tsx'
 import type { HostSummary, SshInjected } from '../src/client/section.tsx'
 import { en } from '../src/client/locales.ts'
@@ -9,7 +9,7 @@ import { en } from '../src/client/locales.ts'
 afterEach(cleanup)
 const t = (key: string) => key
 const okValue = <T,>(value: T): RemoteResult<T> => ({ ok: true, value })
-const failValue = (message: string): RemoteResult<never> => ({ ok: false, error: { code: 'Error', message, details: {} } })
+const failValue = (message: string): RemoteResult<never> => ({ ok: false, error: new RemoteError('gateway/internal', message, {}) })
 const host = (id: string, alias: string, auth: HostSummary['auth'] = 'password'): HostSummary => ({ id, alias, host: '10.0.0.1', port: 22, user: 'root', auth })
 const initialHosts = [host('h1', 'prod'), host('h2', 'stage', 'key')]
 

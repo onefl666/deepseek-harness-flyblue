@@ -14,15 +14,27 @@
     "./client": "./lib/client.js",
     "./package.json": "./package.json"
   },
-  "files": ["index.js", "cordis.patch.yml", "lib/client.js", "assets/liang-frames/*.webp", "assets/chibi-runner-strip.png", "README.md"],
-  "scripts": { "build": "node scripts/build-client.mjs" },
-  "publishConfig": { "access": "public" },
+  "files": [
+    "index.js",
+    "cordis.patch.yml",
+    "lib/client.js",
+    "assets/liang-frames/*.webp",
+    "assets/chibi-runner-strip.png",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node scripts/build-client.mjs"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "dsh": {
-    "bundle": { "patch": "./cordis.patch.yml" },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
     "client": {
       "platform": "web",
       "inject": [
-        "@deepseek-ai/dsh-client-runtime",
         "@deepseek-ai/dsh-client-locale",
         "@deepseek-ai/dsh-cordis-client-runner"
       ]

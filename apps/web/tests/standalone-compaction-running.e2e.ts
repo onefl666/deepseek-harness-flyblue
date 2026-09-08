@@ -47,6 +47,7 @@ function closedTurnFixture(): string {
       content: [{ type: 'text', text: REPLY }],
       source: { kind: 'model', provider: 'fixture', model: 'fixture' },
     }),
+    stream: [],
   }, { surfaceOp: 'append' })
   session.append('step/end', { turn: 1, step: 1 })
   session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
@@ -58,7 +59,7 @@ function closedTurnFixture(): string {
       id: '{{sessionId}}',
       createdAt: eventTimeOrigin,
     }),
-    ...session.events.map(event => JSON.stringify({
+    ...session.snapshotEvents().map(event => JSON.stringify({
       ...event,
       time: eventTimeOrigin + event.seq,
     })),

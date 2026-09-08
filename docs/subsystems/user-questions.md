@@ -22,7 +22,7 @@ interface AskUserQuestionOption {
 
 ## Presentation intent
 
-`AskUserQuestionIntent` optionally declares a known decision kind. It is tagged on `kind` so intents can be added; a UI that does not recognise a tag renders the generic option list. An intent changes presentation only — a UI honouring it answers with the same option labels a generic UI would send, so the caller reads the same answer fields either way. `approve` names the affirmative option instead of relying on option order. `ask()` rejects the two assertions no type can carry: an `approve` naming none of its own question's options, and an intent on a question with no `detail`.
+`AskUserQuestionIntent` optionally declares a known decision kind. It is tagged on `kind` so intents can be added; a UI that does not recognise a tag renders the generic option list. An intent changes presentation only — a UI honouring it answers with the same option labels a generic UI would send, so the caller reads the same answer fields either way. `approve` names every affirmative option instead of relying on option order. `ask()` rejects the two assertions no type can carry: an `approve` entry naming none of its own question's options, and an intent on a question with no `detail`.
 
 ```ts type-equiv
 /**
@@ -36,11 +36,12 @@ type AskUserQuestionIntent = {
   /** A plan submitted for review: `detail` is the plan markdown `ask()` requires, and the decision approves or declines it. */
   kind: 'plan-review'
   /**
-   * The option label that approves the plan; every other option declines it.
-   * Named rather than positional so no UI infers the verdict from option order.
-   * An `approve` naming no option of its own question is rejected at `ask()`.
+   * Option labels that leave plan mode (each execution path). Every other
+   * option stays in plan mode. Named rather than positional so no UI infers
+   * the verdict from option order. An `approve` entry naming no option of
+   * its own question is rejected at `ask()`.
    */
-  approve: string
+  approve: string[]
 }
 ```
 

@@ -73,7 +73,6 @@ declare module '@deepseek-ai/dsh-session/types' {
     /**
      * Latest-wins session title snapshot. Log-only: it never enters the model
      * surface or derived history.
-     * @mode emit
      * @param payload - session title event data
      */
     'session/title': SessionTitleEventData

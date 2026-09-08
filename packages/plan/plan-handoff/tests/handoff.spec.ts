@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import { CallId } from '@deepseek-ai/dsh-llm'
+import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { Session, SessionId, type UserMessage } from '@deepseek-ai/dsh-session'
@@ -12,6 +12,15 @@ import PlanModeController, {
   APPROVE_COMPACT, APPROVE_EXECUTE, APPROVE_KEEP, EXIT_PLAN_MODE,
   approvedPlanPrompt, approvedResultText,
 } from '../src/index.ts'
+
+interface QuestionAnswerer {
+  ask(request: AskUserQuestionRequest): Promise<{ answers: { id: string; selected: string[] }[] }>
+}
+
+/** Register one answerer on the Agent-scoped user-question waterfall. */
+function registerAnswerer(ctx: Context, answerer: QuestionAnswerer): () => void {
+  return ctx.on('user-questions/request', request => answerer.ask(request))
+}
 
 const PLAN_CONFIG = { section: 'Test plan mode instructions.' }
 
@@ -57,13 +66,13 @@ async function setup() {
 }
 
 function callExit(ctx: Context, agent: Agent, selected: string) {
-  ctx.userQuestions.registerProvider({
+  registerAnswerer(ctx, {
     ask: (_request: AskUserQuestionRequest) => Promise.resolve({
       answers: [{ id: 'plan-review', selected: [selected] }],
     }),
   })
   return ctx.tools.execute({
-    callId: CallId(`exit-${selected}`),
+    callId: ToolCallId(`exit-${selected}`),
     name: EXIT_PLAN_MODE,
     arguments: { plan: '# Title\n\nDo the work.' },
     signal: new AbortController().signal,
@@ -99,7 +108,7 @@ describe('approved execution handoff', () => {
     expect(result.concludesTurn).toBeUndefined()
     expect(steered).toHaveLength(1)
     expect(steered[0]?.content[0]).toMatchObject({ type: 'text' })
-    expect(agent.session.events.some(event => event.type === 'plan/approved')).toBe(true)
+    expect(agent.session.snapshotEvents().some(event => event.type === 'plan/approved')).toBe(true)
   })
 
   it('compact calls compactNow then steers', async () => {
@@ -191,6 +200,6 @@ describe('approved execution handoff', () => {
     expect(result.value).toEqual({ approved: true, execution: 'clear' })
     expect(result.concludesTurn).toBe(true)
     expect(steered).toHaveLength(1)
-    expect(agent.session.events.some(event => event.type === 'plan/handoff')).toBe(false)
+    expect(agent.session.snapshotEvents().some(event => event.type === 'plan/handoff')).toBe(false)
   })
 })
