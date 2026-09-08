@@ -6,7 +6,7 @@ Status: implemented
 
 ## Problem
 
-`usageStats.stats()` 在一次请求内折叠全部本机会话日志，只要有一份日志无法解释，整次扫描就会失败。实际触发场景是本构建不认识的事件词汇（`vision/describe`）——这是较新 harness 写出的会话：读取侧拒绝是[会话日志版本机制](../architecture/2026-08-10-session-log-version-mechanism.md)所规定的行为，但仪表盘把它当成整体失败。用户只能看到 `无法更新统计: session "…" contains event type "vision/describe" …`，健康会话的统计也全部不可见，直到外来日志消失。
+`usageStats.stats()` 在一次请求内折叠全部本机会话日志，只要有一份日志无法解释，整次扫描就会失败。实际触发场景是本构建不认识的事件词汇（`vision/describe`）——这是较新 harness 写出的会话：读取侧拒绝是[会话日志版本机制](../architecture/2026-08-10-session-log-version-mechanism.zh.md)所规定的行为，但仪表盘把它当成整体失败。用户只能看到 `无法更新统计: session "…" contains event type "vision/describe" …`，健康会话的统计也全部不可见，直到外来日志消失。
 
 ## Decision
 
@@ -26,4 +26,4 @@ Status: implemented
 
 ## Consequences
 
-仪表盘现在可以承受较新 harness 写出的日志：其余会话照常计数，提示列出出错日志及原因。wire 结果 schema 新增一个必填字段，Host 与 Web 产物必须一起重建（预发布阶段接受这一约束）。跳过缓存以 revision 为键：瞬时读取错误会一直保持跳过，直到日志被重写，因为 revision 变化才是内容已变的持久信号。仪表盘决策由[仪表盘功能 note](../feature/2026-08-18-local-usage-history-dashboard.md) 拥有；拒绝机制本身由[版本机制 note](../architecture/2026-08-10-session-log-version-mechanism.md) 拥有。
+仪表盘现在可以承受较新 harness 写出的日志：其余会话照常计数，提示列出出错日志及原因。wire 结果 schema 新增一个必填字段，Host 与 Web 产物必须一起重建（预发布阶段接受这一约束）。跳过缓存以 revision 为键：瞬时读取错误会一直保持跳过，直到日志被重写，因为 revision 变化才是内容已变的持久信号。仪表盘决策由[仪表盘功能 note](../feature/2026-08-18-local-usage-history-dashboard.zh.md) 拥有；拒绝机制本身由[版本机制 note](../architecture/2026-08-10-session-log-version-mechanism.zh.md) 拥有。

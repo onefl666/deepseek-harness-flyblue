@@ -23,7 +23,7 @@ async function bench(workspaceIds: readonly string[] = ['ws-1']) {
   const tree = vi.fn(async () => failure)
   const preview = vi.fn(async () => failure)
   const search = vi.fn(async () => failure)
-  ctx.provide('remote.workspaceFiles', { tree, preview, search })
+  ctx.provide('remote.workspaceInspector', { tree, preview, search })
   ctx.provide('workspaces', {
     list: { getSnapshot: () => ({ items: workspaceIds.map(workspaceId => ({ workspaceId })) }) },
   } as never)
@@ -39,7 +39,7 @@ function declare(slots: SlotRegistry): () => void {
 
 describe('ui-workspace-inspector apply', () => {
   it('declares its injected services', () => {
-    expect(inject).toEqual(['slots', 'locale', 'remote', 'remote.workspaceFiles', 'workspaces'])
+    expect(inject).toEqual(['slots', 'locale', 'remote', 'remote.workspaceInspector', 'workspaces'])
   })
 
   it('registers the settings section and wires every Remote verb through its inject face', async () => {

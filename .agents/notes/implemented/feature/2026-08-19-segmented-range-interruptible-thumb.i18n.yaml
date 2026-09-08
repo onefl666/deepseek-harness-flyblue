@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-19-segmented-range-interruptible-thumb.md
 2026-08-19-segmented-range-interruptible-thumb.md: e6e239aedfba513d598f72a7902deb3678857fe6
-2026-08-19-segmented-range-interruptible-thumb.zh.md: 5c19f9b60d14fbea88aec6c6867b80a3cef3fd40
+2026-08-19-segmented-range-interruptible-thumb.zh.md: 3e221af1af41a7bc5b80437403f999b59f646146

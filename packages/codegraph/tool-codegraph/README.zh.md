@@ -76,7 +76,7 @@ Codegraph is a local SQLite symbol graph. Call `codegraph_explore` first on inde
 
 #### 模型看到什么
 
-模型看到生成的 [`codegraph_explore` schema](../../../docs/tool-catalog.md#deepseek-aidsh-tool-codegraph)，以及同一目录段中由 `extraTools` 列出的 schema。
+模型看到生成的 [`codegraph_explore` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-codegraph)，以及同一目录段中由 `extraTools` 列出的 schema。
 
 #### Token 影响
 

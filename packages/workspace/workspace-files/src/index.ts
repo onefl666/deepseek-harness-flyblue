@@ -35,19 +35,19 @@ export const Config: z<Config> = z.object({
 })
 
 declare module '@deepseek-ai/cordis' {
-  interface Context { workspaceFiles: WorkspaceFilesService }
+  interface Context { workspaceInspector: WorkspaceFilesService }
 }
 
 /**
  * Host service for ID-scoped file tree, preview, search, and mutations.
- * @typert service workspaceFiles
+ * @typert service workspaceInspector
  */
 export class WorkspaceFilesService extends TypertRemoteService {
   static inject = ['workspaceRegistry']
 
   /** @param ctx - Context carrying registered workspaces. @param config - bounded read limits. */
   constructor(ctx: Context, private readonly config: Config = {}) {
-    super(ctx, 'workspaceFiles')
+    super(ctx, 'workspaceInspector')
   }
 
   /**
@@ -56,7 +56,7 @@ export class WorkspaceFilesService extends TypertRemoteService {
    * @param path - Workspace-relative directory, or an empty string for the root.
    * @returns Direct children with stable metadata ordering.
    */
-  @Remote({ authority: 'loopback' })
+  @Remote
   async tree(workspaceId: WorkspaceId, path: string): Promise<WorkspaceFileEntry[]> {
     const target = await this.resolveExisting(workspaceId, path, true)
     const entries = await readdir(target, { withFileTypes: true })
@@ -77,7 +77,7 @@ export class WorkspaceFilesService extends TypertRemoteService {
    * @param path - Workspace-relative file path.
    * @returns Text preview and the version token required for a subsequent save.
    */
-  @Remote({ authority: 'loopback' })
+  @Remote
   async preview(workspaceId: WorkspaceId, path: string): Promise<WorkspaceFilePreview> {
     const target = await this.resolveExisting(workspaceId, path)
     const info = await stat(target)
@@ -102,7 +102,7 @@ export class WorkspaceFilesService extends TypertRemoteService {
    * @param version - Version returned by the latest preview.
    * @returns The saved file's current preview and replacement version token.
    */
-  @Remote({ authority: 'loopback' })
+  @Remote
   async save(workspaceId: WorkspaceId, path: string, content: string, version: FileVersion): Promise<WorkspaceFilePreview> {
     const target = await this.resolveExisting(workspaceId, path)
     const before = await stat(target)
@@ -117,7 +117,7 @@ export class WorkspaceFilesService extends TypertRemoteService {
    * @param query - Case-insensitive filename fragment.
    * @returns Matching entries up to the configured result and scan limits.
    */
-  @Remote({ authority: 'loopback' })
+  @Remote
   async search(workspaceId: WorkspaceId, query: string): Promise<WorkspaceFileEntry[]> {
     const needle = query.trim().toLowerCase()
     if (needle === '') return []
@@ -147,7 +147,7 @@ export class WorkspaceFilesService extends TypertRemoteService {
    * @param name - Replacement basename without path separators.
    * @param confirmed - Explicit confirmation required before the rename.
    */
-  @Remote({ authority: 'loopback' })
+  @Remote
   async rename(workspaceId: WorkspaceId, path: string, name: string, confirmed: boolean): Promise<void> {
     if (!confirmed) throw new Error('workspace-files: confirmation-required')
     if (name === '' || name === '.' || name === '..' || /[\\/]/.test(name)) throw new Error('workspace-files: invalid name')
@@ -162,7 +162,7 @@ export class WorkspaceFilesService extends TypertRemoteService {
    * @param workspaceId - Registered workspace whose root authorizes the mutation.
    * @param path - New workspace-relative file path.
    */
-  @Remote({ authority: 'loopback' })
+  @Remote
   async create(workspaceId: WorkspaceId, path: string): Promise<void> {
     const target = await this.resolveNew(workspaceId, path)
     await mkdir(dirname(target), { recursive: true })
@@ -175,7 +175,7 @@ export class WorkspaceFilesService extends TypertRemoteService {
    * @param path - Existing workspace-relative path to remove.
    * @param confirmed - Explicit confirmation required before deletion.
    */
-  @Remote({ authority: 'loopback' })
+  @Remote
   async remove(workspaceId: WorkspaceId, path: string, confirmed: boolean): Promise<void> {
     if (!confirmed) throw new Error('workspace-files: confirmation-required')
     await rm(await this.resolveExisting(workspaceId, path), { recursive: true, force: false })

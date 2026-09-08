@@ -22,13 +22,13 @@ Status: implemented
 
 **只包一层 PATH CLI。** 否决：FlyBlue 发行版应自带引擎。
 
-**Host 平面的 `ctx.codegraph` 服务。** 共享只读图缓存仍延期。用户触发的 init 是另一个 host 服务（`ctx.codegraphIndex`）；见[索引管理器说明](2026-08-13-web-codegraph-index-manager.md)。
+**Host 平面的 `ctx.codegraph` 服务。** 共享只读图缓存仍延期。用户触发的 init 是另一个 host 服务（`ctx.codegraphIndex`）；见[索引管理器说明](2026-08-13-web-codegraph-index-manager.zh.md)。
 
 **让 agent 自动 `codegraph init`。** 否决：CodeGraph 把建索引当作用户决定；过早的 `isError` 或突然建索引会教错习惯。Web GUI 与 `autoInit` 设置可以启动 init；agent 仍然不得自行启动。
 
 ## 后果
 
-标准 / PTC / 创造的新会话能看到 `codegraph_explore`。PTC 的 Code Mode 从同一份 schema 得到 `tools.codegraph_explore`。用户决定何时创建 `.codegraph/`：Web「代码索引」页、自动 init，或 `codegraph init`。升级 CodeGraph 是一次有意的 pin 提升，外加 `ToolHandler` / `isInitialized` 仍能解析的契约测试。`tool:codegraph` 提示词与 explore schema 要求用唯一标识符查询；[Explore 查询约定](2026-08-17-codegraph-explore-query-contract.md) 持有那份措辞。
+标准 / PTC / 创造的新会话能看到 `codegraph_explore`。PTC 的 Code Mode 从同一份 schema 得到 `tools.codegraph_explore`。用户决定何时创建 `.codegraph/`：Web「代码索引」页、自动 init，或 `codegraph init`。升级 CodeGraph 是一次有意的 pin 提升，外加 `ToolHandler` / `isInitialized` 仍能解析的契约测试。`tool:codegraph` 提示词与 explore schema 要求用唯一标识符查询；[Explore 查询约定](2026-08-17-codegraph-explore-query-contract.zh.md) 持有那份措辞。
 
 ## 测试
 
@@ -36,7 +36,7 @@ Status: implemented
 
 ## 相关
 
-- [Web host CodeGraph 索引管理器](2026-08-13-web-codegraph-index-manager.md)
-- [Explore 查询约定](2026-08-17-codegraph-explore-query-contract.md)
-- [工具编写](../../../../docs/cookbook/adding-a-tool.md)
+- [Web host CodeGraph 索引管理器](2026-08-13-web-codegraph-index-manager.zh.md)
+- [Explore 查询约定](2026-08-17-codegraph-explore-query-contract.zh.md)
+- [工具编写](../../../../docs/cookbook/adding-a-tool.zh.md)
 - CodeGraph 的 MCP 指引在上游 `src/mcp/server-instructions.ts`；本包在 `src/prompt.ts` 持有面向 DSH 的改写。

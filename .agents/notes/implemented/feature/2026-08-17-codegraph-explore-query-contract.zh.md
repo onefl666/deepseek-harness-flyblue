@@ -12,7 +12,7 @@ Status: implemented
 
 面向模型的查询约定在 `packages/codegraph/tool-codegraph/src/prompt.ts`：`CODEGRAPH_PROMPT_TEXT`、`EXPLORE_TOOL_DESCRIPTION` 和 `EXPLORE_QUERY_DESCRIPTION`。查询必须是唯一标识符。“how X reaches Y” 必须点名两端。禁止开放散文、单独路径和存在性探查。干净的源码转储按 Read 等价处理。token-soup 命中和缺少 `.codegraph/` 时退回 `read` / `grep` / `glob`。发行 preset 仍然只列出 `codegraph_explore`。
 
-[原生工具说明](2026-08-12-flyblue-codegraph-tools.md) 仍持有交付引擎、并禁止 agent 自行 `codegraph init` 的决策。
+[原生工具说明](2026-08-12-flyblue-codegraph-tools.zh.md) 仍持有交付引擎、并禁止 agent 自行 `codegraph init` 的决策。
 
 ## 考虑过的替代方案
 
@@ -32,4 +32,4 @@ Status: implemented
 
 ## 相关
 
-- [原生 CodeGraph 工具](2026-08-12-flyblue-codegraph-tools.md)
+- [原生 CodeGraph 工具](2026-08-12-flyblue-codegraph-tools.zh.md)

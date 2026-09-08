@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-21-usage-stats-skips-unreadable-sessions.md
 2026-08-21-usage-stats-skips-unreadable-sessions.md: 19db67727e61da671395248a6370e7dcf70b74da
-2026-08-21-usage-stats-skips-unreadable-sessions.zh.md: 2be80d1422ff1f200bb8f2eb638f86e36deab028
+2026-08-21-usage-stats-skips-unreadable-sessions.zh.md: 9ebb5e2b8ea9528e9fcf23bbb81bef496b0af336

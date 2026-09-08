@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/plan/plan-handoff/README.md
 README.md: 01450870e07dcd6056fbbaa637928635a7f0212d
-README.zh.md: 43ea8b0127fffe9d73de0c309e129c2943a562a9
+README.zh.md: e4fc18e35f7f8bdfee3246258ddf33e604383d92

@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-19-plan-handoff.md
 2026-08-19-plan-handoff.md: 12c68f311224421acdec95e7e3eb980de32397b5
-2026-08-19-plan-handoff.zh.md: 5df80c5db0c9b832a42f79deca1e00f16eee047d
+2026-08-19-plan-handoff.zh.md: 309c16a836b991beefdb10459a70f7109530179e

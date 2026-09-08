@@ -10,7 +10,7 @@ Status: implemented
 
 ## Decision
 
-`@deepseek-ai/dsh-usage-stats` 从持久会话词汇派生历史。服务合并实时 `sessions.list()` 与 `sessionPersistence.listSnapshots()`，按 Session ID 去重，优先读取实时会话的不可变事件切面，只 inspect 冷日志。缓存按对象身份和 seq 推进实时投影，按持久化 revision 使冷投影失效。冷读取具有可配置并发上限。无法解释的会话日志会被跳过并列入 `skippedSessions`，其余计数均不包含它；列出实时会话或快照失败仍会使请求失败（[跳过契约](../bug-fix/2026-08-21-usage-stats-skips-unreadable-sessions.md)）。
+`@deepseek-ai/dsh-usage-stats` 从持久会话词汇派生历史。服务合并实时 `sessions.list()` 与 `sessionPersistence.listSnapshots()`，按 Session ID 去重，优先读取实时会话的不可变事件切面，只 inspect 冷日志。缓存按对象身份和 seq 推进实时投影，按持久化 revision 使冷投影失效。冷读取具有可配置并发上限。无法解释的会话日志会被跳过并列入 `skippedSessions`，其余计数均不包含它；列出实时会话或快照失败仍会使请求失败（[跳过契约](../bug-fix/2026-08-21-usage-stats-skips-unreadable-sessions.zh.md)）。
 
 统计遵循 token-meter 的替换语义。请求失败后 usage chunk 仍保留，同一 turn/step 的最终样本会替换它。chunk 按当前 request header 归属，最终助手消息可以更新路由。Token 总量只包含四个互斥计费桶，reasoning 始终是 output 的子集。活跃数据只统计直接用户消息和非空助手消息。
 

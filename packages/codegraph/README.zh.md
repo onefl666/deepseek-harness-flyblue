@@ -6,8 +6,8 @@
 
 | 包 | 职责 | ctx 键 |
 |---|---|---|
-| [`tool-codegraph/`](tool-codegraph/README.md) | 在 `ctx.tools` 上注册 `codegraph_explore`（以及可选的额外工具）。 | （注册到 `ctx.tools`） |
-| [`codegraph-index/`](codegraph-index/README.md) | Web host 索引生命周期：状态、用户 init、可选自动 init。 | `codegraphIndex` |
-| [`command-codegraph-init/`](command-codegraph-init/README.md) | 基于 `ctx.codegraphIndex` 的用户 `/codegraph-init` 命令。 | （注册到 `ctx.commands`） |
+| [`tool-codegraph/`](tool-codegraph/README.zh.md) | 在 `ctx.tools` 上注册 `codegraph_explore`（以及可选的额外工具）。 | （注册到 `ctx.tools`） |
+| [`codegraph-index/`](codegraph-index/README.zh.md) | Web host 索引生命周期：状态、用户 init、可选自动 init。 | `codegraphIndex` |
+| [`command-codegraph-init/`](command-codegraph-init/README.zh.md) | 基于 `ctx.codegraphIndex` 的用户 `/codegraph-init` 命令。 | （注册到 `ctx.commands`） |
 
 子级 README 负责工具、提示词和引擎隔离约定。索引管理器在 host 平面，不是模型工具。

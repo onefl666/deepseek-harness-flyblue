@@ -12,7 +12,7 @@ Status: implemented
 
 `@deepseek-ai/dsh-client-ui-primitives` 中的 `SegmentedRange` 把选中填充画成绝对定位滑块，完整盖住当前选项。`useLayoutEffect` 与可选的 `ResizeObserver` 从选中按钮的 `offsetLeft` / `offsetWidth` 写入 `--thumb-x` / `--thumb-w`。首次测量之后，`transform` 和 `width` 使用 `--ds-transition-duration` 与 `--ds-ease-in-out` 过渡。CSS transition 会从当前 computed 值改向，因此滑动中途再点会从该位置继续。滑块为 `aria-hidden` 且 `pointer-events: none`；选项仍是无 role 条带上的 `aria-pressed` 按钮，用量统计的 ARIA 快照不会多出 `group` 或 `tablist`。`prefers-reduced-motion: reduce` 去掉过渡。用量统计和任务看板使用该原子；SSH 的密码/密钥条仍用本地 `.range`。
 
-用量看板仍默认 30 天，并按[本机用量历史笔记](2026-08-18-local-usage-history-dashboard.md)为范围请求编号。任务看板仍按[设置工作台笔记](2026-08-18-settings-workbench-sections.md)拆分进行中与已归档列表。
+用量看板仍默认 30 天，并按[本机用量历史笔记](2026-08-18-local-usage-history-dashboard.zh.md)为范围请求编号。任务看板仍按[设置工作台笔记](2026-08-18-settings-workbench-sections.zh.md)拆分进行中与已归档列表。
 
 ## Alternatives considered
 

@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/subsystems/codegraph.md
 codegraph.md: 79202186cdfd7c1e9c31a67e2d10e37bb130e8ff
-codegraph.zh.md: 24655e3a14bc06c681898ad1db4efa9a4bf6ee0d
+codegraph.zh.md: ab666977c0ebd5329485e428a2423f9e1a7e878d

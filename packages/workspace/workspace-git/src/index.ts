@@ -35,7 +35,7 @@ export class WorkspaceGitService extends TypertRemoteService {
    * @param workspaceId - Registered workspace containing the repository.
    * @returns Porcelain status entries for index and working-tree changes.
    */
-  @Remote({ authority: 'loopback' })
+  @Remote
   async status(workspaceId: WorkspaceId): Promise<GitStatusEntry[]> {
     const output = await this.git(workspaceId, ['status', '--porcelain=v1', '-z'])
     return output.split('\0').filter(Boolean).map(line => ({ index: line.slice(0, 1), worktree: line.slice(1, 2), path: line.slice(3) }))
@@ -46,7 +46,7 @@ export class WorkspaceGitService extends TypertRemoteService {
    * @param workspaceId - Registered workspace containing the repository.
    * @returns Local branch names and the current branch when attached.
    */
-  @Remote({ authority: 'loopback' })
+  @Remote
   async branches(workspaceId: WorkspaceId): Promise<{ current: string | null; branches: string[] }> {
     const output = await this.git(workspaceId, ['branch', '--format=%(HEAD)%(refname:short)'])
     let current: string | null = null
@@ -62,7 +62,7 @@ export class WorkspaceGitService extends TypertRemoteService {
    * @param workspaceId - Registered workspace containing the repository.
    * @returns Commit rows up to the configured graph limit.
    */
-  @Remote({ authority: 'loopback' })
+  @Remote
   async graph(workspaceId: WorkspaceId): Promise<GitGraphEntry[]> {
     const output = await this.git(workspaceId, ['log', `--max-count=${this.config.graphLimit ?? 500}`, '--format=%H%x1f%P%x1f%D%x1f%s'])
     return output.split(/\r?\n/).filter(Boolean).map((line) => {
@@ -76,7 +76,7 @@ export class WorkspaceGitService extends TypertRemoteService {
    * @param workspaceId - Registered workspace containing the repository.
    * @param name - New local branch name interpreted by Git.
    */
-  @Remote({ authority: 'loopback' })
+  @Remote
   createBranch(workspaceId: WorkspaceId, name: string): Promise<void> { return this.git(workspaceId, ['branch', name]).then(() => undefined) }
 
   /**
@@ -84,7 +84,7 @@ export class WorkspaceGitService extends TypertRemoteService {
    * @param workspaceId - Registered workspace containing the repository.
    * @param name - Existing local branch name.
    */
-  @Remote({ authority: 'loopback' })
+  @Remote
   async switchBranch(workspaceId: WorkspaceId, name: string): Promise<void> {
     if ((await this.status(workspaceId)).length > 0) throw new Error('workspace-git: working tree is not clean')
     if (await this.operationInProgress(workspaceId)) throw new Error('workspace-git: another Git operation is in progress')
@@ -106,14 +106,14 @@ export class WorkspaceGitService extends TypertRemoteService {
    * @param workspaceId - Registered workspace containing the repository.
    * @param path - Workspace-relative path passed after Git's option separator.
    */
-  @Remote({ authority: 'loopback' })
+  @Remote
   stage(workspaceId: WorkspaceId, path: string): Promise<void> { return this.git(workspaceId, ['add', '--', this.relativePath(path)]).then(() => undefined) }
   /**
    * Remove one path from the index.
    * @param workspaceId - Registered workspace containing the repository.
    * @param path - Workspace-relative path passed after Git's option separator.
    */
-  @Remote({ authority: 'loopback' })
+  @Remote
   unstage(workspaceId: WorkspaceId, path: string): Promise<void> { return this.git(workspaceId, ['restore', '--staged', '--', this.relativePath(path)]).then(() => undefined) }
   /**
    * Discard one tracked file only after explicit confirmation.
@@ -121,7 +121,7 @@ export class WorkspaceGitService extends TypertRemoteService {
    * @param path - Workspace-relative tracked file path.
    * @param confirmed - Explicit confirmation required before discarding changes.
    */
-  @Remote({ authority: 'loopback' })
+  @Remote
   discard(workspaceId: WorkspaceId, path: string, confirmed: boolean): Promise<void> {
     if (!confirmed) return Promise.reject(new Error('workspace-git: confirmation-required'))
     return this.git(workspaceId, ['restore', '--worktree', '--', this.relativePath(path)]).then(() => undefined)

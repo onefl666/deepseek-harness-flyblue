@@ -47,6 +47,10 @@ type WithoutId<T> = T extends { readonly id: TypeNodeId } ? Omit<T, 'id'> : neve
 
 type TypeNodeInput = WithoutId<TypeNodeModel>
 
+const PUBLIC_REMOTE_TYPE_ROOTS = new Set([
+  '@deepseek-ai/dsh-util-values',
+])
+
 /** Analysis failure with a source-oriented diagnostic. */
 export class TypertAnalysisError extends Error {
   override name = 'TypertAnalysisError'
@@ -976,7 +980,7 @@ class FaceAnalyzer {
     binding: GatewayBinding,
     method: ts.MethodDeclaration,
     invocation:
-      | { readonly kind: 'direct'; readonly exportName?: string }
+      | { readonly kind: 'direct'; readonly exportName?: string; readonly mode?: 'stream' }
       | { readonly kind: 'context'; readonly context: string; readonly exportName?: string },
   ): InvocationModel {
     if (visibilityOf(method) !== 'public' || hasModifier(method, ts.SyntaxKind.StaticKeyword)) {
@@ -1106,13 +1110,15 @@ class FaceAnalyzer {
       }
     }
 
-    const resultType = this.remoteResultType(method)
+    const mode = invocation.kind === 'direct' ? invocation.mode : undefined
+    const resultType = this.remoteResultType(method, mode)
     return {
       id: `${registration.name}#${binding.namespace}/${exportedMethod}`,
       service: binding.service,
       namespace: binding.namespace,
       method: exportedMethod,
       ...(exportedMethod === methodName ? {} : { implementation: methodName }),
+      ...(mode === undefined ? {} : { mode }),
       invocation: receiver,
       ...(scope === undefined ? {} : { scope }),
       parameters,
@@ -1215,11 +1221,11 @@ class FaceAnalyzer {
   private remoteMarker(
     member: ts.ClassElement,
   ):
-    | { readonly kind: 'direct'; readonly exportName?: string }
+    | { readonly kind: 'direct'; readonly exportName?: string; readonly mode?: 'stream' }
     | { readonly kind: 'context'; readonly context: string; readonly exportName?: string }
     | undefined {
     let found:
-      | { readonly kind: 'direct'; readonly exportName?: string }
+      | { readonly kind: 'direct'; readonly exportName?: string; readonly mode?: 'stream' }
       | { readonly kind: 'context'; readonly context: string; readonly exportName?: string }
       | undefined
     for (const decorator of ts.canHaveDecorators(member) ? ts.getDecorators(member) ?? [] : []) {
@@ -1229,23 +1235,27 @@ class FaceAnalyzer {
         marker = { kind: 'direct' }
       } else if (ts.isCallExpression(expression)
         && this.isTypeMetaSymbol(expression.expression, 'Remote')) {
-        const first = expression.arguments[0]
-        if (first === undefined || expression.arguments.length > 2) this.fail(expression, 'Remote() requires options or one exported method name and options')
-        if (ts.isObjectLiteralExpression(first)) {
-          if (expression.arguments.length !== 1) this.fail(expression, 'Remote(options) accepts exactly one argument')
-          this.remoteOptions(first)
-          marker = { kind: 'direct' }
-        } else {
-          const exportName = stringLiteralValue(first)
-          if (exportName === undefined || !isRemoteSegment(exportName)) {
-            this.fail(first, 'Remote() name must be a string literal containing only RPC endpoint segment characters')
-          }
-          const options = expression.arguments[1]
-          if (options !== undefined) {
-            if (!ts.isObjectLiteralExpression(options)) this.fail(options, 'Remote() options must be an object literal')
-            this.remoteOptions(options)
+        if (expression.arguments.length !== 1) this.fail(expression, 'Remote() requires one name or options object')
+        const argument = expression.arguments[0]
+        if (argument === undefined) this.fail(expression, 'Remote() requires one name or options object')
+        const exportName = stringLiteralValue(argument)
+        if (exportName !== undefined) {
+          if (!isRemoteSegment(exportName)) {
+            this.fail(argument, 'Remote() name must contain only RPC endpoint segment characters')
           }
           marker = { kind: 'direct', exportName }
+        } else {
+          if (!ts.isObjectLiteralExpression(argument) || argument.properties.length !== 1) {
+            this.fail(argument, 'Remote() options must contain exactly mode: "stream"')
+          }
+          const [property] = argument.properties
+          if (property === undefined) this.fail(argument, 'Remote() options must contain exactly mode: "stream"')
+          if (!ts.isPropertyAssignment(property)
+            || memberName(property.name) !== 'mode'
+            || stringLiteralValue(property.initializer) !== 'stream') {
+            this.fail(property, 'Remote() options must contain exactly mode: "stream"')
+          }
+          marker = { kind: 'direct', mode: 'stream' }
         }
       } else if (ts.isCallExpression(expression)
         && this.isTypeMetaSymbol(expression.expression, 'RemoteScope')) {
@@ -1271,29 +1281,27 @@ class FaceAnalyzer {
     return found
   }
 
-  /** Validate transport metadata while keeping generated client calls authority-neutral. */
-  private remoteOptions(options: ts.ObjectLiteralExpression): void {
-    for (const property of options.properties) {
-      if (!ts.isPropertyAssignment(property) || memberName(property.name) !== 'authority') {
-        this.fail(property, 'Remote() options only support authority')
-      }
-      const authority = stringLiteralValue(property.initializer)
-      if (authority !== 'trusted-host' && authority !== 'loopback') {
-        this.fail(property.initializer, 'Remote() authority must be trusted-host or loopback')
+  private remoteResultType(method: ts.MethodDeclaration, mode?: 'stream'): ts.TypeNode {
+    const authored = this.requiredType(method, method.type, 'return')
+    if (ts.isTypeReferenceNode(authored)) {
+      const symbol = this.checker.getSymbolAtLocation(authored.typeName)
+      const resolved = symbol === undefined ? undefined : this.resolveSymbol(symbol)
+      const resultType = authored.typeArguments?.[0]
+      const wrappers = mode === 'stream' ? ['Iterable', 'AsyncIterable'] : ['Promise']
+      const declaration = resolved === undefined ? undefined : preferredDeclaration(resolved)
+      if (resolved !== undefined
+        && wrappers.includes(resolved.name)
+        && resultType !== undefined
+        && authored.typeArguments?.length === 1
+        && declaration !== undefined
+        && isStandardLibraryFile(declaration.getSourceFile().fileName)) {
+        return resultType
       }
     }
-  }
-
-  private remoteResultType(method: ts.MethodDeclaration): ts.TypeNode {
-    const authored = this.requiredType(method, method.type, 'return')
-    if (!ts.isTypeReferenceNode(authored)) return authored
-    const symbol = this.checker.getSymbolAtLocation(authored.typeName)
-    const resolved = symbol === undefined ? undefined : this.resolveSymbol(symbol)
-    const resultType = authored.typeArguments?.[0]
-    if (resolved?.name !== 'Promise' || resultType === undefined || authored.typeArguments?.length !== 1) return authored
-    const declaration = preferredDeclaration(resolved)
-    if (declaration === undefined || !isStandardLibraryFile(declaration.getSourceFile().fileName)) return authored
-    return resultType
+    if (mode === 'stream') {
+      this.fail(method, 'stream Remote methods must return Iterable<T> or AsyncIterable<T>')
+    }
+    return authored
   }
 
   private isGlobalAbortSignal(type: ts.TypeNode): boolean {
@@ -1797,7 +1805,8 @@ class FaceAnalyzer {
     if (registration === undefined) this.fail(site, `type ${symbol.name} is not owned by a workspace package`)
     const candidates: RemoteTypeImportModel[] = []
     for (const [subpath, target] of packageExportTargets(registration.manifest)) {
-      if (subpath === '.' || subpath === './package.json' || subpath === './typert'
+      if ((subpath === '.' && !PUBLIC_REMOTE_TYPE_ROOTS.has(registration.name))
+        || subpath === './package.json' || subpath === './typert'
         || subpath === './client/typert' || subpath === './remote' || target.includes('*')) continue
       const sourceFile = this.sourceFiles.get(realPath(sourcePathForExport(registration.root, target)))
       if (sourceFile === undefined) continue

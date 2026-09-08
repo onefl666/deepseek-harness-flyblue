@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-17-web-codegraph-init-command.md
 2026-08-17-web-codegraph-init-command.md: f76c54446971be9927df386c5ff3c703615a847d
-2026-08-17-web-codegraph-init-command.zh.md: a14e88ee8a3683ff8625018cf855c53b3f7648b5
+2026-08-17-web-codegraph-init-command.zh.md: 40a37c4baf7fc03aef76525099710669bcde979e

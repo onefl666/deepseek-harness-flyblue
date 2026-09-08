@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-10-session-log-version-mechanism.md
 2026-08-10-session-log-version-mechanism.md: cea4fc531bb5eef6474133d44aee5379c579775e
-2026-08-10-session-log-version-mechanism.zh.md: afdffd1473a9ff8eead82897fc374544120ab77b
+2026-08-10-session-log-version-mechanism.zh.md: 6bc058be929a2435bd67910762dda60de00890ea

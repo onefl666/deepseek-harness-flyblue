@@ -2,7 +2,7 @@
 
 [English](README.md) | 中文
 
-通过 [`ctx.codegraphIndex`](../codegraph-index/README.md) 提供面向用户的 `/codegraph-init` 控制。该插件通过 [`ctx.commands`](../../interaction/commands/README.md) 注册一个全局命令，因此组合中的每个命令适配器都能发现并执行它，无需模型轮次。[Web `/codegraph-init` Agent Note](../../../.agents/notes/implemented/feature/2026-08-17-web-codegraph-init-command.md) 拥有组合与结果文本决策。
+通过 [`ctx.codegraphIndex`](../codegraph-index/README.zh.md) 提供面向用户的 `/codegraph-init` 控制。该插件通过 [`ctx.commands`](../../interaction/commands/README.zh.md) 注册一个全局命令，因此组合中的每个命令适配器都能发现并执行它，无需模型轮次。[Web `/codegraph-init` Agent Note](../../../.agents/notes/implemented/feature/2026-08-17-web-codegraph-init-command.zh.md) 拥有组合与结果文本决策。
 
 ## 命令约定
 

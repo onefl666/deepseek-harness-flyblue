@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-18-local-usage-history-dashboard.md
 2026-08-18-local-usage-history-dashboard.md: 2094af547164ab0980895900f0b585708efbdacf
-2026-08-18-local-usage-history-dashboard.zh.md: a4cc1f59cea1109ec0788fc23f989d486d0ebabc
+2026-08-18-local-usage-history-dashboard.zh.md: a29d9925ef400c8cf5c3bc6e8e2dc9141b2caac9

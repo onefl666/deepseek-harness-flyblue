@@ -44,14 +44,14 @@ export class SshService extends TypertRemoteService {
    * List configured hosts without passwords, passphrases, or key paths.
    * @returns Secret-free copies of the configured host records.
    */
-  @Remote({ authority: 'loopback' })
+  @Remote
   list(): SshHostSummary[] { return this.store.hosts.map(({ password: _password, privateKeyPath: _privateKeyPath, ...host }) => ({ ...host, auth: _password === undefined ? 'key' : 'password' })) }
   /**
    * Save a host record. The complete secret-bearing configuration remains local.
    * @param host - Complete local host configuration to insert or replace.
    * @returns The saved host with secret fields removed.
    */
-  @Remote({ authority: 'loopback' })
+  @Remote
   async put(host: SshHost): Promise<SshHostSummary> {
     if (host.alias.trim() === '' || host.host.trim() === '' || host.user.trim() === '' || host.port < 1 || host.port > 65535) throw new Error('ssh: invalid host configuration')
     const index = this.store.hosts.findIndex(item => item.id === host.id)
@@ -64,7 +64,7 @@ export class SshService extends TypertRemoteService {
    * Remove a host record.
    * @param id - Stable identifier of the host to remove.
    */
-  @Remote({ authority: 'loopback' })
+  @Remote
   async remove(id: SshHostId): Promise<void> { this.store.hosts = this.store.hosts.filter(host => host.id !== id); await this.persist() }
   /**
    * Execute one command once. A dropped dispatched channel returns `result-unknown`.
@@ -72,7 +72,7 @@ export class SshService extends TypertRemoteService {
    * @param command - Command text passed to the remote SSH server.
    * @returns Captured streams, exit status, and whether the dispatched result is known.
    */
-  @Remote({ authority: 'loopback' })
+  @Remote
   async exec(id: SshHostId, command: string): Promise<{ stdout: string; stderr: string; exitCode: number | null; result: 'known' | 'result-unknown' }> {
     const host = this.store.hosts.find(item => item.id === id)
     if (host === undefined) throw new Error('ssh: unknown host')

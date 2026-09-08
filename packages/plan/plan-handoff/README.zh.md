@@ -65,7 +65,7 @@ through exit_plan_mode.
 
 #### What the model sees
 
-[`exit_plan_mode` schema](../../../docs/tool-catalog.md#deepseek-aidsh-plan-handoff) 在两种状态下都可用。批准返回 `{ approved: true, execution }` 以及按模式区分的确认文本。空闲后，一条插件来源的用户消息携带已批准计划并要求执行。
+[`exit_plan_mode` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-plan-handoff) 在两种状态下都可用。批准返回 `{ approved: true, execution }` 以及按模式区分的确认文本。空闲后，一条插件来源的用户消息携带已批准计划并要求执行。
 
 #### Token effect
 

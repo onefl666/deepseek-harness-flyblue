@@ -6,7 +6,7 @@ Status: implemented
 
 ## 问题
 
-Web 用户可以从空白会话提示条或**设置 → 代码索引**启动 CodeGraph 索引，但斜杠命令目录里没有对应项。已经习惯 `/compact` 和 `/export` 的用户必须离开输入框。若把 init 挂在 `@deepseek-ai/dsh-tool-codegraph` 上，模型就能启动索引，这与[索引管理器笔记](2026-08-13-web-codegraph-index-manager.md)的禁令冲突。
+Web 用户可以从空白会话提示条或**设置 → 代码索引**启动 CodeGraph 索引，但斜杠命令目录里没有对应项。已经习惯 `/compact` 和 `/export` 的用户必须离开输入框。若把 init 挂在 `@deepseek-ai/dsh-tool-codegraph` 上，模型就能启动索引，这与[索引管理器笔记](2026-08-13-web-codegraph-index-manager.zh.md)的禁令冲突。
 
 ## 决策
 
@@ -46,5 +46,5 @@ Web 命令菜单列出 `/codegraph-init`。输入它会启动与提示条和设�
 
 ## 相关
 
-- [Web host 负责 CodeGraph 索引 init](2026-08-13-web-codegraph-index-manager.md)
-- [插件拥有的人类命令注册](2026-07-19-plugin-command-registration.md)
+- [Web host 负责 CodeGraph 索引 init](2026-08-13-web-codegraph-index-manager.zh.md)
+- [插件拥有的人类命令注册](2026-07-19-plugin-command-registration.zh.md)

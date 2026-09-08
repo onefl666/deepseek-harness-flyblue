@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/codegraph/command-codegraph-init/README.md
 README.md: 70c0dfab4adce55fd7af96dd7b67b0bf4aa2be13
-README.zh.md: cab82b0fb5e509c2fb0b402a708b31f89cf59ce6
+README.zh.md: 447e62d31c2704ff53eadf63f9bf8a8df50857e5

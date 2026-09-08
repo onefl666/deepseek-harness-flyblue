@@ -16,7 +16,7 @@ Status: implemented
 
 `@deepseek-ai/dsh-client-ui-codegraph` 注册独立的设置页「代码索引」和 `conversation.input.dock` 条目。选择提示只在会话空白、cwd 未索引、自动 init 关闭、且本会话尚未忽略时出现。自动 init 或正在进行的 init 会改为显示进度。忽略记在会话作用域 store。打开已有历史会话不会出现该条。
 
-`@deepseek-ai/dsh-command-codegraph-init` 在同一 host 服务上注册 `/codegraph-init`。该命令只做消费；[其 Agent Note](2026-08-17-web-codegraph-init-command.md) 拥有斜杠命令约定。
+`@deepseek-ai/dsh-command-codegraph-init` 在同一 host 服务上注册 `/codegraph-init`。该命令只做消费；[其 Agent Note](2026-08-17-web-codegraph-init-command.zh.md) 拥有斜杠命令约定。
 
 面向模型的插件仍然从不执行 init。Agent 仍然不得自行 init。
 
@@ -42,5 +42,5 @@ Host 测试覆盖未索引 / 已索引 / 无 cwd / autoInit 在 `session/created
 
 ## 相关
 
-- [原生 CodeGraph 工具](2026-08-12-flyblue-codegraph-tools.md)
-- [Web `/codegraph-init` 启动 host 平面 CodeGraph 索引](2026-08-17-web-codegraph-init-command.md)
+- [原生 CodeGraph 工具](2026-08-12-flyblue-codegraph-tools.zh.md)
+- [Web `/codegraph-init` 启动 host 平面 CodeGraph 索引](2026-08-17-web-codegraph-init-command.zh.md)

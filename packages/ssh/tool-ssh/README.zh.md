@@ -12,7 +12,7 @@
 
 #### 模型看到的内容
 
-只有 `ctx.ssh` 可用时，模型才会看到生成的 [`ssh_list` 和 `ssh_exec` schema](../../../docs/tool-catalog.md#deepseek-aidsh-tool-ssh)。
+只有 `ctx.ssh` 可用时，模型才会看到生成的 [`ssh_list` 和 `ssh_exec` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-ssh)。
 
 #### Token 影响
 
