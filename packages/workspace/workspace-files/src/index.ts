@@ -175,8 +175,8 @@ export class WorkspaceFilesService extends TypertRemoteService {
    * @param path - Existing workspace-relative path to remove.
    * @param confirmed - Explicit confirmation required before deletion.
    */
-  @Remote
-  async remove(workspaceId: WorkspaceId, path: string, confirmed: boolean): Promise<void> {
+  @Remote('delete')
+  async delete(workspaceId: WorkspaceId, path: string, confirmed: boolean): Promise<void> {
     if (!confirmed) throw new Error('workspace-files: confirmation-required')
     await rm(await this.resolveExisting(workspaceId, path), { recursive: true, force: false })
   }

@@ -328,7 +328,7 @@ Host SSH service. A connection loss after channel dispatch reports an unknown re
  * Remove a host record.
  * @param id - Stable identifier of the host to remove.
  */
-@Remote async remove(id: SshHostId): Promise<void>
+@Remote('delete') async delete(id: SshHostId): Promise<void>
 
 /**
  * Execute one command once. A dropped dispatched channel returns `result-unknown`.

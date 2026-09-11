@@ -25,7 +25,7 @@ async function bench() {
   const archive = vi.fn(async () => failure)
   const update = vi.fn(async () => failure)
   const remove = vi.fn(async () => failure)
-  ctx.provide('remote.taskBoard', { list, create, archive, update, remove })
+  ctx.provide('remote.taskBoard', { list, create, archive, update, delete: remove })
   return { ctx, locale, slots: ctx.get('slots') as SlotRegistry, list, create, archive, update, remove }
 }
 

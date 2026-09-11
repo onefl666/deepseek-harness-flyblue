@@ -12,7 +12,7 @@ English | [中文](README.zh.md)
 
 Loopback Typert service for workspace-ID-scoped file inspection and mutations. Every operation resolves a registered workspace first. Relative-path checks reject traversal, `.git`, symbolic links, and targets whose real path escapes the workspace.
 
-The service lists one directory level, reads bounded UTF-8 previews, searches filenames, performs version-checked full-text saves, creates new files without overwriting, renames entries, and removes confirmed paths. Rename and remove require explicit confirmation where the operation is destructive; stale saves fail with `workspace-files: stale-write`.
+The service lists one directory level, reads bounded UTF-8 previews, searches filenames, performs version-checked full-text saves, creates new files without overwriting, renames entries, and deletes confirmed paths. Rename and delete require explicit confirmation where the operation is destructive; stale saves fail with `workspace-files: stale-write`.
 
 
 -----

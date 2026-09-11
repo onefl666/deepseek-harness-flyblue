@@ -22,7 +22,7 @@ export function apply(ctx: ClientContext): void {
       archive: (id: string, requestId: string) => ctx.remote.taskBoard.archive(id as TaskArg, requestId),
       update: (id: string, title: string, requestId: string) =>
         ctx.remote.taskBoard.update(id as TaskArg, title, requestId),
-      remove: (id: string, requestId: string) => ctx.remote.taskBoard.remove(id as TaskArg, requestId),
+      remove: (id: string, requestId: string) => ctx.remote.taskBoard.delete(id as TaskArg, requestId),
     }),
   }, TaskBoardSection))
 }

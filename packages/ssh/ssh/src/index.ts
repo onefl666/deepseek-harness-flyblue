@@ -64,8 +64,8 @@ export class SshService extends TypertRemoteService {
    * Remove a host record.
    * @param id - Stable identifier of the host to remove.
    */
-  @Remote
-  async remove(id: SshHostId): Promise<void> { this.store.hosts = this.store.hosts.filter(host => host.id !== id); await this.persist() }
+  @Remote('delete')
+  async delete(id: SshHostId): Promise<void> { this.store.hosts = this.store.hosts.filter(host => host.id !== id); await this.persist() }
   /**
    * Execute one command once. A dropped dispatched channel returns `result-unknown`.
    * @param id - Stable identifier of the configured host.

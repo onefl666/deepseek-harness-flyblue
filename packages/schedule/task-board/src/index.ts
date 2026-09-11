@@ -100,8 +100,8 @@ export class TaskBoardService extends TypertRemoteService {
    * @param requestId - Browser-generated idempotency key for this mutation.
    * @returns The removed task or the result previously stored for the request id.
    */
-  @Remote
-  async remove(id: TaskId, requestId: string): Promise<TaskView> {
+  @Remote('delete')
+  async delete(id: TaskId, requestId: string): Promise<TaskView> {
     await this.ready
     const prior = this.applied.get(requestId)
     if (prior !== undefined) return prior

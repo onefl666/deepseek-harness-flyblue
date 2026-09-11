@@ -9,7 +9,7 @@ kind: "package-reference"
 ## 概述
 
 
-由 Host 管理的 SSH 主机存储和单次命令执行服务。`ssh` Typert 服务公开仅限 loopback 的 list、put、remove 和 exec 方法。主机记录保存在 `$DSH_HOME/dsh-ssh.json`，文件和目录仅允许所有者访问；浏览器列表不返回密码和私钥路径。
+由 Host 管理的 SSH 主机存储和单次命令执行服务。`ssh` Typert 服务公开仅限 loopback 的 list、put、delete 和 exec 方法。主机记录保存在 `$DSH_HOME/dsh-ssh.json`，文件和目录仅允许所有者访问；浏览器列表不返回密码和私钥路径。
 
 `exec` 最多分发一次命令。分发前连接失败会拒绝调用。分发后连接丢失或超时会返回 `result: "result-unknown"`，调用方因此可以避免重放远端效果尚不确定的命令。
 

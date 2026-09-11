@@ -2232,7 +2232,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'The saved host with secret fields removed.',
       },
       {
-        signature: '@Remote async remove(id: SshHostId): Promise<void>',
+        signature: '@Remote(\'delete\') async delete(id: SshHostId): Promise<void>',
         description: 'Remove a host record.',
         parameters: [{ name: 'id', description: 'Stable identifier of the host to remove.' }],
       },
@@ -2517,7 +2517,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'The updated task or the result previously stored for the request id.',
       },
       {
-        signature: '@Remote async remove(id: TaskId, requestId: string): Promise<TaskView>',
+        signature: '@Remote(\'delete\') async delete(id: TaskId, requestId: string): Promise<TaskView>',
         description: 'Permanently remove an archived task through an idempotent action.',
         parameters: [{ name: 'id', description: 'Archived task to remove.' }, { name: 'requestId', description: 'Browser-generated idempotency key for this mutation.' }],
         returns: 'The removed task or the result previously stored for the request id.',
@@ -3123,7 +3123,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [{ name: 'workspaceId', description: 'Registered workspace whose root authorizes the mutation.' }, { name: 'path', description: 'New workspace-relative file path.' }],
       },
       {
-        signature: '@Remote async remove(workspaceId: WorkspaceId, path: string, confirmed: boolean): Promise<void>',
+        signature: '@Remote(\'delete\') async delete(workspaceId: WorkspaceId, path: string, confirmed: boolean): Promise<void>',
         description: 'Delete a path only after an explicit confirmation.',
         parameters: [{ name: 'workspaceId', description: 'Registered workspace whose root authorizes the mutation.' }, { name: 'path', description: 'Existing workspace-relative path to remove.' }, { name: 'confirmed', description: 'Explicit confirmation required before deletion.' }],
       },

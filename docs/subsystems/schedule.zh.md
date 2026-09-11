@@ -236,7 +236,7 @@ Task service with request-id idempotence and locked ledger publication.
  * @param requestId - Browser-generated idempotency key for this mutation.
  * @returns The removed task or the result previously stored for the request id.
  */
-@Remote async remove(id: TaskId, requestId: string): Promise<TaskView>
+@Remote('delete') async delete(id: TaskId, requestId: string): Promise<TaskView>
 ```
 
 Source: [`packages/schedule/task-board/src/index.ts`](../../packages/schedule/task-board/src/index.ts)

@@ -434,7 +434,7 @@ Host service for ID-scoped file tree, preview, search, and mutations.
  * @param path - Existing workspace-relative path to remove.
  * @param confirmed - Explicit confirmation required before deletion.
  */
-@Remote async remove(workspaceId: WorkspaceId, path: string, confirmed: boolean): Promise<void>
+@Remote('delete') async delete(workspaceId: WorkspaceId, path: string, confirmed: boolean): Promise<void>
 ```
 
 Source: [`packages/workspace/workspace-files/src/index.ts`](../../packages/workspace/workspace-files/src/index.ts)

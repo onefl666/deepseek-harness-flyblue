@@ -24,7 +24,7 @@ async function bench() {
   const put = vi.fn(async () => failure)
   const remove = vi.fn(async () => failure)
   const exec = vi.fn(async () => failure)
-  ctx.provide('remote.ssh', { list, put, remove, exec })
+  ctx.provide('remote.ssh', { list, put, delete: remove, exec })
   return { ctx, locale, slots: ctx.get('slots') as SlotRegistry, list, put, remove, exec }
 }
 

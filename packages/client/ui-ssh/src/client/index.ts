@@ -18,7 +18,7 @@ export function apply(ctx: ClientContext): void {
     inject: () => ({
       list: () => ctx.remote.ssh.list(),
       put: host => ctx.remote.ssh.put(host as Parameters<typeof ctx.remote.ssh.put>[0]),
-      remove: (id: string) => ctx.remote.ssh.remove(id as Parameters<typeof ctx.remote.ssh.remove>[0]),
+      remove: (id: string) => ctx.remote.ssh.delete(id as Parameters<typeof ctx.remote.ssh.delete>[0]),
       exec: (id: string, command: string) => ctx.remote.ssh.exec(id as Parameters<typeof ctx.remote.ssh.exec>[0], command),
     }),
   }, SshSection))
