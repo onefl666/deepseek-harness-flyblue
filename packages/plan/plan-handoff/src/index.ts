@@ -30,13 +30,14 @@ import { Context, Service } from '@deepseek-ai/cordis'
 import { z as zod } from 'zod'
 import type { ZodType } from 'zod'
 import type { Agent, PreStepDecision } from '@deepseek-ai/dsh-agent'
+import { brandString } from '@deepseek-ai/dsh-brand'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { Session, SessionEvent, UserMessage } from '@deepseek-ai/dsh-session'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import { UserQuestionError } from '@deepseek-ai/dsh-user-questions'
 // Type-only edge: resolves `ctx.commands` for the optional command child.
-import type {} from '@deepseek-ai/dsh-commands'
+import type { CommandDefinitionId } from '@deepseek-ai/dsh-commands'
 // Type-only: resolves ctx.sessionProjections for the optional unit child.
 import type {} from '@deepseek-ai/dsh-session-projection'
 import type { PlanExecution, PlanProjection } from './types.ts'
@@ -253,6 +254,7 @@ export class PlanModeController extends Service {
       text: (context) => {
         if (context.agent === undefined) return ''
         const pending = this.pendingIntents.get(context.agent.session)
+        // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
         return (pending?.active ?? foldPlanMode(context.agent.session.snapshotEvents())) ? this.section : ''
       },
     })
@@ -299,6 +301,10 @@ export class PlanModeController extends Service {
     // The command child activates only when a command registry is composed.
     ctx.inject(['commands'], (commandCtx) => {
       commandCtx.commands.register({
+        // The upstream plan command's definition id: the client's built-in
+        // command face (localized label, description, claim token, icon) keys
+        // off this id, and plan-handoff replaces that command in place.
+        definitionId: brandString<CommandDefinitionId>('@deepseek-ai/dsh-plan-mode'),
         name: 'plan',
         description: 'Enter or leave plan mode',
         input: { hint: '[off|message]' },
@@ -316,6 +322,7 @@ export class PlanModeController extends Service {
                 // Repeat the queued wording while an exit still awaits the
                 // next accepted pre-step; only a truly inactive session reads
                 // idempotent.
+                // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
                 return foldPlanMode(agent.session.snapshotEvents())
                   ? { kind: 'success', text: 'Leaving plan mode (applies from the next step).' }
                   : { kind: 'success', text: 'Plan mode is already inactive.' }
@@ -357,6 +364,7 @@ export class PlanModeController extends Service {
       execute: async (args, exec) => {
         const agent = exec.agent
         if (agent === undefined) throw new Error(`${EXIT_PLAN_MODE} requires a calling agent (no session to switch)`)
+        // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
         if (!foldPlanMode(agent.session.snapshotEvents())) {
           throw new Error(`${EXIT_PLAN_MODE} is only available in plan mode`)
         }
@@ -457,6 +465,7 @@ export class PlanModeController extends Service {
    * @returns Current logged state plus a pending selection, when present.
    */
   get(agent: Agent): { active: boolean; pending?: boolean } {
+    // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
     const active = foldPlanMode(agent.session.snapshotEvents())
     const pending = this.pendingIntents.get(agent.session)
     return pending === undefined ? { active } : { active, pending: pending.active }
@@ -481,14 +490,18 @@ export class PlanModeController extends Service {
   set(agent: Agent, active: boolean): 'committed' | 'queued' | 'cancelled' | 'noop' {
     const session = agent.session
     const pending = this.pendingIntents.get(session)
+    // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
     const target = pending?.active ?? foldPlanMode(session.snapshotEvents())
     if (active === target) return 'noop'
+    // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
     if (hasOpenTurn(session.snapshotEvents())) {
       this.pendingIntents.set(session, { active, narrate: true })
+      // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
       return foldPlanMode(session.snapshotEvents()) === active ? 'cancelled' : 'queued'
     }
     // No open turn: commit now. Delete only after append succeeds so a
     // failed durable write leaves the selection retryable, not dropped.
+    // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
     if (active === foldPlanMode(session.snapshotEvents())) {
       this.pendingIntents.delete(session)
       return 'cancelled'
@@ -505,6 +518,7 @@ export class PlanModeController extends Service {
     const pending = this.pendingIntents.get(session)
     if (pending === undefined) return
     const target = pending.active
+    // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
     if (target === foldPlanMode(session.snapshotEvents())) {
       this.pendingIntents.delete(session)
       return
@@ -517,6 +531,7 @@ export class PlanModeController extends Service {
 
   /** Build a user-switch notice when the last logged header described the other mode. */
   private narration(session: Session, target: boolean): UserMessage | undefined {
+    // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
     const told = planModeAtLastHeader(session.snapshotEvents())
     if (told === undefined || told === target) return
     const text = target

@@ -13,9 +13,24 @@
     - button "Agent 预设":
       - img
       - text: Agent 预设
-    - button "代码索引" [current]:
+    - button "代码索引":
       - img
       - text: 代码索引
+    - button "用量统计":
+      - img
+      - text: 用量统计
+    - button "任务看板":
+      - img
+      - text: 任务看板
+    - button "Git 图谱":
+      - img
+      - text: Git 图谱
+    - button "文件检查器":
+      - img
+      - text: 文件检查器
+    - button "SSH 运维":
+      - img
+      - text: SSH 运维
   - button "打开配置文件"
   - button "关闭":
     - img
@@ -23,8 +38,7 @@
   - heading "代码索引" [level=2]
   - paragraph: 索引落在该仓库的 .codegraph/ 目录。Agent 不会替你初始化。
   - switch "自动初始化未索引的工作区"
+  - text: 自动初始化未索引的工作区
   - paragraph: 打开后，新会话不再询问，宿主会直接对当前工作区运行 codegraph init。
   - text: 当前工作区
-  - paragraph: "{{cwd}}"
-  - paragraph: 尚未建立索引
-  - button "立即初始化"
+  - paragraph: {{cwd}}\workspace

@@ -41,6 +41,7 @@ function renderSection(verbs: Verbs = {}) {
       useWorkspaces={useWorkspaces}
       useResource={(() => ({ status: 'none', value: undefined, failure: undefined, reload: () => {} })) as never}
       useSessionPendingInteraction={((selector: (value: never) => unknown) => selector(new Map() as never)) as never}
+      usePanelInfo={selector => selector({ activePanelId: null })}
       {...resolved}
     />,
   )

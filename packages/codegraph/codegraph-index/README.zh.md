@@ -7,21 +7,14 @@ kind: "package-reference"
 [English](README.md) | 中文
 
 ## 概述
+Web GUI 的 host 平面 CodeGraph 索引生命周期。`ctx.codegraphIndex` 提供 `status(sessionId)` 与 `init(sessionId)`；两者都读取 `session.header.cwd`，不接受客户端传来的路径。`init` 启动 `codegraph init` 后立即返回；UI 轮询 `status`，直到 `indexed` 或 `error`；同一 cwd 共享一个进行中的任务；服务 fiber dispose 时中止未完成的 spawn。
 
-
-Web GUI 的 host 平面 CodeGraph 索引生命周期。`ctx.codegraphIndex` 提供 `status(sessionId)` 与 `init(sessionId)`。两条方法都只读 host 上的 `session.header.cwd`，不接受客户端传来的路径。`init` 启动 `codegraph init` 后立即返回；UI 轮询 `status`，直到 `indexed` 或 `error`。同一规范化 cwd 共享一个进行中的任务。服务 fiber dispose 时会中止未完成的 spawn。
-
-`codegraph` 设置命名空间保存 `{ autoInit: boolean }`（默认 `false`）。`autoInit` 为 true 时，`session/created` 会对带 cwd、尚未建索引的会话启动 init。CLI / headless / ACP 组装不挂本插件，因此不会自动 init。
-
-面向模型的 `@deepseek-ai/dsh-tool-codegraph` 插件仍然从不执行 init。只有用户点击、`/codegraph-init`，或本 host 的自动 init 路径会创建 `.codegraph/`。同级 [`dsh-command-codegraph-init`](../command-codegraph-init/README.zh.md) 是面向用户的命令消费方。
+`codegraph` 设置命名空间保存 `{ autoInit: boolean }`（默认 `false`）；为 true 时，`session/created` 对带 cwd、尚未建索引的会话启动 init。CLI / headless / ACP 组装不会自动 init。面向模型的工具从不执行 init：只有用户点击、`/codegraph-init` 或自动 init 会创建 `.codegraph/`。
 
 ```yaml
 - id: codegraph-index
   name: '@deepseek-ai/dsh-codegraph-index'
 ```
-
-
------
 
 ## 目录
 

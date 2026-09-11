@@ -7,16 +7,10 @@ kind: "package-reference"
 English | [中文](README.zh.md)
 
 ## Summary
+The model-facing **CodeGraph tool suite** over the bundled [`@colbymchenry/codegraph`](https://www.npmjs.com/package/@colbymchenry/codegraph) engine. It owns tool names, JSON schemas, the `tool:codegraph` prompt section, project-path confinement, and UI presentation. The engine is a pinned runtime dependency; there is no `ctx.codegraph` service and no host MCP client.
 
+Namespace plugin (`name` / `inject` / `Config` / `apply`, no default export). Injects `tools` and `systemPrompt`. Registration does not require a `.codegraph/` index: a missing index or failed engine load stays a successful tool result that tells the model to use `read`/`grep`/`glob`. The plugin never runs `codegraph init`; the Web GUI and auto-init live in `@deepseek-ai/dsh-codegraph-index`.
 
-The model-facing **CodeGraph tool suite** over the bundled [`@colbymchenry/codegraph`](https://www.npmjs.com/package/@colbymchenry/codegraph) engine. It owns tool names, JSON schemas, the `tool:codegraph` prompt section, project-path confinement, and UI presentation. The engine is a pinned runtime dependency of this package; there is no `ctx.codegraph` service and no host MCP client.
-
-Namespace plugin (`name` / `inject` / `Config` / `apply`, no default export). Injects `tools` and `systemPrompt`.
-
-Registration does not require a `.codegraph/` index. A missing index or a failed engine load stays a successful tool result that tells the model to use `read`/`grep`/`glob`. The plugin never runs `codegraph init`. The Web GUI and optional auto-init live in `@deepseek-ai/dsh-codegraph-index` and start only from a user click, `/codegraph-init`, or the `autoInit` setting.
-
-
------
 
 ## Table of Contents
 

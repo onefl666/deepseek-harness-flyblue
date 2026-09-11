@@ -24,7 +24,7 @@ const now = vi.spyOn(Date, 'now')
 function appendUsage(session: Session, date: string, provider: string, model: string, inputTokens: number, outputTokens: number): void {
   now.mockReturnValue(new Date(`${date}T12:00:00+08:00`).getTime())
   session.append('user/message', createUserMessage({ content: [{ type: 'text', text: `${model} prompt` }], source: { kind: 'user' } }), { surfaceOp: 'append' })
-  session.append('request/header', { header: { config: { provider, model }, system: '', tools: [] }, reason: 'change' })
+  session.append('request/header', { header: { config: { provider, model } }, reason: 'change' })
   session.append('assistant/message', {
     turn: session.seq, step: 1,
     message: createAssistantMessage({ content: [{ type: 'text', text: `${model} answer` }], source: { provider, model } }),
@@ -42,11 +42,16 @@ describe('web e2e: local usage history dashboard', () => {
   beforeAll(async () => {
     now.mockReturnValue(new Date('2026-08-18T12:00:00+08:00').getTime())
     scaffold = await launchWebScaffold({})
+    // A stored-only session: a live agent owns the persistence write handle,
+    // so a hand-prepared session must hand its buffered events to storage
+    // itself before leaving the live store.
     const cold = scaffold.ctx.sessions.prepare(SessionId('usage-cold-unassigned'))
     const detach = scaffold.ctx.sessions.enter(cold)
     scaffold.ctx.sessions.announce(cold)
     appendUsage(cold, '2026-07-30', 'deepseek', 'deepseek-chat', 90, 20)
-    await scaffold.ctx.sessions.flush(cold)
+    const coldHandle = await scaffold.ctx.sessionPersistence.create(cold.header)
+    await coldHandle.append(cold.snapshotEvents())
+    await coldHandle.close()
     detach()
     const live = scaffold.ctx.sessions.create(SessionId('usage-live-unassigned'))
     appendUsage(live, '2026-08-16', 'deepseek', 'deepseek-reasoner', 50, 15)
@@ -55,7 +60,7 @@ describe('web e2e: local usage history dashboard', () => {
     browser = await chromium.launch()
     page = await browser.newPage({ viewport: { width: 1680, height: 1000 }, locale: ZH_BROWSER_LOCALE })
     tripwire = watchConsole(page)
-    await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
+    await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
   }, 120_000)
 
@@ -102,7 +107,9 @@ describe('web e2e: local usage history dashboard', () => {
     // method's `this` so the append runs against this Session.
     const forgedAppend = poisoned.append.bind(poisoned) as unknown as (type: string, data: unknown) => unknown
     forgedAppend('vision/describe', { url: 'https://example.invalid/a.png' })
-    await scaffold.ctx.sessions.flush(poisoned)
+    const poisonedHandle = await scaffold.ctx.sessionPersistence.create(poisoned.header)
+    await poisonedHandle.append(poisoned.snapshotEvents())
+    await poisonedHandle.close()
     detach()
     const section = page.locator('[data-usage-stats]')
     await section.getByRole('button', { name: '刷新' }).click()

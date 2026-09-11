@@ -8,16 +8,10 @@ kind: "package-reference"
 English | [中文](README.zh.md)
 
 ## Summary
-
-
 Web settings dashboard for `@deepseek-ai/dsh-usage-stats`. It registers the existing `settings.section` id `usage-stats`; no top-level navigation is added.
 
-The initial view requests 30 days and can switch to 7 days or refresh manually. Six KPI cards, a visible-message heatmap, stacked daily Token bars, model donut and ranking, and the disjoint Token-bucket breakdown fit the settings content column. The model chart keeps four models plus Other, while expandable tables retain every model and day. Reasoning is shown beneath output and is not presented as an additional total bucket.
+The initial view requests 30 days and can switch to 7 days or refresh manually. KPI cards, a visible-message heatmap, stacked daily Token bars, a model donut and ranking, and the Token-bucket breakdown fit the settings content column; expandable tables retain every model and day. Refresh and range changes retain the committed data with a busy message, stale responses are ignored, a failed update exposes Retry, and sessions the Host could not interpret are excluded and reported.
 
-The dashboard uses CSS Modules and existing theme, shadow, and motion tokens. Compact `Intl.NumberFormat` values carry exact accessible names; dates use `Intl.DateTimeFormat`. Daily chart entries are keyboard reachable, charts include summaries, and tables provide a non-visual alternative. Initial loading keeps the layout stable. Refresh and range changes retain the previous result with a busy message; request sequencing ignores stale responses. A failed update retains the committed range and data and exposes Retry. Empty activity and missing provider usage have separate explanations. Sessions the Host could not interpret are excluded from the counts; a transient banner reports how many, and an in-panel notice keeps listing each session id with its failure until a later load skips nothing.
-
-
------
 
 ## Table of Contents
 

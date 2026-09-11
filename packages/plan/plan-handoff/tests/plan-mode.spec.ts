@@ -570,7 +570,7 @@ describe('/plan', () => {
     const plainSteer = vi.fn()
     ;(plainAgent as unknown as { steer: typeof plainSteer }).steer = plainSteer
     expect(ctx.commands.list(plainAgent)).toEqual([
-      { name: 'plan', description: 'Enter or leave plan mode', input: { hint: '[off|message]' } },
+      { definitionId: '@deepseek-ai/dsh-plan-mode', name: 'plan', description: 'Enter or leave plan mode', input: { hint: '[off|message]' } },
     ])
 
     const signal = new AbortController().signal
@@ -837,7 +837,7 @@ describe('exit_plan_mode', () => {
       question: 'Approve this plan and leave plan mode?',
       detail: plan,
     })
-    expect(agent.session.snapshotEvents().find(event => event.type === 'tool/code-dispatch')?.data).toMatchObject({
+    expect(agent.session.snapshotEvents().find(event => event.type === 'tool/ptc-dispatch')?.data).toMatchObject({
       name: EXIT_PLAN_MODE,
       arguments: { plan },
       isError: false,

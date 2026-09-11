@@ -7,16 +7,9 @@ kind: "package-reference"
 [English](README.md) | 中文
 
 ## 概述
-
-
 面向模型的 **CodeGraph 工具集**，基于发行版附带的 [`@colbymchenry/codegraph`](https://www.npmjs.com/package/@colbymchenry/codegraph) 引擎。本包负责工具名、JSON schema、`tool:codegraph` 提示词段、项目路径约束和 UI 呈现。引擎是本包钉死的运行时依赖；没有 `ctx.codegraph` 服务，也不走 host MCP 客户端。
 
-命名空间插件（`name` / `inject` / `Config` / `apply`，无 default 导出）。注入 `tools` 与 `systemPrompt`。
-
-注册不要求已有 `.codegraph/` 索引。缺少索引或引擎加载失败时，工具仍返回成功形态的指引，让模型改用 `read`/`grep`/`glob`。本插件从不执行 `codegraph init`。Web GUI 与可选的自动 init 在 `@deepseek-ai/dsh-codegraph-index`，只由用户点击、`/codegraph-init` 或 `autoInit` 设置启动。
-
-
------
+命名空间插件（`name` / `inject` / `Config` / `apply`，无 default 导出）。注入 `tools` 与 `systemPrompt`。注册不要求已有 `.codegraph/` 索引：缺少索引或引擎加载失败时，工具仍返回成功形态的指引，让模型改用 `read`/`grep`/`glob`。本插件从不执行 `codegraph init`；Web GUI 与自动 init 在 `@deepseek-ai/dsh-codegraph-index`。
 
 ## 目录
 

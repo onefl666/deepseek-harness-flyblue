@@ -103,6 +103,7 @@ export class UsageStatsService extends TypertRemoteService {
         ? cached.projection
         : createSessionUsageProjection()
       try {
+        // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
         foldSessionUsage(projection, session.snapshotEvents().slice(projection.seq))
       } catch (error) {
         // The projection may be partially folded; drop it so the next scan rebuilds from sequence zero.

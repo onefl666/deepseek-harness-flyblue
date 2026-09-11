@@ -8,9 +8,7 @@ kind: "package-group"
 [English](README.md) | 中文
 
 ## 概述
-
-
-面向模型的 CodeGraph 工具，以及 Web host 索引生命周期，基于发行版附带的 `@colbymchenry/codegraph` 引擎。没有可替换的提供方约定：工具打开项目本地的 `.codegraph/` 索引。
+面向模型的 CodeGraph 工具，以及 Web host 索引生命周期，基于发行版附带的 `@colbymchenry/codegraph` 引擎。没有提供方约定：工具打开项目本地的 `.codegraph/` 索引。
 
 | 包 | 职责 | ctx 键 |
 |---|---|---|
@@ -20,9 +18,6 @@ kind: "package-group"
 
 子级 README 负责工具、提示词和引擎隔离约定。索引管理器在 host 平面，不是模型工具。
 
------
-
-<a id="related-documentation"></a>
 ## 相关文档
 
 - [CodeGraph 子系统参考](../../docs/subsystems/codegraph.zh.md) —— 索引生命周期、探索工具与引擎隔离边界。

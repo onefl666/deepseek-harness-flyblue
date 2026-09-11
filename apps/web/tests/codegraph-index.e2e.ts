@@ -9,7 +9,7 @@ import {
   assertFixtureInventory, captureStableAria, compareOrRefreshGolden,
   launchWebScaffold, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { ZH_BROWSER_LOCALE, saveFailureShot } from './support.ts'
+import { ZH_BROWSER_LOCALE, connectFreshWorkspaceZh, saveFailureShot } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/codegraph-index', import.meta.url))
 const DOCK_EXPECTED = join(SNAPSHOT_DIR, 'dock.expected.md')
@@ -27,8 +27,11 @@ describe('web e2e: CodeGraph index prompt and settings', () => {
     browser = await chromium.launch()
     page = await browser.newPage({ viewport: { width: 1680, height: 1000 }, locale: ZH_BROWSER_LOCALE })
     tripwire = watchConsole(page)
-    await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
+    await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
+    // The dock reads the blank session's cwd; a workspace connection is what
+    // establishes one in the current shell.
+    await connectFreshWorkspaceZh(page, scaffold.workspaceCwd)
   }, 120_000)
 
   afterAll(async () => {

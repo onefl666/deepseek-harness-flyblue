@@ -8,14 +8,10 @@ kind: "package-reference"
 English | [中文](README.zh.md)
 
 ## Summary
+Loopback browser settings section for SSH host inventory and one-command execution. The plugin registers `ssh` in `settings.section`, loads secret-free hosts through `ssh.list()`, creates and edits host records through `ssh.put()`, and deletes them through `ssh.delete()`. A selected host drives the command console, which sends one command at a time through `ssh.exec()` and appends one terminal block per command with its captured streams and exit status.
 
+The console never auto-retries: a post-dispatch failure keeps the captured partial output and warns that the result is unknown, because an uncertain non-idempotent command must not be repeated automatically.
 
-Loopback browser settings section for SSH host inventory and deliberate command execution. The plugin registers `ssh` in `settings.section`, loads secret-free hosts through `ssh.list()`, creates and edits host records (password or key auth) through `ssh.put()`, and deletes them through `ssh.delete()`. A selected host drives the command console, which sends one command at a time through `ssh.exec()` and appends one terminal block per executed command with its captured streams and exit status.
-
-The console never auto-retries. A post-dispatch failure keeps the captured partial output and renders a warning that the result is unknown, preserving the Host service's warning that an uncertain non-idempotent command must not be repeated automatically.
-
-
------
 
 ## Table of Contents
 

@@ -58,6 +58,8 @@ function closedTurnFixture(): string {
       version: SESSION_FORMAT_VERSION,
       id: '{{sessionId}}',
       createdAt: eventTimeOrigin,
+      isSeeded: false,
+      delegationDepth: 0,
     }),
     ...session.snapshotEvents().map(event => JSON.stringify({
       ...event,
@@ -80,7 +82,7 @@ describe('web e2e: standalone compactNow shows Compacting context…', () => {
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
     tripwire = watchConsole(page)
-    await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
+    await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
   }, 120_000)
 
@@ -99,8 +101,12 @@ describe('web e2e: standalone compactNow shows Compacting context…', () => {
     await sessionRow.click()
     await expect.poll(() => page.getByText(REPLY, { exact: true }).count(), { timeout: 15_000 }).toBe(1)
 
-    const agent = scaffold.ctx.agents.get(SessionId(SEED_ID))
-    if (agent === undefined) throw new Error('seeded session did not attach an agent')
+    // Opening the stored session in the UI renders its projection without
+    // activating an Agent; resolve the Agent through the same Host entry the
+    // interactive surface uses before appending the live event.
+    const resolved = await scaffold.ctx.sessionController.resolveAgent(SessionId(SEED_ID))
+    if ('error' in resolved) throw new Error(`seeded session did not attach an agent: ${JSON.stringify(resolved.error)}`)
+    const agent = resolved.agent
     agent.session.append('compaction/start', {
       compactionId: CompactionId('standalone-running-web-e2e'),
       turn: null,

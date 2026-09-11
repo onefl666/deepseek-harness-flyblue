@@ -61,7 +61,7 @@ describe('plan-mode stream invariants', () => {
     expect(() => {
       ctx.emit('session/event', session, {
         type: 'plan/approved', seq: SessionSeq(0), time: 0, data: { execution: 'nope', title: 'T' },
-      } as SessionEvent)
+      } as unknown as SessionEvent)
     }).toThrow(/execution/)
   })
 

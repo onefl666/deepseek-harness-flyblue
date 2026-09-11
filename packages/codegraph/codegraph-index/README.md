@@ -7,21 +7,15 @@ kind: "package-reference"
 English | [中文](README.zh.md)
 
 ## Summary
+Host-plane CodeGraph index lifecycle for the Web GUI. `ctx.codegraphIndex` exposes `status(sessionId)` and `init(sessionId)`; both read `session.header.cwd` and ignore client-supplied paths. `init` starts `codegraph init` and returns immediately; the UI polls `status` to `indexed` or `error`; one cwd shares one in-flight job; disposing the fiber aborts unfinished spawns.
 
-
-Host-plane CodeGraph index lifecycle for the Web GUI. `ctx.codegraphIndex` exposes `status(sessionId)` and `init(sessionId)`. Both methods read `session.header.cwd` on the host and ignore any client-supplied path. `init` starts `codegraph init` and returns immediately; the UI polls `status` until `indexed` or `error`. The same resolved cwd shares one in-flight job. Disposing the service fiber aborts unfinished spawns.
-
-The `codegraph` settings namespace holds `{ autoInit: boolean }` (default `false`). When `autoInit` is true, `session/created` starts init for a session that has a cwd and is not already indexed. CLI, headless, and ACP assemblies do not mount this plugin, so they never auto-init.
-
-The model-facing `@deepseek-ai/dsh-tool-codegraph` plugin still never runs init. Only a user click, `/codegraph-init`, or this host auto-init path creates `.codegraph/`. The sibling [`dsh-command-codegraph-init`](../command-codegraph-init/README.md) is the human command consumer.
+The `codegraph` settings namespace holds `{ autoInit: boolean }` (default `false`); when true, `session/created` starts init for an unindexed session with a cwd. CLI, headless, and ACP assemblies never auto-init. The model-facing tools never run init: only a user click, `/codegraph-init`, or auto-init creates `.codegraph/`.
 
 ```yaml
 - id: codegraph-index
   name: '@deepseek-ai/dsh-codegraph-index'
 ```
 
-
------
 
 ## Table of Contents
 

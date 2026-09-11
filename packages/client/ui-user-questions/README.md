@@ -8,10 +8,10 @@ kind: "package-reference"
 English | [中文](README.zh.md)
 
 ## Summary
+When an agent asks a question in the Web client, this package replaces the chat composer with an interactive question surface. Users answer with single or multiple choice, custom input, or skip, and submit one structured batch. Single-choice selections advance immediately; drafts survive Session navigation for the page's lifetime.
 
-When an agent asks a question in the Web client, this package replaces the chat composer with an interactive question surface. Users can move through questions, choose one or multiple options, enter custom answers, skip items, and submit one structured answer batch. Single-choice selections advance immediately, while drafts survive Session navigation for the lifetime of the page. A single question with a supported presentation intent can use a dedicated surface, including the plan-review card with `Chat about it`, `Refuse`, and `Approve` actions.
+A single question declaring a presentation intent renders as that intent's surface. `plan-review`, set by `dsh-plan-handoff` on the `exit_plan_mode` review, takes the waiting-approval card: the intent names the decision actions, answers use the asker's own option labels, and the plan forms the body. The card claims only requests it can answer.
 
-A request whose single question declares a presentation intent renders as that intent's own surface instead. `plan-review` — set by `dsh-plan-handoff` on the `exit_plan_mode` review — takes the waiting-approval card shape: a `Plan review` strip, the plan as the scrolling markdown body, the question text as the card's accessible name, and a decision row of `Chat about it`, `Refine`, and each named approve path. Approve and refine answer with the asker's own option labels (the intent names which labels leave plan mode, so the verdict never rides option order) and keep the asker's descriptions as tooltips; `Chat about it` rejects the wait as `ASK_CANCELLED`, returning the composer so the user can say what they want instead. The card claims a request only when it can send every answer that request allows: one question, the intent declared, the plan present as `detail`, every named approve label offered, and at most one other option (refine), not multi-select. Anything else — no intent, a batch of several questions, a missing plan, an approve label naming no option, two unnamed extras, a multi-select decision — stays on the generic flow, which can express it. An intent changes the layout, never which answers are reachable.
 
 ## Table of Contents
 

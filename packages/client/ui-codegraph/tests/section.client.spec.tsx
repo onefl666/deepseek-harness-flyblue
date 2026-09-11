@@ -47,6 +47,7 @@ function renderSection(options: {
       useWorkspaces={selector => selector({} as never)}
       useResource={(() => ({ status: 'none', value: undefined, failure: undefined, reload: () => {} })) as never}
       useSessionPendingInteraction={((selector: (value: never) => unknown) => selector(new Map() as never)) as never}
+      usePanelInfo={selector => selector({ activePanelId: null })}
       useSessions={selector => selector({
         ids: [SID],
         byId: {
