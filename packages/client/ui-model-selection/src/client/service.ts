@@ -38,6 +38,14 @@ export class ModelDirectoryResolver extends Service {
   private readonly live: LiveState = { directories: new Map() }
   private readonly catalog: ModelCatalogDirectory
 
+  /**
+   * The providing plugin's own context. Service methods run behind the
+   * caller-context tracker, so `this.ctx` names the *consumer*: every service
+   * this class reads is resolved through this captured context instead, which
+   * keeps resolution independent of a caller's inject chain.
+   */
+  private readonly owner: Context
+
   /** Localized composer-block copy; this plugin owns the string it raises. */
   private readonly blockReason: () => string
 
@@ -47,6 +55,7 @@ export class ModelDirectoryResolver extends Service {
    */
   constructor(ctx: Context, config: { blockReason: () => string }) {
     super(ctx, 'modelDirectories')
+    this.owner = ctx
     this.blockReason = config.blockReason
     this.catalog = new ModelCatalogDirectory(ctx)
     void this.catalog.load().catch(() => { /* selectors expose the shared error */ })
@@ -61,7 +70,9 @@ export class ModelDirectoryResolver extends Service {
 
   /**
    * Resolve the per-session shared directory (lazy; the scope disposer
-   * removes and disposes it). Unknown sessions fail loud.
+   * removes and disposes it). Unknown sessions fail loud. Any consumer may
+   * call this without declaring `remote.session` itself: resolution reads the
+   * providing plugin's context, not the caller's.
    * @param sessionId - the owning session.
    * @returns the resident directory both entries share.
    */
@@ -69,13 +80,13 @@ export class ModelDirectoryResolver extends Service {
     const { live } = this
     const existing = live.directories.get(sessionId)
     if (existing !== undefined) return existing
-    const sessions = this.ctx.sessions
+    const sessions = this.owner.sessions
     const actx = sessions.scope(sessionId)
     if (actx === undefined) throw new Error(`ui-model-selection: session "${String(sessionId)}" resolved no scope`)
     const binding = sessions.binding(sessionId)
     if (binding === undefined) throw new Error(`ui-model-selection: session "${String(sessionId)}" resolved no binding`)
     const directory = new ModelDirectory(
-      this.ctx.remote.session,
+      this.owner.remote.session,
       sessionId,
       () => sessions.subagentAddress(sessionId) === undefined,
       this.catalog,
@@ -87,7 +98,7 @@ export class ModelDirectoryResolver extends Service {
     // session's route, and only a definite `false` makes the input inert.
     // `null` — before the first load, or after one failed — must not, or a
     // slow or unreachable Host would lock a working composer.
-    const conversation = this.ctx.get('conversation')
+    const conversation = this.owner.get('conversation')
     if (conversation !== undefined) {
       const publish = (): void => {
         conversation.blocks.set(sessionId, directory.store.getSnapshot().routable === false

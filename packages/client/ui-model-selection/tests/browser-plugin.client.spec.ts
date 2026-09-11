@@ -8,7 +8,7 @@
  * (and the reverse), the one-shared-state contract of the dual entry.
  * Scope disposal drops the directory (HMR safety).
  */
-import { Context } from '@deepseek-ai/cordis'
+import { Context, Service } from '@deepseek-ai/cordis'
 import { describe, expect, it, vi } from 'vitest'
 import { createScope } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
@@ -18,6 +18,7 @@ import { TestRemote } from '@deepseek-ai/dsh-client-test-runtime'
 import type { ModelSelection, ModelSelectionProjection } from '@deepseek-ai/dsh-api-session-controller/types'
 import type { CommandContribution, SelectOption } from '@deepseek-ai/dsh-client-ui-commands/client'
 import type { ModelSelectInjected } from '../src/client/slots.ts'
+import type { ModelDirectory } from '../src/client/directory.ts'
 import { apply, inject } from '../src/client/index.ts'
 import { zh } from '../src/client/locales.ts'
 
@@ -53,6 +54,47 @@ const GROUPS = [{
     },
   ],
 }]
+
+/**
+ * `ctx.remote` as the shipped Client Remote provides it: a cordis Service, so
+ * `ctx.remote.<namespace>` resolves through the namespace property registry
+ * and the caller's fiber chain. TestRemote alone registers a plain object whose
+ * `.session` is an ordinary property read, which would hide that resolution.
+ * The double is built on a throwaway root because it registers itself.
+ */
+class TrackedRemote extends Service {
+  /** Host facts mirrored from the double. */
+  readonly $host: TestRemote['$host']
+
+  private readonly double: TestRemote
+
+  /**
+   * @param serviceCtx - the spec's root context.
+   * @param double - behavior-only TestRemote.
+   */
+  constructor(serviceCtx: Context, double: TestRemote) {
+    super(serviceCtx, 'remote')
+    this.double = double
+    this.$host = double.$host
+  }
+
+  /**
+   * @param event - forwarded host event name.
+   * @param listener - receives the Host argument list verbatim.
+   * @returns disposer removing this subscription.
+   */
+  $on(event: string, listener: (...args: never[]) => void): () => void {
+    return this.double.$on(event, listener)
+  }
+
+  /**
+   * @param event - forwarded host event name.
+   * @param args - the Host argument list, verbatim.
+   */
+  emit(event: string, args: readonly unknown[]): void {
+    this.double.emit(event, args)
+  }
+}
 
 /** Boot the plugin over fake faces + a stateful fake host (current moves on selectModel). */
 async function bench() {
@@ -90,8 +132,22 @@ async function bench() {
       return Promise.resolve({ ok: true as const, value: { selected } })
     },
   }
-  const remote = Object.assign(new TestRemote(ctx), { session: sessionRemote })
-  ctx.reflect.provide('remote.session', sessionRemote)
+  // `remote` must carry a cordis Service tracker: the shipped Client Remote is
+  // a service, and only a tracked service routes `ctx.remote.<namespace>`
+  // through the namespace property registry — and therefore through the
+  // caller's fiber chain. TestRemote registers a plain object, whose `.session`
+  // would be an ordinary property read that never consults the chain.
+  const remote = new TrackedRemote(ctx, new TestRemote(new Context()))
+  // Real topology: the api-gateway namespace service is provided by a fiber of
+  // its own (`ownerCtx.plugin({...})`), a sibling of every consumer fiber.
+  // Cordis inject resolution reads the global service store, while
+  // `ctx.remote.session` walks the caller's fiber chain — that asymmetry is
+  // what a resolver must not depend on.
+  const gateway = ctx.plugin({
+    name: 'gateway-fixture',
+    apply(f: Context) { f.provide('remote.session', sessionRemote) },
+  })
+  await gateway.await()
   const blocks = new Map<SessionId, { reason: string } | undefined>()
   ctx.provide('conversation', {
     blocks: {
@@ -243,6 +299,20 @@ describe('ui-model-selection dual entry', () => {
       b.contribution().ui.options(projection('b'), new AbortController().signal),
     ])
     expect(b.calls.models).toBe(1)
+  })
+
+  it('a consumer that does not inject `remote.session` still resolves the shared directory', async () => {
+    const b = await bench()
+    b.mint('a')
+    // The seat's inject face runs in a fiber below this plugin, whose chain
+    // reaches `remote.session`. An unrelated consumer fiber does not — the
+    // real case is a third-party seat override that injects only
+    // `modelDirectories`. Resolution reads the providing plugin's context.
+    let resolved: ModelDirectory | undefined
+    await b.ctx.inject(['modelDirectories'], (scope: Context) => {
+      resolved = scope.modelDirectories.directoryFor(sid('a'))
+    })
+    expect(resolved!.store).toBe(b.seat().inject!(sid('a')).directory)
   })
 
   it('keeps the durable projected selection while the eager catalog reconnects', async () => {
