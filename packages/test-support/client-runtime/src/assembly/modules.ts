@@ -8,6 +8,7 @@
 import * as modulesClient from '@deepseek-ai/dsh-client-modules/client'
 import { createClientModuleSystem } from '@deepseek-ai/dsh-client-modules/client'
 import type { ClientModuleLoader, ClientModuleLoaderTarget, WebBootGraph } from '@deepseek-ai/dsh-client-modules/client'
+import { loadFragmentPlugin } from './fragment-plugin.ts'
 import type { AssemblyPlan, ClientPluginModule } from './roster.ts'
 
 /** The bootstrap row: always this process's static namespace, never a dynamic import or a `provide` replacement. */
@@ -18,6 +19,10 @@ export const MODULES_PACKAGE = '@deepseek-ai/dsh-client-modules'
  * present, otherwise a `/client` import resolved by the repository's tsconfig
  * path aliases under Vitest. The bootstrap row is the
  * statically imported `@deepseek-ai/dsh-client-modules/client` namespace.
+ *
+ * A row whose `/client` entry is a ModuleLoader artifact — a third-party
+ * package built for the browser rather than emitted as ESM — falls back to
+ * {@link loadFragmentPlugin}, because no test runner can import one.
  * @param plan - validated plan.
  * @returns package name → module, in roster order.
  * @throws {Error} when an import fails (the package name prefixes the original message) or the bootstrap row is provided.
@@ -39,13 +44,19 @@ export async function loadPluginModules(plan: AssemblyPlan): Promise<ReadonlyMap
 }
 
 async function importClient(name: string): Promise<ClientPluginModule> {
-  let namespace: unknown
   try {
-    namespace = await import(/* @vite-ignore */ `${name}/client`)
+    return await import(/* @vite-ignore */ `${name}/client`) as ClientPluginModule
   } catch (error) {
-    throw new Error(`client-test-runtime: cannot import ${name}/client: ${String(error)}`, { cause: error })
+    try {
+      return loadFragmentPlugin(name)
+    } catch (fallbackError) {
+      throw new Error(
+        `client-test-runtime: cannot import ${name}/client: ${String(error)}`
+        + `; ${name} is not a browser-fragment package either: ${String(fallbackError)}`,
+        { cause: error },
+      )
+    }
   }
-  return namespace as ClientPluginModule
 }
 
 /**
