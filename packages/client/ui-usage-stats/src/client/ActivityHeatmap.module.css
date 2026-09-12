@@ -1,0 +1,98 @@
+/* Activity grid: one square per Host calendar day, colored by the selected
+   metric. The color is an overlay so an empty cell keeps the surface tone. */
+.panel {
+  padding: 12px;
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 12px;
+  background: var(--dsw-alias-bg-layer-2);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 500;
+}
+
+.help,
+.note {
+  margin: 2px 0 0;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.empty {
+  padding: 18px 8px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  text-align: center;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(15, 1fr);
+  gap: 4px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.grid li {
+  display: flex;
+  min-width: 0;
+}
+
+.cell {
+  position: relative;
+  flex: 1;
+  aspect-ratio: 1;
+  min-width: 0;
+  border-radius: 3px;
+  background: var(--dsw-alias-bg-layer-1);
+}
+
+.cell::before {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--dsw-alias-state-business-primary);
+  content: '';
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cell:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 2px;
+}
+
+/* The color level arrives as an attribute so a cell carries one class name. */
+.cell[data-level='0']::before {
+  opacity: 0;
+}
+
+.cell[data-level='1']::before {
+  opacity: .3;
+}
+
+.cell[data-level='2']::before {
+  opacity: .6;
+}
+
+.cell[data-level='3']::before {
+  opacity: 1;
+}
+
+@media (max-width: 520px) {
+  .grid {
+    grid-template-columns: repeat(10, 1fr);
+  }
+}

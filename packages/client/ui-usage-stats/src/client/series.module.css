@@ -1,0 +1,22 @@
+/* Series color classes. The custom properties they read are declared once on
+   the dashboard root (see section.module.css), so every view under it resolves
+   the same palette position to the same color. */
+.series0 {
+  color: var(--series-0);
+}
+
+.series1 {
+  color: var(--series-1);
+}
+
+.series2 {
+  color: var(--series-2);
+}
+
+.series3 {
+  color: var(--series-3);
+}
+
+.series4 {
+  color: var(--series-4);
+}

@@ -14,7 +14,7 @@ A running-process counter cannot answer how this device was used over time: it l
 
 Accounting follows token-meter replacement semantics. A usage chunk remains after a failed request, while the final sample for the same turn and step replaces it. Chunk attribution follows the active request header and a final assistant message can replace the route. Total Token includes the four disjoint billing buckets; reasoning remains an output subset. Activity counts only direct-user and non-empty assistant messages.
 
-The Web presentation stays under Settings → Usage statistics. It defaults to 30 Host calendar days, offers 7 days and manual refresh, and shows KPI, activity, daily Token, model, and bucket views with complete tables. Request sequencing preserves the last committed result across refreshes, range changes, errors, and stale responses. The surface presents no balance, plan, quota, cost, credential, or model-price claims.
+The Web presentation stays under Settings → Usage statistics. It defaults to 30 Host calendar days, offers 7 days and manual refresh, and shows headline, activity, daily Token, model, and bucket views with complete tables. Request sequencing preserves the last committed result across refreshes, range changes, errors, and stale responses. The surface presents no balance, plan, quota, cost, credential, or model-price claims. Every charted value is revealed from the element that draws it — a hover or focused cell, day column, model row, or ring segment — ([interaction decision](2026-09-12-usage-stats-dashboard-interaction-details.md)).
 
 ## Alternatives considered
 

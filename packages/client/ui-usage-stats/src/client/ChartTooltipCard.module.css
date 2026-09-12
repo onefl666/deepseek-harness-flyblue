@@ -1,0 +1,51 @@
+/* Detail card rendered inside the Tooltip primitive's bubble. The bubble keeps
+   the shared tooltip chrome; this lays out the headline and the optional series
+   rows. Text inherits the bubble's foreground, so the inverse surface stays the
+   one place that picks a color. */
+.card {
+  display: block;
+  min-width: 152px;
+}
+
+.title {
+  display: block;
+  font-weight: 500;
+}
+
+.detail {
+  display: block;
+  opacity: .72;
+}
+
+.rows {
+  display: block;
+  margin-top: 4px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 7px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+}
+
+/* The swatch carries a palette class for its color; the box belongs to the row
+   selector so a series element never has to join two class names. */
+.row > i {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: .72;
+}
+
+.value {
+  font-variant-numeric: tabular-nums;
+}

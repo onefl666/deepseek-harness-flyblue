@@ -6,16 +6,16 @@ import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import { UsageStatsSection } from './section.tsx'
-import type { UsageDays } from './section.tsx'
-import { en, zh } from './locales.ts'
+import { NS, en, zh } from './locales.ts'
+import type { UsageDays } from './types.ts'
 export const inject = ['slots', 'locale', 'remote', 'remote.usageStats']
 
 /** Register the Web workbench usage entry. */
 export function apply(ctx: ClientContext): void {
-  ctx.effect(() => ctx.locale.register('usageStats', { zh, en }), 'ui-usage-stats: dictionaries')
-  const t = ctx.locale.bind('usageStats')
+  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-usage-stats: dictionaries')
+  const t = ctx.locale.bind(NS)
   ctx.slots.inject('settings.section', () => ctx.slots.register({
-    name: 'settings.section', id: 'usage-stats', order: 40, label: () => t('nav'), locale: 'usageStats',
+    name: 'settings.section', id: 'usage-stats', order: 40, label: () => t('nav'), locale: NS,
     inject: () => ({ stats: (request: { days: UsageDays }) => ctx.remote.usageStats.stats(request) }),
   }, UsageStatsSection))
 }

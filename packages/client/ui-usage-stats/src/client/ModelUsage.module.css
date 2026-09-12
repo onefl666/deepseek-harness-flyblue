@@ -1,0 +1,160 @@
+/* Model usage: one ring of provider/model shares beside the ranked list that
+   names them. The ring is drawn as one stroked arc per segment, so a segment's
+   pointer area is exactly the segment the reader sees; the list and the ring
+   highlight each other. */
+.panel {
+  padding: 12px;
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 12px;
+  background: var(--dsw-alias-bg-layer-2);
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 500;
+}
+
+.top {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty {
+  padding: 18px 8px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  text-align: center;
+}
+
+.chart {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  align-items: center;
+  gap: 18px;
+  margin-top: 8px;
+}
+
+.ring {
+  position: relative;
+  width: 140px;
+  max-width: 100%;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.svg path,
+.svg circle {
+  fill: none;
+  stroke: currentColor;
+}
+
+.track {
+  color: var(--dsw-alias-bg-layer-1);
+}
+
+/* Ring segments and rows carry a palette class for their color, so their
+   emphasis travels as an attribute instead of a second class name. */
+.svg path {
+  transition: opacity var(--ds-transition-duration) var(--ds-ease-in-out);
+}
+
+.svg path[data-muted] {
+  opacity: .3;
+}
+
+.center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ranking {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.ranking li {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 4px;
+  border-radius: 6px;
+}
+
+.ranking li[data-active] {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.ranking li > i {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.ranking span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ranking small {
+  display: block;
+  overflow: hidden;
+  color: var(--dsw-alias-label-tertiary);
+  text-overflow: ellipsis;
+}
+
+.rank {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svg path {
+    transition: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .chart {
+    grid-template-columns: 112px 1fr;
+  }
+
+  .ring {
+    width: 106px;
+  }
+}

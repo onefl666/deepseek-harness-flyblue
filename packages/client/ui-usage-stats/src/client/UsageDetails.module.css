@@ -1,0 +1,53 @@
+/* Complete tables behind the charts: the same figures as text, so no value is
+   available only through a chart. */
+.details {
+  padding: 10px 12px;
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 12px;
+  background: var(--dsw-alias-bg-layer-2);
+  font-size: 12px;
+  --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
+  --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
+}
+
+.details summary {
+  cursor: pointer;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.details summary:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 2px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.details table {
+  width: 100%;
+  margin-top: 12px;
+  border-collapse: collapse;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.details caption {
+  margin-bottom: 5px;
+  color: var(--dsw-alias-label-secondary);
+  font-weight: 500;
+  text-align: left;
+}
+
+.details th,
+.details td {
+  padding: 5px 4px;
+  border-bottom: 0.5px solid var(--dsw-alias-border-l2);
+}
+
+.details th:first-child,
+.details td:first-child,
+.details th:nth-child(2),
+.details td:nth-child(2) {
+  text-align: left;
+}

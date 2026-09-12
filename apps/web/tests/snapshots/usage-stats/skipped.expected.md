@@ -1,63 +1,82 @@
 - heading "用量统计" [level=2]
 - paragraph: 基于此设备上的全部会话日志统计，不包含费用、余额或套餐信息。
 - button "刷新"
-- button "最近 7 天" [pressed]
-- button "最近 30 天"
 - status:
   - text: 以下会话无法统计，已从结果中排除：
   - list:
     - listitem: "usage-poisoned: session \"usage-poisoned\" contains event type \"vision/describe\" (seq 3) unknown to this harness and not marked ignorable; refusing to interpret the log — it was likely written by a newer harness (raw log: {{sessions}}/_no-cwd/usage-poisoned/session.v3.jsonl.zstd)"
 - article:
-  - text: Token 总量
   - strong: "111"
+  - text: Token 总量
 - article:
-  - text: 会话数
   - strong: "1"
+  - text: 会话数
 - article:
-  - text: 消息数
   - strong: "4"
+  - text: 消息数
 - article:
-  - text: 活跃天数
   - strong: 2 / 7
+  - text: 活跃天数
 - article:
-  - text: 当前连续活跃
   - strong: 1 天
+  - text: 当前连续活跃
+- text: 时间范围
+- button "最近 7 天" [pressed]
+- button "最近 30 天"
 - article:
-  - text: 最常用模型
-  - strong: deepseek-reasoner
-  - text: 61.3% · deepseek
+  - heading "Token 活动" [level=3]
+  - button "每日" [pressed]
+  - button "每周"
+  - button "累计"
+  - paragraph: 每格代表一个 Host 日历日，颜色越深表示 Token 越多；悬停或聚焦可查看当天用量。
+  - list "Token 活动":
+    - listitem:
+      - img "2026年8月12日：0 Token，0 条消息"
+    - listitem:
+      - img "2026年8月13日：0 Token，0 条消息"
+    - listitem:
+      - img "2026年8月14日：0 Token，0 条消息"
+    - listitem:
+      - img "2026年8月15日：0 Token，0 条消息"
+    - listitem:
+      - img "2026年8月16日：68 Token，2 条消息"
+    - listitem:
+      - img "2026年8月17日：0 Token，0 条消息"
+    - listitem:
+      - img "2026年8月18日：43 Token，2 条消息"
 - article:
-  - heading "消息活跃度" [level=3]
-  - paragraph: 每格代表一个 Host 日历日，颜色越深表示可见消息越多。
-  - list "消息活跃度":
-    - 'listitem "2026年8月12日: 0 条消息"'
-    - 'listitem "2026年8月13日: 0 条消息"'
-    - 'listitem "2026年8月14日: 0 条消息"'
-    - 'listitem "2026年8月15日: 0 条消息"'
-    - 'listitem "2026年8月16日: 2 条消息"'
-    - 'listitem "2026年8月17日: 0 条消息"'
-    - 'listitem "2026年8月18日: 2 条消息"'
-- article:
-  - heading "每日 Token 趋势" [level=3]
+  - heading "每日 Token 趋势图" [level=3]
+  - button "折线" [pressed]
+  - button "堆叠"
   - paragraph: 所选范围共有 111 Token 和 4 条可见消息。
-  - list "每日 Token 趋势":
-    - 'listitem "2026年8月12日: 0 Token"': 8月12日
-    - 'listitem "2026年8月13日: 0 Token"': 8月13日
-    - 'listitem "2026年8月14日: 0 Token"': 8月14日
-    - 'listitem "2026年8月15日: 0 Token"': 8月15日
-    - 'listitem "2026年8月16日: 68 Token"': 8月16日
-    - 'listitem "2026年8月17日: 0 Token"': 8月17日
-    - 'listitem "2026年8月18日: 43 Token"': 8月18日
+  - list "序列图例":
+    - listitem: 未缓存输入
+    - listitem: 输出
+    - listitem: 缓存读取
+    - listitem: 缓存写入
+  - list "每日 Token 趋势图":
+    - listitem:
+      - img "2026年8月12日：0 Token"
+    - listitem:
+      - img "2026年8月13日：0 Token"
+    - listitem:
+      - img "2026年8月14日：0 Token"
+    - listitem:
+      - img "2026年8月15日：0 Token"
+    - listitem:
+      - img "2026年8月16日：68 Token"
+    - listitem:
+      - img "2026年8月17日：0 Token"
+    - listitem:
+      - img "2026年8月18日：43 Token"
 - article:
   - heading "模型用量" [level=3]
+  - text: 最常用：deepseek-reasoner · 61.3%
   - img "按 Token 展示 2 个模型。"
+  - text: "111"
   - list:
-    - listitem:
-      - text: deepseek-reasoner deepseek
-      - strong: "68"
-    - listitem:
-      - text: local-model openai-compatible
-      - strong: "43"
+    - listitem: deepseek-reasoner deepseek 61.3% 68 Token
+    - listitem: local-model openai-compatible 38.7% 43 Token
 - article:
   - heading "Token 构成" [level=3]
   - text: 未缓存输入

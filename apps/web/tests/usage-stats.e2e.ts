@@ -90,6 +90,32 @@ describe('web e2e: local usage history dashboard', () => {
     await page.evaluate(() => { document.body.setAttribute('data-ds-dark-theme', '') })
     await expect.poll(() => page.locator('[data-usage-stats]').count()).toBe(1)
     await page.evaluate(() => { document.body.removeAttribute('data-ds-dark-theme') })
+    // Interaction details: a day reveals its own figures, and each switch
+    // repaints only the card it governs. Every switch is restored, so the
+    // skipped-session golden still captures the same view as the 7-day one.
+    const activity = section.getByRole('list', { name: 'Token 活动' })
+    await activity.locator('li').last().locator('span[tabindex="0"]').hover()
+    await expect.poll(() => page.getByRole('tooltip').count()).toBe(1)
+    const detail = await page.getByRole('tooltip').textContent()
+    expect(detail).toContain('2026年8月18日')
+    expect(detail).toContain('2 条消息')
+
+    await section.getByRole('button', { name: '每周' }).click()
+    await activity.locator('li').last().locator('span[tabindex="0"]').hover()
+    await expect.poll(async () => await page.getByRole('tooltip').textContent()).toContain('–')
+    await section.getByRole('button', { name: '每日' }).click()
+
+    await section.getByRole('button', { name: '堆叠' }).click()
+    await expect.poll(() => section.locator('svg polyline').count()).toBe(0)
+    await expect.poll(() => section.locator('[class*="stackValue"] > i').count()).toBeGreaterThan(0)
+    await section.getByRole('button', { name: '折线' }).click()
+    await expect.poll(() => section.locator('svg polyline').count()).toBe(4)
+
+    const columns = section.getByRole('list', { name: '每日 Token 趋势图' })
+    await columns.locator('li').nth(4).locator('span[tabindex="0"]').hover()
+    await expect.poll(async () => await page.getByRole('tooltip').textContent()).toContain('8月16日 · 68 Token')
+    await page.mouse.move(0, 0)
+    await expect.poll(() => page.getByRole('tooltip').count()).toBe(0)
     expect(tripwire.pageErrors).toEqual([])
     expect(tripwire.warnings).toEqual([])
   }, 60_000)

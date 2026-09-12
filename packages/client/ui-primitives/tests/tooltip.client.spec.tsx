@@ -257,6 +257,36 @@ describe('Tooltip', () => {
     }
   })
 
+  it('renders node labels as detail content inside the same bubble', () => {
+    render(
+      <Tooltip label={<span data-testid="row">2026-09-09 · 1.6亿 tokens</span>} side="top">
+        <span tabIndex={0}>cell</span>
+      </Tooltip>,
+    )
+    const cell = screen.getByText('cell')
+    fireEvent.focus(cell)
+    const bubble = screen.getByRole('tooltip')
+    expect(bubble.textContent).toBe('2026-09-09 · 1.6亿 tokens')
+    expect(screen.getByTestId('row')).toBeTruthy()
+    fireEvent.blur(cell)
+    expect(screen.queryByRole('tooltip')).toBeNull()
+  })
+
+  it('resolves a lazy node label only while the bubble is visible', () => {
+    const label = vi.fn(() => <span>Lazy details</span>)
+    render(
+      <Tooltip label={label}>
+        <button type="button">anchor</button>
+      </Tooltip>,
+    )
+    expect(label).not.toHaveBeenCalled()
+    fireEvent.mouseEnter(screen.getByText('anchor'))
+    expect(screen.getByRole('tooltip').textContent).toBe('Lazy details')
+    expect(label).toHaveBeenCalledOnce()
+    fireEvent.mouseLeave(screen.getByText('anchor'))
+    expect(label).toHaveBeenCalledOnce()
+  })
+
   it('chains the anchor\'s own handlers ahead of the tooltip\'s', () => {
     const onMouseEnter = vi.fn()
     const onMouseLeave = vi.fn()

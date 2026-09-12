@@ -2,7 +2,7 @@
 // bubble escape ancestor overflow clipping without a portal.
 
 import { cloneElement, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import type { FocusEventHandler, MouseEventHandler, MutableRefObject, ReactElement, Ref } from 'react'
+import type { FocusEventHandler, MouseEventHandler, MutableRefObject, ReactElement, ReactNode, Ref } from 'react'
 import css from './Tooltip.module.css'
 
 /** Bubble placement relative to the anchor. */
@@ -17,11 +17,14 @@ interface AnchorProps {
   onBlur?: FocusEventHandler | undefined
 }
 
-type TooltipLabel = string | (() => string)
+type TooltipLabel = ReactNode | (() => ReactNode)
 
 /**
  * Attach a hover/focus tooltip to an anchor element.
- * @param props.label - bubble text, or a resolver evaluated only while the bubble is visible.
+ * @param props.label - bubble content, or a resolver evaluated only while the bubble is visible. A node
+ * carries multi-line or multi-column detail (a chart hover card); a string renders as plain text, and
+ * embedded newlines break lines. The bubble never receives pointer events, so detail that must stay
+ * readable under the pointer belongs in HoverCard instead.
  * @param props.side - placement relative to the anchor (default 'right').
  * @param props.delayMs - hover delay in milliseconds; keyboard focus remains immediate.
  * @param props.disabled - suppress the bubble while true; the anchor renders identically so
