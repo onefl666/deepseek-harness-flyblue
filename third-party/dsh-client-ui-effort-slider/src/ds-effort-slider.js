@@ -155,6 +155,20 @@ class DsEffortSlider extends HTMLElement {
           --ds-effort-thumb-inset: 2px;
           --ds-effort-track-pad: 1px;
           --ds-effort-track-radius: 0.625rem;
+          /* Single source for the thumb slot geometry: travel is the usable
+             horizontal run, thumb-left/-center place the thumb box and its
+             center. The tick offset reuses travel from .tick, where
+             --tick-frac is set per element. */
+          --ds-effort-thumb-travel: calc(
+            100% - var(--ds-effort-thumb-w) - var(--ds-effort-thumb-inset) * 2
+          );
+          --ds-effort-thumb-left: calc(
+            var(--ds-effort-thumb-travel) * var(--ds-effort-progress, 0)
+            + var(--ds-effort-thumb-inset)
+          );
+          --ds-effort-thumb-center: calc(
+            var(--ds-effort-thumb-left) + var(--ds-effort-thumb-w) * 0.5
+          );
           --ds-effort-surface: var(--dsw-specific-menu, var(--dsw-alias-bg-layer-1, #ffffff));
           --ds-effort-outline: var(--dsw-alias-border-l1, rgba(76, 70, 65, 0.12));
           --ds-effort-blue: #2788d6;
@@ -250,6 +264,7 @@ class DsEffortSlider extends HTMLElement {
         }
 
         .header {
+          position: relative;
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -262,33 +277,27 @@ class DsEffortSlider extends HTMLElement {
           align-items: baseline;
           min-width: 0;
           color: var(--ds-effort-text);
-          font-size: 1rem;
+          font-size: inherit;
           font-weight: 500;
           line-height: 1.3;
           letter-spacing: -0.01em;
           text-wrap: balance;
         }
 
+        /* One grid cell for both label layers: the stage is as wide as the
+           widest of the outgoing/current label, so swapping never reflows. */
         .level-stage {
-          position: relative;
-          display: inline-block;
-          height: 1.3em;
+          display: inline-grid;
+          grid-template-columns: max-content;
           margin-left: 0.375rem;
           color: var(--ds-effort-text-strong);
           line-height: inherit;
           vertical-align: baseline;
         }
 
-        .level-stage::after {
-          content: "Default";
-          visibility: hidden;
-          white-space: nowrap;
-        }
-
         .level-stage > span {
-          position: absolute;
-          top: 0;
-          left: 0;
+          grid-area: 1 / 1;
+          justify-self: start;
           line-height: inherit;
           white-space: nowrap;
           transform-origin: left center;
@@ -367,7 +376,7 @@ class DsEffortSlider extends HTMLElement {
         }
 
         .help-wrap {
-          position: relative;
+          position: static;
           flex: 0 0 auto;
         }
 
@@ -408,12 +417,14 @@ class DsEffortSlider extends HTMLElement {
           height: 1rem;
         }
 
+        /* Anchored to the header, whose width is the panel content box, so the
+           bubble stays inside the panel instead of overflowing it. */
         .tooltip {
           position: absolute;
           z-index: 8;
           top: calc(100% + 0.375rem);
           right: 0;
-          width: min(16rem, calc(100vw - 2rem));
+          width: min(16rem, 100%);
           padding: 0.5rem 0.625rem;
           border: 1px solid rgba(76, 70, 65, 0.1);
           border-radius: 0.5rem;
@@ -629,11 +640,7 @@ class DsEffortSlider extends HTMLElement {
           position: absolute;
           z-index: 0;
           top: 50%;
-          left: calc(
-            (100% - var(--ds-effort-thumb-w) - (var(--ds-effort-thumb-inset) * 2))
-              * var(--ds-effort-progress, 0)
-            + var(--ds-effort-thumb-inset)
-          );
+          left: var(--ds-effort-thumb-center);
           width: calc(var(--ds-effort-thumb-w) + 3.5rem);
           height: calc(var(--ds-effort-thumb-h) + 1.75rem);
           transform: translate(-50%, -50%);
@@ -655,11 +662,8 @@ class DsEffortSlider extends HTMLElement {
           top: 0;
           bottom: 0;
           left: var(--ds-effort-track-pad);
-          width: calc(
-            (100% - (var(--ds-effort-track-pad) * 2) - var(--ds-effort-thumb-w) - (var(--ds-effort-thumb-inset) * 2))
-              * var(--ds-effort-progress, 0)
-            + (var(--ds-effort-thumb-inset) + var(--ds-effort-thumb-w) * 0.5)
-          );
+          /* The fill ends exactly on the thumb center. */
+          width: calc(var(--ds-effort-thumb-center) - var(--ds-effort-track-pad));
           border-radius: calc(var(--ds-effort-track-radius) - 1px) 0 0 calc(var(--ds-effort-track-radius) - 1px);
           background: var(--ds-effort-track-fill);
           pointer-events: none;
@@ -759,10 +763,11 @@ class DsEffortSlider extends HTMLElement {
         .tick {
           position: absolute;
           top: 50%;
+          /* Resolved per tick: --tick-frac is set on the tick itself, so this
+             formula cannot live in an inherited custom property. */
           left: calc(
-            (100% - var(--ds-effort-thumb-w) - (var(--ds-effort-thumb-inset) * 2))
-              * var(--tick-frac, 0)
-            + (var(--ds-effort-thumb-inset) + var(--ds-effort-thumb-w) * 0.5)
+            var(--ds-effort-thumb-travel) * var(--tick-frac, 0)
+            + var(--ds-effort-thumb-inset) + var(--ds-effort-thumb-w) * 0.5
           );
           width: 0.25rem;
           height: 0.25rem;
@@ -854,11 +859,7 @@ class DsEffortSlider extends HTMLElement {
           position: absolute;
           z-index: 2;
           top: 50%;
-          left: calc(
-            (100% - var(--ds-effort-thumb-w) - (var(--ds-effort-thumb-inset) * 2))
-              * var(--ds-effort-progress, 0)
-            + var(--ds-effort-thumb-inset)
-          );
+          left: var(--ds-effort-thumb-left);
           width: var(--ds-effort-thumb-w);
           height: var(--ds-effort-thumb-h);
           border: 1px solid rgba(76, 70, 65, 0.15);
@@ -952,16 +953,13 @@ class DsEffortSlider extends HTMLElement {
           --ds-effort-thumb-h: 3.4375rem;
         }
 
+        /* .track is inset .5rem top and bottom; the shell grows to exactly the
+           thumb height so the taller chibi is not clipped by the track. */
+        :host([chibi]) .track-shell {
+          height: calc(var(--ds-effort-thumb-h) + 1rem);
+        }
+
         :host([chibi]) .thumb {
-          /* 左端与普通 thumb 对齐（inset 贴边）；仅限制右端防小人溢出 */
-          left: min(
-            calc(
-              (100% - var(--ds-effort-thumb-w) - (var(--ds-effort-thumb-inset) * 2))
-                * var(--ds-effort-progress, 0)
-              + var(--ds-effort-thumb-inset)
-            ),
-            calc(100% - var(--ds-effort-thumb-w) * 0.5)
-          );
           border: 0;
           border-radius: 0.5rem;
           background-color: transparent;
@@ -1098,6 +1096,8 @@ class DsEffortSlider extends HTMLElement {
 
         :host([inline]) {
           --ds-effort-width: 100%;
+          /* Inline mode sits inside the menu's 13px/14px type system. */
+          font-size: 0.875rem;
         }
 
         :host([inline]) .shell {
@@ -1129,10 +1129,6 @@ class DsEffortSlider extends HTMLElement {
           min-height: auto;
         }
 
-        :host([inline]) .header {
-          min-height: auto;
-        }
-
         :host([inline]) .title > span:first-child {
           display: none;
         }
@@ -1143,10 +1139,7 @@ class DsEffortSlider extends HTMLElement {
 
         :host([inline]) .axis {
           margin-top: 0.375rem;
-        }
-
-        :host([inline]) .track-shell {
-          margin-top: 0.375rem;
+          font-size: 0.8125rem;
         }
 
         :host([inline]) .track-shell {
@@ -1166,7 +1159,7 @@ class DsEffortSlider extends HTMLElement {
           height: 2rem;
         }
 
-       @media (max-width: 479px) {
+        @media (max-width: 479px) {
           :host {
             --ds-effort-width: calc(100vw - 1.5rem);
           }
@@ -1343,9 +1336,9 @@ class DsEffortSlider extends HTMLElement {
       animateLabel: false,
       reflect: false,
     });
-   this._syncOpenState();
-   this._syncDisabledState();
-   this._parseSupported();
+    this._syncOpenState();
+    this._syncDisabledState();
+    this._parseSupported();
     this._syncInlineState();
     this._syncTexts();
     this._syncLiang();
@@ -1606,35 +1599,6 @@ class DsEffortSlider extends HTMLElement {
 
   _isSupported(index) {
     return this._supportedSet ? this._supportedSet.has(index) : true;
-  }
-
-  _nearestSupported(target) {
-    const set = this._supportedSet;
-    if (!set || !set.size) return target;
-    let nearest = Infinity;
-    let best = target;
-    for (const index of set) {
-      const distance = Math.abs(index - target);
-      if (distance < nearest) {
-        nearest = distance;
-        best = index;
-      }
-    }
-    return best;
-  }
-
-  // Nearest supported index in a given direction from current.
-  _stepSupported(from, delta) {
-    const set = this._supportedSet;
-    if (!set || !set.size) return clamp(from + delta, 0, this._levels.length - 1);
-    const source = Math.round(from);
-    if (delta === 0) return source;
-    let index = source + (delta > 0 ? 1 : -1);
-    while (index >= 0 && index < this._levels.length) {
-      if (set.has(index)) return index;
-      index += delta > 0 ? 1 : -1;
-    }
-    return source;
   }
 
   _cancelTimer(key) {
@@ -1913,21 +1877,6 @@ class DsEffortSlider extends HTMLElement {
     this._emit("change");
   }
 
-  _nearestSupportedFrom(probe) {
-    const set = this._supportedSet;
-    if (!set || !set.size) return probe;
-    let nearest = Infinity;
-    let best = probe;
-    for (const index of set) {
-      const distance = Math.abs(index - probe);
-      if (distance < nearest) {
-        nearest = distance;
-        best = index;
-      }
-    }
-    return best;
-  }
-
   _snapToNearest() {
     const target = Math.round(this._value);
     this._setValue(target, { animateLabel: false, reflect: true });
@@ -2046,7 +1995,9 @@ class DsEffortSlider extends HTMLElement {
     this._outgoingLabel.style.setProperty("--label-exit-y", exitY);
     this._currentLabel.classList.add("is-preparing");
 
-        this._currentLabel.getBoundingClientRect();
+    // Reading layout flushes the preparing frame, so the 16ms timeout below
+    // transitions from the entered position instead of skipping the swap.
+    this._currentLabel.getBoundingClientRect();
 
     this._labelFrame = effortTiming.timeout(() => {
       this._labelFrame = 0;

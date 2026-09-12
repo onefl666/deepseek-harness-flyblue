@@ -191,22 +191,111 @@ function EffortSlider(props) {
 }
 
 // --- Forked ModelSelect ------------------------------------------------------
+
+// 菜单里重复出现的 16px 箭头；direction 决定指向（触发器朝下，单元格朝右）。
+function Chevron({ direction, className }) {
+  const down = direction === "down";
+  return React.createElement(
+    "svg",
+    {
+      className: (down ? "ds-effort-chevron" : "ds-effort-cellChevron") + (className || ""),
+      viewBox: "0 0 16 16",
+      width: "14",
+      height: "14",
+      "aria-hidden": "true",
+    },
+    React.createElement("path", {
+      d: down ? "M4 6l4 4 4-4" : "M6 4l4 4-4 4",
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: "1.5",
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+    }),
+  );
+}
+
+// 推理等级面板：整块 JSX 以纯 props + 回调渲染，钩子与共享状态留在
+// EffortModelSelect。面板内的控件不因提交中的选择而禁用：range 输入框一旦
+// 变成 disabled，浏览器按 focus fixup 把焦点移到 body，菜单会收到
+// relatedTarget 为 null 的 focusout 并关闭。去重与过期响应由
+// chooseEffort 的相等判断和 ModelDirectory 的 generation 计数器承担。
+function EffortPane(props) {
+  const {
+    t, errorMessage, onReload, supported, value, onChange,
+    liang, chibi, onLiangChange, defaultActive, extras, activeEffort,
+    onChooseDefault, onChooseExtra,
+  } = props;
+  return [
+    errorMessage !== null && React.createElement(
+      "div",
+      { className: "ds-effort-error", key: "error" },
+      React.createElement("span", null, t("error.action", { message: errorMessage })),
+      React.createElement("button", { type: "button", className: "ds-effort-retry", onClick: onReload }, t("action.reload")),
+    ),
+    [
+      React.createElement(EffortSlider, {
+        key: "slider",
+        supported,
+        value,
+        onChange,
+        liang,
+        chibi,
+        onLiangChange,
+        labels: {
+          label: t("effort.title"),
+          axisLow: t("effort.axisLow"),
+          axisHigh: t("effort.axisHigh"),
+          tooltip: t("effort.tooltip"),
+          inputAria: t("effort.ariaLabel"),
+          helpAria: t("effort.helpAria"),
+          liangToggle: t("liang.toggle"),
+        },
+      }),
+      React.createElement(
+        "div",
+        { key: "extras", className: "ds-effort-extras" },
+        React.createElement(
+          "button",
+          {
+            type: "button",
+            role: "menuitemradio",
+            "aria-checked": defaultActive,
+            className: "ds-effort-extraItem" + (defaultActive ? " ds-effort-extraItemActive" : ""),
+            onClick: onChooseDefault,
+          },
+          React.createElement("span", null, t("effort.providerDefault")),
+        ),
+        extras.map((eff) => {
+          const active = activeEffort === eff.id;
+          return React.createElement(
+            "button",
+            {
+              type: "button",
+              role: "menuitemradio",
+              "aria-checked": active,
+              className: "ds-effort-extraItem" + (active ? " ds-effort-extraItemActive" : ""),
+              key: eff.id,
+              onClick: () => onChooseExtra(eff),
+            },
+            React.createElement("span", null, eff.name),
+            active && React.createElement("span", { className: "ds-effort-check" }, "✓"),
+          );
+        }),
+      ),
+    ],
+  ];
+}
+
 function EffortModelSelect(props) {
   const { locked, available, directory, load, select, t } = props;
 
-  const [snapshot, setSnapshot] = React.useState(() => directory.getSnapshot());
-  React.useEffect(() => {
-    let unsub = () => {};
-    try {
-      unsub = directory.subscribe(() => setSnapshot(directory.getSnapshot()));
-      setSnapshot(directory.getSnapshot());
-    } catch (err) {
-      // snapshot store may be unavailable; keep the initial value
-    }
-    return unsub;
-  }, [directory]);
-
-  const state = snapshot;
+  // 目录快照是 uSES 安全的 observable store；直接订阅它，避免
+  // useState 镜像带来的撕裂（与仓库 ModelSelect 采用同一模式）。
+  const state = React.useSyncExternalStore(
+    (onStoreChange) => directory.subscribe(onStoreChange),
+    () => directory.getSnapshot(),
+  );
   const [open, setOpen] = React.useState(false);
   const [pane, setPane] = React.useState("root");
   const lastActionRef = React.useRef("load");
@@ -244,7 +333,7 @@ function EffortModelSelect(props) {
         },
       })),
     );
-  }, [state]);
+  }, [state.groups]);
 
   const current = state ? state.current : null;
   const currentChoice = current == null
@@ -503,10 +592,14 @@ function EffortModelSelect(props) {
   const menuId = React.useId();
   const onBlur = (event) => {
     const related = event.relatedTarget;
-    if (related instanceof Node && rootRef.current) {
-      const host = typeof related.getRootNode === "function" ? related.getRootNode().host : null;
-      if (rootRef.current.contains(related) || (host && rootRef.current.contains(host))) return;
-    }
+    // 焦点去向未知（控件被禁用/移除、窗口失焦）不算离开菜单：此时浏览器
+    // 把焦点移到 body 并抛出 relatedTarget 为 null 的 focusout。真正的
+    // "点击外部"由 document 的 mousedown 监听负责关闭。
+    if (!(related instanceof Node)) return;
+    const root = rootRef.current;
+    if (root === null) return;
+    const host = typeof related.getRootNode === "function" ? related.getRootNode().host : null;
+    if (root.contains(related) || (host && root.contains(host))) return;
     close();
   };
 
@@ -533,11 +626,7 @@ function EffortModelSelect(props) {
       },
       React.createElement("span", { className: "ds-effort-triggerLabel" }, modelLabel),
       displayEffortLabel !== void 0 && React.createElement("span", { className: "ds-effort-triggerEffort" }, displayEffortLabel),
-      React.createElement(
-        "svg",
-        { className: "ds-effort-chevron" + (open ? " ds-effort-chevronOpen" : ""), viewBox: "0 0 16 16", width: "14", height: "14", "aria-hidden": "true" },
-        React.createElement("path", { d: "M4 6l4 4 4-4", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" }),
-      ),
+      React.createElement(Chevron, { direction: "down", className: open ? " ds-effort-chevronOpen" : "" }),
     ),
     // menu
     open && React.createElement(
@@ -549,16 +638,14 @@ function EffortModelSelect(props) {
           { ref: itemRef(), type: "button", role: "menuitem", className: "ds-effort-cell", onClick: () => setPane("model") },
           React.createElement("span", { className: "ds-effort-cellLabel" }, t("menu.model")),
           React.createElement("span", { className: "ds-effort-cellValue" }, modelLabel),
-          React.createElement("svg", { className: "ds-effort-cellChevron", viewBox: "0 0 16 16", width: "14", height: "14", "aria-hidden": "true" },
-            React.createElement("path", { d: "M6 4l4 4-4 4", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" })),
+          React.createElement(Chevron, { direction: "right" }),
         ),
         reasoning !== void 0 && React.createElement(
           "button",
           { ref: itemRef(), type: "button", role: "menuitem", className: "ds-effort-cell", onClick: () => setPane("effort") },
           React.createElement("span", { className: "ds-effort-cellLabel" }, t("menu.effort")),
           React.createElement("span", { className: "ds-effort-cellValue" }, displayEffortLabel),
-          React.createElement("svg", { className: "ds-effort-cellChevron", viewBox: "0 0 16 16", width: "14", height: "14", "aria-hidden": "true" },
-            React.createElement("path", { d: "M6 4l4 4-4 4", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" })),
+          React.createElement(Chevron, { direction: "right" }),
         ),
       ],
       pane === "model" && [
@@ -615,70 +702,23 @@ function EffortModelSelect(props) {
         ),
         state && state.status === "ready" && choices.length === 0 && React.createElement("div", { className: "ds-effort-empty" }, t("empty.models")),
       ],
-      pane === "effort" && [
-        state && state.error !== null && lastActionRef.current === "load" && React.createElement(
-          "div",
-          { className: "ds-effort-error" },
-          React.createElement("span", null, t("error.action", { message: state.error })),
-          React.createElement("button", { type: "button", className: "ds-effort-retry", onClick: reload }, t("action.reload")),
-        ),
-        [
-          React.createElement(EffortSlider, {
-            key: "slider",
-            supported,
-            value: sliderIndex,
-            disabled: busy,
-            onChange: chooseEffort,
-            liang,
-            chibi,
-            onLiangChange: (next) => liangStore.set(next),
-            labels: {
-              label: t("effort.title"),
-              axisLow: t("effort.axisLow"),
-              axisHigh: t("effort.axisHigh"),
-              tooltip: t("effort.tooltip"),
-              inputAria: t("effort.ariaLabel"),
-              helpAria: t("effort.helpAria"),
-              liangToggle: t("liang.toggle"),
-            },
-          }),
-          React.createElement(
-            "div",
-            { key: "extras", className: "ds-effort-extras" },
-            React.createElement(
-              "button",
-              {
-                type: "button",
-                role: "menuitemradio",
-                "aria-checked": Boolean(defaultChosen || (appliedLevel && appliedLevel.canonical === "default")),
-                className: "ds-effort-extraItem" + (defaultChosen || (appliedLevel && appliedLevel.canonical === "default")
-                  ? " ds-effort-extraItemActive"
-                  : ""),
-                disabled: busy,
-                onClick: chooseDefault,
-              },
-              React.createElement("span", null, t("effort.providerDefault")),
-            ),
-            extraEfforts.map((eff) => {
-              const active = effectiveEffort === eff.id;
-              return React.createElement(
-                "button",
-                {
-                  type: "button",
-                  role: "menuitemradio",
-                  "aria-checked": active,
-                  className: "ds-effort-extraItem" + (active ? " ds-effort-extraItemActive" : ""),
-                  disabled: busy,
-                  key: eff.id,
-                  onClick: () => chooseExtraEffort(eff),
-                },
-                React.createElement("span", null, eff.name),
-                active && React.createElement("span", { className: "ds-effort-check" }, "✓"),
-              );
-            }),
-          ),
-        ],
-      ],
+      pane === "effort" && React.createElement(EffortPane, {
+        key: "effort-pane",
+        t,
+        errorMessage: state && state.error !== null && lastActionRef.current === "load" ? state.error : null,
+        onReload: reload,
+        supported,
+        value: sliderIndex,
+        onChange: chooseEffort,
+        liang,
+        chibi,
+        onLiangChange: (next) => liangStore.set(next),
+        defaultActive: Boolean(defaultChosen || (appliedLevel && appliedLevel.canonical === "default")),
+        extras: extraEfforts,
+        activeEffort: effectiveEffort,
+        onChooseDefault: chooseDefault,
+        onChooseExtra: chooseExtraEffort,
+      }),
     ),
     toast !== null && React.createElement(
       "div",
@@ -717,7 +757,8 @@ function ChibiThumbSetting({ t }) {
         type: "button",
         role: "switch",
         "aria-checked": enabled,
-        className: "ds-effort-setting-switch" + (enabled ? " is-on" : ""),
+        "aria-label": txt("chibi.setting.title"),
+        className: "ds-effort-setting-switch",
         onClick: () => chibiStore.set(!enabled),
       },
       React.createElement("span", { className: "ds-effort-setting-knob" }),
@@ -754,8 +795,6 @@ const DICT_ZH = {
   "action.reload": "重新加载",
   "warning.groupLoad": "{name} 加载失败：{message}",
   "empty.models": "没有可用的模型。",
-  "empty.efforts": "当前模型未提供推理等级。",
-  "extra.efforts": "其他等级",
   "close": "关闭",
 };
 
@@ -785,8 +824,6 @@ const DICT_EN = {
   "action.reload": "Reload",
   "warning.groupLoad": "{name} failed to load: {message}",
   "empty.models": "No models available.",
-  "empty.efforts": "This model provides no reasoning effort levels.",
-  "extra.efforts": "Other levels",
   "close": "Close",
 };
 
@@ -824,12 +861,10 @@ const CSS = `
 .ds-effort-description{font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary)}
 .ds-effort-selected{background:var(--dsw-alias-interactive-bg-selected,var(--dsw-alias-bg-layer-2))}
 .ds-effort-check{color:var(--dsw-alias-brand-primary);flex:none;font-size:13px;line-height:20px}
-.ds-effort-extra{margin-top:10px;border-top:1px solid var(--dsw-alias-border-l1);padding-top:8px}
-.ds-effort-extraTitle{color:var(--dsw-alias-label-tertiary);font-size:11px;font-weight:600;line-height:16px;padding:2px 2px 4px}
 .ds-effort-extraItem{width:100%;border:0;background:0 0;border-radius:8px;cursor:pointer;padding:5px 8px;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;line-height:20px;color:var(--dsw-alias-label-secondary);text-align:left}
 .ds-effort-extraItem:hover{background:var(--dsw-alias-interactive-bg-hover,var(--dsw-alias-bg-layer-2))}
 .ds-effort-extraItemActive{color:var(--dsw-alias-label-primary)}
-.ds-effort-extras{margin-top:12px;border-top:1px solid var(--dsw-alias-border-l1);padding-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+.ds-effort-extras{margin-top:8px;border-top:1px solid var(--dsw-alias-border-l1);padding-top:8px;display:flex;flex-wrap:wrap;gap:6px}
 .ds-effort-extras .ds-effort-extraItem{width:auto;border:1px solid var(--dsw-alias-border-l1);padding:4px 10px;border-radius:999px;justify-content:flex-start}
 .ds-effort-extras .ds-effort-extraItemActive{border-color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-interactive-bg-selected,var(--dsw-alias-bg-layer-2));color:var(--dsw-alias-label-primary)}
 .ds-effort-toast{position:absolute;top:calc(100% + 6px);right:0;z-index:30;max-width:280px;background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-state-error-primary);border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px 10px;font-size:12px;line-height:18px;display:flex;align-items:flex-start;gap:8px;box-shadow:var(--dsw-shadow-lv3,0 12px 28px rgba(0,0,0,.12));overflow:hidden;animation:ds-effort-toast-in 220ms cubic-bezier(.22,.61,.36,1)}
@@ -841,17 +876,18 @@ const CSS = `
 /* purple accent + dark variants for the Web Component */
 ds-effort-slider{--ds-effort-accent:#8c73c9;--ds-effort-accent-deep:#a17ec2;--ds-effort-text:var(--dsw-alias-label-secondary,#5f5b58);--ds-effort-text-strong:var(--dsw-alias-label-primary,#3f3b38);--ds-effort-muted:var(--dsw-alias-label-tertiary,#77736f);--ds-effort-track:var(--dsw-alias-bg-layer-2,#edeae8);--ds-effort-track-fill:var(--dsw-alias-bg-layer-3,#e0dbd6);--ds-effort-surface:var(--dsw-specific-menu,var(--dsw-alias-bg-layer-1,#fff));--ds-effort-outline:var(--dsw-alias-border-l1,rgba(76,70,65,.12))}
 body[data-ds-dark-theme] ds-effort-slider{--ds-effort-accent:#a17ec2;--ds-effort-accent-deep:#b39ad6;--ds-effort-track:rgba(255,255,255,.08);--ds-effort-track-fill:rgba(255,255,255,.12);--ds-effort-surface:var(--dsw-specific-menu,var(--dsw-alias-bg-layer-1));--light-color:#b9c8ff}
-/* settings-page chibi switch */
-.ds-effort-setting-row{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:16px 0;border-bottom:1px solid var(--dsw-alias-border-l2,rgba(121,126,145,.18))}
-.ds-effort-setting-copy{min-width:0}
+/* settings-page chibi switch. Row metrics, type scale and switch geometry
+   mirror the native settings row and the ui-primitives Switch. */
+.ds-effort-setting-row{display:flex;align-items:center;gap:8px;padding:16px 0;border-bottom:0.5px solid var(--dsw-alias-border-l2,rgba(121,126,145,.18))}
+.ds-effort-setting-copy{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;padding-right:48px}
 .ds-effort-setting-title{color:var(--dsw-alias-label-primary,#15171b);font-size:14px;font-weight:400;line-height:22px}
-.ds-effort-setting-description{margin-top:3px;color:var(--dsw-alias-label-tertiary,#9296a0);font-size:12px;line-height:18px}
-.ds-effort-setting-switch{position:relative;width:38px;height:22px;padding:0;border:0;border-radius:999px;background:var(--dsw-alias-fill-quaternary,#c7cbd3);cursor:pointer;transition:background 150ms ease;flex:none}
-.ds-effort-setting-switch:hover{filter:brightness(.97)}
-.ds-effort-setting-switch:focus-visible{outline:2px solid var(--dsw-static-blue-400,#5d83ff);outline-offset:2px}
-.ds-effort-setting-switch.is-on{background:var(--dsw-alias-state-business-primary,#4f73ff)}
-.ds-effort-setting-knob{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:transform 170ms cubic-bezier(.22,1,.36,1)}
-.ds-effort-setting-switch.is-on .ds-effort-setting-knob{transform:translateX(16px)}
+.ds-effort-setting-description{color:var(--dsw-alias-label-tertiary,#9296a0);font-size:12px;line-height:18px}
+.ds-effort-setting-switch{position:relative;box-sizing:border-box;width:36px;height:20px;padding:2px;border:0;border-radius:10px;background:var(--dsw-alias-border-l3,#c7cbd3);cursor:pointer;transition:background 150ms ease;flex:none}
+.ds-effort-setting-switch[aria-checked='true']{background:var(--dsw-alias-brand-primary,#4f73ff)}
+.ds-effort-setting-switch:focus-visible{outline:2px solid var(--dsw-alias-brand-primary,#4f73ff);outline-offset:2px}
+.ds-effort-setting-switch:disabled{cursor:default;opacity:.5}
+.ds-effort-setting-knob{display:block;width:16px;height:16px;border-radius:50%;background:var(--dsw-alias-label-primary-foreground,#fff);transition:transform 120ms ease}
+.ds-effort-setting-switch[aria-checked='true'] .ds-effort-setting-knob{transform:translateX(16px)}
 `;
 
 // --- plugin -------------------------------------------------------------------

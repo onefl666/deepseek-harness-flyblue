@@ -50,8 +50,9 @@ compatible selector whose reasoning pane is a Claude-style animated slider.
   flowing multi-color gradient text.
 - **Localized and theme-aware** — ships with English and Simplified Chinese
   dictionaries and follows DSH light/dark design tokens.
-- **Accessible** — keyboard-operable slider (arrows, Home/End, PageUp/PageDown),
-  ARIA labels, focus management, and `prefers-reduced-motion` support.
+- **Accessible** — keyboard-operable slider (arrows, Home/End, PageUp/PageDown)
+  that keeps focus while the level is applied, ARIA labels, focus management,
+  and `prefers-reduced-motion` support.
 
 ## Install
 
@@ -83,6 +84,10 @@ Restart the web profile after installing or removing the bundle.
    - Click **Default** to remove `reasoningEffort` and let the provider decide.
    - Click any extra pill to apply a provider-specific strength that does not
      map to a slider position.
+
+   Adjusting the level keeps the menu open and the focus on the slider, so
+   arrow keys step through levels one after another. Only a successful model
+   switch closes the menu and returns focus to the trigger chip.
 4. When switching models, the plugin preserves the current effort level where
    supported; otherwise it downgrades to the nearest supported level below or
    falls back to `Default`, always with a toast.
@@ -99,7 +104,9 @@ Restart the web profile after installing or removing the bundle.
   effort label flows as a purple gradient. With the Liang Calibrator enabled it
   also shows stage suffixes such as `Max 梁祖`.
 - **Two-level popup menu** — a compact menu with a model list (grouped by
-  provider) and an effort pane; loading/error/retry states are included.
+  provider) and an effort pane; loading/error/retry states are included. The
+  effort pane stays open while you adjust, and the help bubble is anchored to
+  the panel header so it stays inside the menu.
 - **Glass track** — inner bevel shadows and a subtle fractal-noise layer break
   up flat-color banding.
 - **Light field** — the track responds to the pointer like a light source: an
@@ -107,7 +114,8 @@ Restart the web profile after installing or removing the bundle.
   as the pointer approaches and fading with distance. The light is suppressed
   at `Max` so the pixel field stays clean.
 - **Level labels** — faint tick labels; the current level is always shown,
-  hovering near a slot highlights it, and others stay barely visible.
+  hovering near a slot highlights it, and others stay barely visible. The stage
+  sizes itself to the real label, so suffixed labels such as `Medium 梁子` fit.
 - **Liang portrait** — when the Liang Calibrator is enabled, a `224px` square
   portrait appears above the track. It uses 31 WebP frames (`frame-00`…
   `frame-30`) that change continuously while dragging and keep the original
@@ -122,8 +130,8 @@ Restart the web profile after installing or removing the bundle.
   flowing multi-color gradient.
 - **Big Fat Fish thumb** — when enabled, the thumb becomes an 8-frame running
   chibi fish sprite. It loops at `720ms` when idle, `420ms` while dragging, and
-  freezes under reduced motion. The left edge stays aligned and the right edge
-  is clamped so the fish never overflows.
+  freezes under reduced motion. The track grows to the thumb height, so the
+  sprite is drawn in full instead of being clipped top and bottom.
 - **Motion safety** — effects use CSS transitions/animations or lightweight
   event handlers, and `prefers-reduced-motion` is respected.
 
@@ -147,7 +155,8 @@ Run the standalone component demo:
 
 The demo page exercises panel mode, inline mode, supported-level combinations,
 theme switching, the Max pixel field, the Liang Calibrator, and the Big Fat Fish
-thumb.
+thumb. It resolves `liang-asset-base` / `chibi-sprite` against `../assets/`, so
+it opens straight from the filesystem with no build step.
 
 ## Package contract
 
