@@ -2,7 +2,7 @@
 
 [English](shell.md) | 中文
 
-bash 执行 seam 分为 Service Definition（[dsh-shell](../../packages/shell/shell)，`ctx.shell`）、Service Provider（[dsh-bash-local](../../packages/shell/bash-local) 与 [dsh-bash-sandbox](../../packages/shell/bash-sandbox)）和 Consumer（[dsh-tool-bash](../../packages/shell/tool-bash)，即 `bash` schema）。通用后台任务的 job id、所有权与控制位于 [jobs.md](jobs.zh.md)；本 seam 返回一个不含任务概念的进程句柄。managed-range 机制封装在[子进程 seam](subprocess.zh.md)之后。
+bash 执行 seam 分为 Service Definition（[dsh-shell](../../packages/shell/shell)，`ctx.shell`）、Service Provider（[dsh-bash-local](../../packages/shell/bash-local)、[dsh-bash-sandbox](../../packages/shell/bash-sandbox)、[dsh-gitbash-local](../../packages/shell/gitbash-local)、[dsh-gitbash-sandbox](../../packages/shell/gitbash-sandbox)、[dsh-pwsh-local](../../packages/shell/pwsh-local) 与 [dsh-pwsh-sandbox](../../packages/shell/pwsh-sandbox)）和 Consumer（[dsh-tool-bash](../../packages/shell/tool-bash)，即 `bash` schema；[dsh-tool-pwsh](../../packages/shell/tool-pwsh)，即 `pwsh` schema）。本发行版保留 POSIX 行，并把 win32 层默认切到 Git Bash 栈（`DSH_WINDOWS_SHELL=pwsh` 恢复受限 PowerShell 行）；见 [gitbash-windows-shell-stack Agent Note](../../.agents/notes/implemented/feature/2026-09-12-gitbash-windows-shell-stack.zh.md)。通用后台任务的 job id、所有权与控制位于 [jobs.md](jobs.zh.md)；本 seam 返回一个不含任务概念的进程句柄。managed-range 机制封装在[子进程 seam](subprocess.zh.md)之后。
 
 源码：[`packages/shell/shell/src/types.ts`](../../packages/shell/shell/src/types.ts)
 

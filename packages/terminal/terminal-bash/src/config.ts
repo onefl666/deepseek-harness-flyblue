@@ -1,6 +1,7 @@
 /** Validated configuration for the local PTY backend. */
 
 import z from '@deepseek-ai/schemastery'
+import { resolveGitBashPath } from '@deepseek-ai/dsh-gitbash-local'
 import { resolvePwshPath } from '@deepseek-ai/dsh-pwsh-local'
 
 /** One supported interactive shell dialect. */
@@ -12,7 +13,10 @@ export interface Config {
   backendType?: string
   /** Interactive shell dialect (default: `bash`); selects the argv/env/startup defaults. */
   shellDialect?: ShellDialect
-  /** Interactive shell executable (default per dialect: `/bin/bash`, or the resolved pwsh). */
+  /**
+   * Interactive shell executable (default per dialect and platform: `/bin/bash`
+   * on POSIX, the resolved Git Bash on win32, or the resolved pwsh).
+   */
   shellPath?: string
   /** Shell arguments (default per dialect: bash `--noprofile --norc -i`, pwsh `-NoLogo -NoProfile`). */
   shellArgs?: string[]
@@ -50,12 +54,35 @@ export type ResolvedConfig = Omit<Required<Config>, 'shellDialect' | 'shellPath'
   shellArgs: string[]
 }
 
-/** Bash dialect default executable. */
+/** Bash dialect default executable (POSIX; win32 resolves Git Bash instead). */
 export const DEFAULT_BASH_SHELL = '/bin/bash'
 /** Bash dialect default arguments (interactive, profile-free). */
 export const DEFAULT_BASH_ARGS = ['--noprofile', '--norc', '-i']
 /** Pwsh dialect default arguments (interactive host, profile-free). */
 export const DEFAULT_PWSH_ARGS = ['-NoLogo', '-NoProfile']
+
+/**
+ * The default executable for one dialect on one platform. The bash dialect on
+ * win32 is Git Bash (there is no `/bin/bash`); discovery fails loudly with an
+ * actionable message because a bare `bash` on Windows may resolve to the WSL
+ * launcher and mount a different filesystem view.
+ * @param shellDialect - the interactive dialect being defaulted.
+ * @param platform - the platform to resolve for.
+ * @param env - the environment to probe with.
+ * @returns the dialect's default executable path.
+ * @throws Error when the bash dialect on win32 finds no Git for Windows install.
+ */
+function defaultShellPath(shellDialect: ShellDialect, platform: NodeJS.Platform, env: NodeJS.ProcessEnv): string {
+  if (shellDialect === 'pwsh') return resolvePwshPath(undefined, env, platform)
+  if (platform === 'win32') {
+    try {
+      return resolveGitBashPath(undefined, env, platform)
+    } catch {
+      throw new Error('terminal-bash: the bash dialect on win32 resolves Git for Windows; install it or set shellPath')
+    }
+  }
+  return DEFAULT_BASH_SHELL
+}
 
 /**
  * Resolve the effective per-dialect shell specification. Defaulting is this
@@ -64,16 +91,22 @@ export const DEFAULT_PWSH_ARGS = ['-NoLogo', '-NoProfile']
  * (Schemastery materializes an absent optional array as `[]`, so emptiness —
  * not just `undefined` — means "dialect default".)
  * @param config - Schemastery-resolved plugin configuration.
+ * @param platform - the platform to resolve dialect defaults for; defaults to the process platform.
+ * @param env - the environment to probe dialect defaults with; defaults to the process environment.
  * @returns the fully resolved configuration.
  */
-export function resolveConfig(config: Config): ResolvedConfig {
+export function resolveConfig(
+  config: Config,
+  platform: NodeJS.Platform = process.platform,
+  env: NodeJS.ProcessEnv = process.env,
+): ResolvedConfig {
   const shellDialect = config.shellDialect ?? 'bash'
   return {
     ...(config as Required<Config>),
     shellDialect,
     shellPath: config.shellPath !== undefined && config.shellPath.length > 0
       ? config.shellPath
-      : (shellDialect === 'pwsh' ? resolvePwshPath() : DEFAULT_BASH_SHELL),
+      : defaultShellPath(shellDialect, platform, env),
     shellArgs: config.shellArgs !== undefined && config.shellArgs.length > 0
       ? config.shellArgs
       : (shellDialect === 'pwsh' ? DEFAULT_PWSH_ARGS : DEFAULT_BASH_ARGS),

@@ -79,7 +79,7 @@ Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnp
 
 ### `ctx.permissionPresets` — `PermissionPresetService`
 
-Owns the deployment's permission presets and their write path. Requires a confining `ctx.shell` executor and `ctx.approval`; unmatched knob values are reported as CUSTOM_PRESET, not an error.
+Owns the deployment's permission presets and their write path. Requires a `ctx.shell` executor that confines, unless every composed preset's sandbox mode is `danger-full-access` (the one mode an unconfined executor enforces); unmatched knob values are reported as CUSTOM_PRESET, not an error.
 
 ```ts cordis-catalog
 /**

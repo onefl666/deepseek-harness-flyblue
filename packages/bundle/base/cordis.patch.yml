@@ -217,17 +217,34 @@
       config:
         timeoutMs: 60000
 
+    # This distribution defaults the win32 shell stack to Git Bash (the POSIX
+    # dialect the model's commands assume); DSH_WINDOWS_SHELL=pwsh restores the
+    # upstream confined PowerShell stack. Exactly one executor mounts per host:
+    # the rows are complementary on every platform/env pair. The Git Bash
+    # executor is unconfined — the windows-acl restricted-token chain cannot
+    # start the msys runtime (CreateFileMapping denial); see the
+    # gitbash-windows-shell-stack Agent Note.
+    - id: gitbash-local
+      name: '@deepseek-ai/dsh-gitbash-local'
+      disabled: !!js process.platform !== 'win32' || process.env.DSH_WINDOWS_SHELL === 'pwsh'
+
     - id: pwsh-sandbox
       name: '@deepseek-ai/dsh-pwsh-sandbox'
-      disabled: !!js process.platform !== 'win32'
+      disabled: !!js process.platform !== 'win32' || process.env.DSH_WINDOWS_SHELL !== 'pwsh'
 
     - id: approval
       name: '@deepseek-ai/dsh-user-approval'
       config:
         policy: !!js "(process.env.DSH_PERMISSION_MODE ?? 'workspace-write') === 'danger-full-access' ? 'never' : 'ask'"
 
+    # The full preset table mounts wherever the shell executor confines. On
+    # this distribution's default win32 stack the Git Bash executor cannot
+    # confine (msys cannot run under the ACL restricted-token runner), so only
+    # danger-full-access presets stay honest and the unconfined twin row takes
+    # over — see the gitbash-windows-shell-stack Agent Note.
     - id: permission
       name: '@deepseek-ai/dsh-permission-presets'
+      disabled: !!js process.platform === 'win32' && process.env.DSH_WINDOWS_SHELL !== 'pwsh'
       config:
         presets:
           read-only:
@@ -240,16 +257,33 @@
             sandbox: danger-full-access
             approval: never
 
+    - id: permission-unconfined
+      name: '@deepseek-ai/dsh-permission-presets'
+      disabled: !!js process.platform !== 'win32' || process.env.DSH_WINDOWS_SHELL === 'pwsh'
+      config:
+        presets:
+          unconfined-ask:
+            sandbox: danger-full-access
+            approval: ask
+            name: unconfined-ask
+            description: Shell commands run unconfined (Git Bash); every write-capable action asks for approval.
+          danger-full-access:
+            sandbox: danger-full-access
+            approval: never
+            name: danger-full-access
+            description: Full file access without approval prompts.
+        defaultPreset: unconfined-ask
+
     - id: shell-env
       name: '@deepseek-ai/dsh-shell-env'
 
     - id: tool-bash
       name: '@deepseek-ai/dsh-tool-bash'
-      disabled: !!js process.platform === 'win32'
+      disabled: !!js process.platform === 'win32' && process.env.DSH_WINDOWS_SHELL === 'pwsh'
 
     - id: tool-pwsh
       name: '@deepseek-ai/dsh-tool-pwsh'
-      disabled: !!js process.platform !== 'win32'
+      disabled: !!js process.platform !== 'win32' || process.env.DSH_WINDOWS_SHELL !== 'pwsh'
 
     - id: tool-jobs
       name: '@deepseek-ai/dsh-tool-jobs'

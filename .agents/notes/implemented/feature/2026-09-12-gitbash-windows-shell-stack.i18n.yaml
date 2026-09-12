@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-12-gitbash-windows-shell-stack.md
+2026-09-12-gitbash-windows-shell-stack.md: 00238dc7ad7591e2ac24c1dc42c3266c44e94796
+2026-09-12-gitbash-windows-shell-stack.zh.md: 2cd33f9ac1ac22a162a049653413a4a72b532313

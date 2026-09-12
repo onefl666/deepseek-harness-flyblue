@@ -157,8 +157,9 @@ export interface Config {
 
 /**
  * Owns the deployment's permission presets and their write path. Requires a
- * confining `ctx.shell` executor and `ctx.approval`; unmatched knob values are
- * reported as {@link CUSTOM_PRESET}, not an error.
+ * `ctx.shell` executor that confines, unless every composed preset's sandbox
+ * mode is `danger-full-access` (the one mode an unconfined executor enforces);
+ * unmatched knob values are reported as {@link CUSTOM_PRESET}, not an error.
  */
 export class PermissionPresetService extends Service {
   // Inline schema call: the config catalog walks `static Config` statically.
@@ -194,7 +195,15 @@ export class PermissionPresetService extends Service {
       throw new Error(`permission: "${CUSTOM_PRESET}" is reserved for the derived not-a-preset state and cannot name a table entry`)
     }
     if (ctx.shell.sandboxMode === undefined) {
-      throw new Error('permission: the mounted bash executor does not confine (no sandboxMode) — presets bundle a sandbox mode, so composing this plugin over an unconfined executor is a misconfiguration')
+      // An unconfined executor enforces exactly one sandbox promise —
+      // danger-full-access (no confinement) — so a preset table bundling any
+      // other mode would promise enforcement the executor cannot deliver.
+      const unenforceable = Object.entries(this.presets)
+        .filter(([, preset]) => preset.sandbox !== 'danger-full-access')
+        .map(([name]) => name)
+      if (unenforceable.length > 0) {
+        throw new Error(`permission: the mounted bash executor does not confine (no sandboxMode), so these presets promise sandbox modes it cannot enforce: ${unenforceable.join(', ')}`)
+      }
     }
     const inferredDefault = this.derive(EMPTY_KNOBS)
     const defaultPreset = config.defaultPreset ?? inferredDefault

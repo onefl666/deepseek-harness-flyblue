@@ -74,12 +74,16 @@ flowchart LR
   cfg --> plugin_dsh_base_sandbox_policy
   plugin_dsh_base_bash_sandbox["bash-sandbox<br/>@deepseek-ai/dsh-bash-sandbox"]
   cfg --> plugin_dsh_base_bash_sandbox
+  plugin_dsh_base_gitbash_local["gitbash-local<br/>@deepseek-ai/dsh-gitbash-local"]
+  cfg --> plugin_dsh_base_gitbash_local
   plugin_dsh_base_pwsh_sandbox["pwsh-sandbox<br/>@deepseek-ai/dsh-pwsh-sandbox"]
   cfg --> plugin_dsh_base_pwsh_sandbox
   plugin_dsh_base_approval["approval<br/>@deepseek-ai/dsh-user-approval"]
   cfg --> plugin_dsh_base_approval
   plugin_dsh_base_permission["permission<br/>@deepseek-ai/dsh-permission-presets"]
   cfg --> plugin_dsh_base_permission
+  plugin_dsh_base_permission_unconfined["permission-unconfined<br/>danger-full-access"]
+  cfg --> plugin_dsh_base_permission_unconfined
   plugin_dsh_base_shell_env["shell-env<br/>@deepseek-ai/dsh-shell-env"]
   cfg --> plugin_dsh_base_shell_env
   plugin_dsh_base_tool_bash["tool-bash<br/>@deepseek-ai/dsh-tool-bash"]
@@ -213,9 +217,11 @@ flowchart LR
 | `sandbox` | `@deepseek-ai/dsh-sandbox-local` |
 | `sandbox-policy` | `@deepseek-ai/dsh-sandbox-policy` |
 | `bash-sandbox` | `@deepseek-ai/dsh-bash-sandbox` |
+| `gitbash-local` | `@deepseek-ai/dsh-gitbash-local` |
 | `pwsh-sandbox` | `@deepseek-ai/dsh-pwsh-sandbox` |
 | `approval` | `@deepseek-ai/dsh-user-approval` |
 | `permission` | `@deepseek-ai/dsh-permission-presets` |
+| `permission-unconfined` | `danger-full-access` |
 | `shell-env` | `@deepseek-ai/dsh-shell-env` |
 | `tool-bash` | `@deepseek-ai/dsh-tool-bash` |
 | `tool-pwsh` | `@deepseek-ai/dsh-tool-pwsh` |

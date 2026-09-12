@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { resolvePwshPath } from './packages/shell/pwsh-local/src/resolve.ts'
+import { resolveGitBashPath } from './packages/shell/gitbash-local/src/resolve.ts'
 import { defineConfig } from 'vitest/config'
 import { standardDecoratorPlugin, vitestExecArgv } from './vitest.shared.ts'
 import { COVERAGE_EXEMPT_ENV, coverageExemptHeavySuites } from './scripts/coverage-exempt.ts'
@@ -116,6 +117,29 @@ const pwshCoverageExclusions = spawnSync(resolvePwshPath(), ['-NoLogo', '-NoProf
   : [
       'packages/shell/pwsh-local/src/index.ts',
       'packages/shell/pwsh-sandbox/src/**/*.ts',
+    ]
+
+// The Git Bash twins' run/start/lifecycle suites self-skip without a
+// resolvable Git Bash (executor.spec.ts / sandbox.spec.ts gitBashAvailable),
+// leaving these files far below per-file 100% on Git-Bash-less hosts (every
+// non-Windows lane); the exemption keeps those hosts green while Windows
+// hosts with Git for Windows enforce the full bar. The probe runs the suites'
+// own resolution (the dependency-free resolve.ts module — which throws where
+// discovery fails), so the exemption is active exactly when the suites skip;
+// resolve.ts itself stays covered everywhere by the pure suites.
+const gitBashExecutable = (() => {
+  try {
+    return resolveGitBashPath()
+  } catch {
+    return undefined
+  }
+})()
+const gitBashCoverageExclusions = gitBashExecutable !== undefined
+  && spawnSync(gitBashExecutable, ['-c', 'exit 0'], { encoding: 'utf8' }).status === 0
+  ? []
+  : [
+      'packages/shell/gitbash-local/src/index.ts',
+      'packages/shell/gitbash-sandbox/src/**/*.ts',
     ]
 
 const testIncludes = [
@@ -347,6 +371,7 @@ export default defineConfig({
         ...windowsOnlyCoverageExclusions,
         ...windowsRunnerCoverageExclusions,
         ...pwshCoverageExclusions,
+        ...gitBashCoverageExclusions,
       ],
       // 100% or it doesn't merge (docs/testing.md: excessive tests are welcome).
       // Per-file so a well-covered big file can't subsidize a bare one.

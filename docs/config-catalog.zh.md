@@ -809,6 +809,52 @@ export type Config = LocalConfig
 
 来源：[`packages/fs/fs-sandbox/src/index.ts:45`](../packages/fs/fs-sandbox/src/index.ts)
 
+<a id="deepseek-aidsh-gitbash-local"></a>
+
+## `@deepseek-ai/dsh-gitbash-local`
+
+需要：`subprocess`
+
+```ts config-catalog
+/** Plugin config: the local bash executor's knobs plus the Git Bash path. */
+export interface Config extends LocalConfig {
+  /**
+   * Explicit Git Bash executable. When omitted, well-known Git for Windows
+   * install locations and PATH-derived candidates are probed in order
+   * (`Program Files`, `Program Files (x86)`, a per-user install, the
+   * installation a PATH `git.exe` names, then a Git `bin` directory on PATH);
+   * mounting fails loudly when none exists.
+   */
+  gitBashPath?: string
+}
+```
+
+依赖：[`LocalConfig`](#deepseek-aidsh-bash-local)
+
+来源：[`packages/shell/gitbash-local/src/index.ts:27`](../packages/shell/gitbash-local/src/index.ts)
+
+<a id="deepseek-aidsh-gitbash-sandbox"></a>
+
+## `@deepseek-ai/dsh-gitbash-sandbox`
+
+需要：`subprocess` · `sandbox` · `sandboxPolicy`
+
+```ts config-catalog
+/**
+ * Plugin config: the local executor's knobs, verbatim. The sandbox policy —
+ * the default mode and fallback `workspace-write` root — is NOT here: it lives
+ * on `ctx.sandboxPolicy` (`@deepseek-ai/dsh-sandbox-policy`), which resolves
+ * each calling session's mode and cwd for every enforcing capability. The
+ * runner choice is likewise the `ctx.sandbox` provider's config, not this
+ * executor's.
+ */
+export type Config = LocalConfig
+```
+
+依赖：[`LocalConfig`](#deepseek-aidsh-gitbash-local)
+
+来源：[`packages/shell/gitbash-sandbox/src/index.ts:40`](../packages/shell/gitbash-sandbox/src/index.ts)
+
 <a id="deepseek-aidsh-goal"></a>
 
 ## `@deepseek-ai/dsh-goal`
@@ -2671,7 +2717,10 @@ export interface Config {
   backendType?: string
   /** Interactive shell dialect (default: `bash`); selects the argv/env/startup defaults. */
   shellDialect?: ShellDialect
-  /** Interactive shell executable (default per dialect: `/bin/bash`, or the resolved pwsh). */
+  /**
+   * Interactive shell executable (default per dialect and platform: `/bin/bash`
+   * on POSIX, the resolved Git Bash on win32, or the resolved pwsh).
+   */
   shellPath?: string
   /** Shell arguments (default per dialect: bash `--noprofile --norc -i`, pwsh `-NoLogo -NoProfile`). */
   shellArgs?: string[]
@@ -2706,7 +2755,7 @@ export interface Config {
 export type ShellDialect = 'bash' | 'pwsh'
 ```
 
-来源：[`packages/terminal/terminal-bash/src/config.ts:10`](../packages/terminal/terminal-bash/src/config.ts)
+来源：[`packages/terminal/terminal-bash/src/config.ts:11`](../packages/terminal/terminal-bash/src/config.ts)
 
 <a id="deepseek-aidsh-time-context"></a>
 

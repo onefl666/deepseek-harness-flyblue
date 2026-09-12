@@ -126,14 +126,16 @@ export class LocalBashExecutor extends ShellExecutor {
     assertServiceableBashConfig(entry)
     this.source = () => entry
     ctx.inject(['settings'], (settingsCtx) => {
-      settingsCtx.settings.installSection(ctx, SHELL_SETTINGS_NAMESPACE, LocalBashExecutor.Config, entry, {
+      // The concrete class's schema: a subclass extending the config installs
+      // its own section shape (e.g. dsh-gitbash-local's gitBashPath).
+      settingsCtx.settings.installSection(ctx, SHELL_SETTINGS_NAMESPACE, (this.constructor as typeof LocalBashExecutor).Config, entry, {
         validate: assertServiceableBashConfig,
         setSource: (current) => {
           this.source = current as () => ResolvedConfig
         },
-        // Every field is read through the getter at each command, so nothing
-        // derived from the source needs rebuilding when the document changes.
-        onChange: () => {},
+        onChange: () => {
+          this.onSettingsChanged()
+        },
       })
     })
   }
@@ -337,6 +339,14 @@ export class LocalBashExecutor extends ShellExecutor {
    * @param _providerError - the provider rejection reason, which may itself be undefined.
    */
   protected onProcessDone(_proc: ShellProcess, _stderr: string, _providerRejected: boolean, _providerError?: unknown): void {}
+
+  /**
+   * Notification that the authoritative settings document changed. Every
+   * config field is read through the getter at each command, so the base
+   * implementation has nothing to rebuild; subclasses re-derive facts they
+   * cache (e.g. a resolved executable path).
+   */
+  protected onSettingsChanged(): void {}
 }
 
 export default LocalBashExecutor

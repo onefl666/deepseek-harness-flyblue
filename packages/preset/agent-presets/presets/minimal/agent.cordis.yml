@@ -16,8 +16,10 @@
 # The PTY registry is an agent-owned service, so it lives in an entry-local
 # realm. The backend still consumes the host sandbox policy and subprocess
 # implementation, while the tool registers into this agent's scoped catalog.
-# Exactly one shell stack mounts per host: the bash stack gates off win32 and
-# its pwsh twin gates off POSIX, mirroring the one-shot shell rows.
+# Exactly one shell stack mounts per host: the bash stack (POSIX bash; Git
+# Bash on win32, where terminal-bash resolves the dialect's executable) gates
+# off only behind DSH_WINDOWS_SHELL=pwsh, and its pwsh twin gates off POSIX —
+# mirroring the one-shot shell rows.
 - id: persistent-shell
   name: cordis:group
   group: true
@@ -29,13 +31,13 @@
 
     - id: terminal-bash
       name: '@deepseek-ai/dsh-terminal-bash'
-      disabled: !!js process.platform === 'win32'
+      disabled: !!js process.platform === 'win32' && process.env.DSH_WINDOWS_SHELL === 'pwsh'
       config:
         timeoutMs: 300000
 
     - id: persistent-bash
       name: '@deepseek-ai/dsh-tool-bash-persistent'
-      disabled: !!js process.platform === 'win32'
+      disabled: !!js process.platform === 'win32' && process.env.DSH_WINDOWS_SHELL === 'pwsh'
       config:
         timeoutMs: 300000
         description: |-
@@ -49,14 +51,14 @@
 
     - id: terminal-pwsh
       name: '@deepseek-ai/dsh-terminal-bash'
-      disabled: !!js process.platform !== 'win32'
+      disabled: !!js process.platform !== 'win32' || process.env.DSH_WINDOWS_SHELL !== 'pwsh'
       config:
         shellDialect: pwsh
         timeoutMs: 300000
 
     - id: persistent-pwsh
       name: '@deepseek-ai/dsh-tool-pwsh-persistent'
-      disabled: !!js process.platform !== 'win32'
+      disabled: !!js process.platform !== 'win32' || process.env.DSH_WINDOWS_SHELL !== 'pwsh'
       config:
         timeoutMs: 300000
         description: |-

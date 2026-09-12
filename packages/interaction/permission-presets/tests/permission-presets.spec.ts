@@ -180,9 +180,26 @@ describe('PermissionPresetService', () => {
     ])
   })
 
-  it('rejects composition over a non-confining executor at load', async () => {
+  it('rejects composition over a non-confining executor when any preset promises confinement', async () => {
     await expect(mounted({ bashDefault: undefined }))
-      .rejects.toThrow(/does not confine/)
+      .rejects.toThrow(/does not confine.*cannot enforce: workspace-write$/u)
+  })
+
+  it('mounts over a non-confining executor when every preset is danger-full-access', async () => {
+    const ctx = await mounted({
+      bashDefault: undefined,
+      config: {
+        presets: {
+          'unconfined-ask': {
+            sandbox: 'danger-full-access', approval: 'ask',
+            name: 'unconfined-ask', description: 'Shell commands run unconfined; every write-capable action asks for approval.',
+          },
+        },
+        defaultPreset: 'unconfined-ask',
+      },
+    })
+    expect(ctx.permissionPresets.names).toEqual(['unconfined-ask'])
+    expect(ctx.permissionPresets.resolve('unconfined-ask')).toMatchObject({ sandbox: 'danger-full-access', approval: 'ask' })
   })
 
   it('optionOf() presents shipped labels/descriptions, falls back to the raw key, and fixes custom', async () => {
