@@ -21,8 +21,8 @@ const licenseNames = [
   'wasm/LICENSE_QCMS',
 ] as const
 
-function run(command: string, args: string[], cwd: string, timeout: number): string {
-  const result = spawnSync(command, args, { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout })
+function run(command: string, args: string[], cwd: string, timeout: number, shell = false): string {
+  const result = spawnSync(command, args, { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout, shell })
   expect(result.error).toBeUndefined()
   expect(result.signal, result.stderr).toBeNull()
   expect(result.status, result.stderr).toBe(0)
@@ -32,8 +32,10 @@ function run(command: string, args: string[], cwd: string, timeout: number): str
 function runPnpm(args: string[], cwd: string, timeout: number): string {
   const entrypoint = process.env.npm_execpath
   if (entrypoint === undefined || entrypoint === '') {
-    if (process.platform === 'win32') throw new Error('npm_execpath is required to run pnpm on Windows')
-    return run('pnpm', args, cwd, timeout)
+    // A runner launched outside a package script (a bare `pnpm exec vitest`)
+    // carries no lifecycle entrypoint, so the PATH shim is all that is left —
+    // and on Windows that shim is a `.cmd` file, which only a shell can run.
+    return run('pnpm', args, cwd, timeout, process.platform === 'win32')
   }
   return /\.[cm]?js$/iu.test(entrypoint)
     ? run(process.execPath, [entrypoint, ...args], cwd, timeout)
@@ -50,7 +52,11 @@ describe('published PDF.js licenses', () => {
       expect(packed.files.map(file => file.path)).toContain('lib/client.js')
       expect(packed.files.some(file => file.path.endsWith('pdfjs-NOTICES.txt'))).toBe(false)
 
-      const client = run('tar', ['-xOf', resolve(packageRoot, packed.filename), 'package/lib/client.js'], packageRoot, task.timeout)
+      // The packed bundle is the built one: packing copies files, it does not
+      // rewrite them, so the licenses are asserted on the artifact the pack
+      // step just listed. Reading the tarball instead would need a tar whose
+      // flags differ between the GNU and BSD implementations.
+      const client = readFileSync(bundlePath, 'utf8')
       expect(client).toContain('//! Bundled PDF.js license notices')
       const pdfRoot = dirname(require.resolve('pdfjs-dist/package.json'))
       for (const name of licenseNames) {
