@@ -4,6 +4,8 @@ English | [中文](README.zh.md)
 
 This repository is a fork distribution of [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness), customized and maintained by FlyBlue at [github.com/onefl666/deepseek-harness-flyblue](https://github.com/onefl666/deepseek-harness-flyblue). The upstream project is developed by [DeepSeek AI](https://deepseek.com).
 
+This fork is maintained independently and merges upstream changes selectively: there is no guarantee of staying current with the upstream dsh repository or of merging every upstream commit.
+
 It is built on an **everything-is-a-plugin** architecture and powered by [Cordis](https://github.com/cordiverse/cordis), whose design is described in [_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512).
 
 Documentation: [https://deepseek-harness.github.io/deepseek-harness/](https://deepseek-harness.github.io/deepseek-harness/)

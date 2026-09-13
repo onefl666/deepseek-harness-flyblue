@@ -4,6 +4,8 @@
 
 本仓库是 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的分支发行版，由 FlyBlue 定制维护，仓库见 [github.com/onefl666/deepseek-harness-flyblue](https://github.com/onefl666/deepseek-harness-flyblue)。上游项目由 [DeepSeek AI](https://deepseek.com) 开发。
 
+本分支独立维护，选择性合并上游变更：不保障与上游 dsh 官方仓库始终同步更新，也不保障合并每一个 dsh 官方提交。
+
 它构建于**一切皆插件**的架构之上，由 [Cordis](https://github.com/cordiverse/cordis) 驱动，其设计参见论文 [_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512)。
 
 文档：[https://deepseek-harness.github.io/deepseek-harness/](https://deepseek-harness.github.io/deepseek-harness/)
