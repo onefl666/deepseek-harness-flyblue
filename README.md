@@ -40,7 +40,6 @@ Standard, PTC, and Create modes include `codegraph_explore` from the bundled [`@
 
 - Feel free to submit feedback or bug reports through [Issues](https://github.com/onefl666/deepseek-harness-flyblue/issues).
 - Add the [`dsh-plugin`](https://github.com/topics/dsh-plugin) topic to your plugin repository for discoverability.
-- Join <a href="https://discord.gg/Ycq5dCaS4">upstream DeepSeek Harness Discord community</a>.
 
 ## Contributing
 
