@@ -7,8 +7,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
-  Button, IconChevronRightOutline14, IconFolderOpenOutline16, IconLoadingOutline16,
-  IconRefreshOutline16, IconSearchOutline16, Input, Pill,
+  IconChevronRightOutline14, IconFolderOpenOutline16, IconSearchOutline16,
+  Input, Pill, SectionChrome,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
@@ -143,31 +143,18 @@ export function WorkspaceInspectorSection({
 
   return (
     <section className={css.section} data-workspace-inspector aria-busy={busy}>
-      <header className={css.header}>
-        <div>
-          <h2 className={css.title}>{t('title')}</h2>
-          <p className={css.intro}>{t('intro')}</p>
-        </div>
-        <div className={css.headerMeta}>
-          {workspacePath !== undefined && <Pill className={css.workspacePill} title={workspacePath}>{t('workspace')} · {workspacePath}</Pill>}
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={busy ? <IconLoadingOutline16 className={css.spin} /> : <IconRefreshOutline16 />}
-            disabled={busy || id === undefined}
-            onClick={refresh}
-            aria-label={t('refresh')}
-          >
-            {busy ? t('refreshing') : t('refresh')}
-          </Button>
-        </div>
-      </header>
-      {error !== undefined && (
-        <div className={css.error} role="alert">
-          <span>{t('error')}: {error}</span>
-          <Button variant="ghost" size="sm" onClick={refresh}>{t('retry')}</Button>
-        </div>
-      )}
+      <SectionChrome
+        labels={{ refresh: t('refresh'), refreshing: t('refreshing'), errorSummary: t('error'), retry: t('retry') }}
+        title={t('title')}
+        intro={t('intro')}
+        meta={workspacePath !== undefined && (
+          <Pill className={css.workspacePill} title={workspacePath}>{t('workspace')} · {workspacePath}</Pill>
+        )}
+        busy={busy}
+        refreshDisabled={id === undefined}
+        onRefresh={refresh}
+        error={error}
+      />
       {id === undefined
         ? <div className={css.empty}>{t('noWorkspace')}</div>
         : firstLoad

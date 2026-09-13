@@ -9,62 +9,12 @@
   color: var(--dsw-alias-label-primary);
 }
 
-.header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.title {
-  margin: 0;
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 500;
-  color: var(--dsw-alias-label-primary);
-}
-
-.intro {
-  margin: 2px 0 0;
-  font-size: 14px;
-  line-height: 22px;
-  color: var(--dsw-alias-label-tertiary);
-}
-
-.headerMeta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
 .counts {
   flex: none;
   color: var(--dsw-alias-label-tertiary);
   font-size: 12px;
   line-height: 18px;
   font-variant-numeric: tabular-nums;
-}
-
-.spin {
-  animation: dsh-task-board-spin 700ms linear infinite;
-}
-
-@keyframes dsh-task-board-spin {
-  to { transform: rotate(360deg); }
-}
-
-.error {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 10px;
-  border: 1px solid var(--dsw-alias-state-error-primary);
-  border-radius: 10px;
-  color: var(--dsw-alias-state-error-primary);
-  font-size: 12px;
-  line-height: 18px;
 }
 
 .createForm {
@@ -192,7 +142,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .row { animation: none; }
-  .spin { animation: none; }
   .skeletonRow { animation: none; }
   .actions { opacity: 1; }
 }

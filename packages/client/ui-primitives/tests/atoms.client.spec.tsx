@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Button, ConnectionIndicator, Input, Menu, Modal, Pill } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, ConnectionIndicator, Input, Menu, Modal, Pill, SectionChrome } from '@deepseek-ai/dsh-client-ui-primitives'
 import { POINTER_GRACE_MS } from '../src/pointer-grace.ts'
 
 afterEach(cleanup)
@@ -490,5 +490,51 @@ describe('ConnectionIndicator', () => {
     rerender(<ConnectionIndicator state="recovered" {...labels} />)
     expect(screen.queryByRole('button')).toBeNull()
     expect(screen.getByRole('status', { name: 'Connected' })).toBeTruthy()
+  })
+})
+
+describe('SectionChrome', () => {
+  const labels = { refresh: 'Refresh', refreshing: 'Refreshing…', errorSummary: 'Could not load', retry: 'Retry' }
+
+  it('renders the heading, description, and caller meta before the refresh control', () => {
+    render(
+      <SectionChrome
+        title="Task board" intro="Durable tasks" meta={<span>2 active</span>}
+        busy={false} onRefresh={() => {}} labels={labels}
+      />,
+    )
+    expect(screen.getByRole('heading', { level: 2, name: 'Task board' })).toBeDefined()
+    expect(screen.getByText('Durable tasks')).toBeDefined()
+    const refresh = screen.getByRole('button', { name: 'Refresh' })
+    expect(refresh.previousElementSibling?.textContent).toBe('2 active')
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('activates the refresh control', () => {
+    const onRefresh = vi.fn()
+    render(<SectionChrome title="t" intro="i" busy={false} onRefresh={onRefresh} labels={labels} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }))
+    expect(onRefresh).toHaveBeenCalledOnce()
+  })
+
+  it('swaps the caption, disables the control, and spins the glyph while busy', () => {
+    render(<SectionChrome title="t" intro="i" busy onRefresh={() => {}} labels={labels} />)
+    const refresh = screen.getByRole('button', { name: 'Refresh' }) as HTMLButtonElement
+    expect(refresh.textContent).toBe('Refreshing…')
+    expect(refresh.disabled).toBe(true)
+    expect(refresh.querySelector('svg')).toBeTruthy()
+  })
+
+  it('disables the refresh control for caller reasons beyond busy', () => {
+    render(<SectionChrome title="t" intro="i" busy={false} refreshDisabled onRefresh={() => {}} labels={labels} />)
+    expect(screen.getByRole('button', { name: 'Refresh' }).disabled).toBe(true)
+  })
+
+  it('announces the failure summary with the raw detail and retries through the strip', () => {
+    const onRefresh = vi.fn()
+    render(<SectionChrome title="t" intro="i" busy={false} error="gateway closed" onRefresh={onRefresh} labels={labels} />)
+    expect(screen.getByRole('alert').textContent).toContain('Could not load: gateway closed')
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    expect(onRefresh).toHaveBeenCalledOnce()
   })
 })

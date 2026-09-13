@@ -8,8 +8,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
 import {
-  Button, IconLoadingOutline16, IconPlayOutline16, IconPlusOutline16, IconRefreshOutline16,
-  IconTrashOutline16, Input, TerminalBlock, type TerminalBlockLabels,
+  Button, IconLoadingOutline16, IconPlayOutline16, IconPlusOutline16,
+  IconTrashOutline16, Input, SectionChrome, TerminalBlock, type TerminalBlockLabels,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import { randomUUID } from '@deepseek-ai/dsh-util-crypto'
@@ -213,31 +213,15 @@ export function SshSection({ t, list, put, remove, exec }: PropsLocale<'ssh'> & 
 
   return (
     <section className={css.section} data-ssh aria-busy={busy}>
-      <header className={css.header}>
-        <div>
-          <h2 className={css.title}>{t('title')}</h2>
-          <p className={css.intro}>{t('intro')}</p>
-        </div>
-        <div className={css.headerMeta}>
-          <span className={css.counts}>{t('count.hosts').replace('{count}', String(hosts.length))}</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={busy ? <IconLoadingOutline16 className={css.spin} /> : <IconRefreshOutline16 />}
-            disabled={busy}
-            onClick={refresh}
-            aria-label={t('refresh')}
-          >
-            {busy ? t('refreshing') : t('refresh')}
-          </Button>
-        </div>
-      </header>
-      {error !== undefined && (
-        <div className={css.error} role="alert">
-          <span>{t('error')}: {error}</span>
-          <Button variant="ghost" size="sm" onClick={refresh}>{t('retry')}</Button>
-        </div>
-      )}
+      <SectionChrome
+        labels={{ refresh: t('refresh'), refreshing: t('refreshing'), errorSummary: t('error'), retry: t('retry') }}
+        title={t('title')}
+        intro={t('intro')}
+        meta={<span className={css.counts}>{t('count.hosts').replace('{count}', String(hosts.length))}</span>}
+        busy={busy}
+        onRefresh={refresh}
+        error={error}
+      />
       <article className={css.card}>
         <div className={css.cardHeader}>
           <h3 className={css.cardTitle}>{t('hosts')}</h3>
