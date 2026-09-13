@@ -3613,7 +3613,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/workspace/workspace-git/src/index.ts:14`](../packages/workspace/workspace-git/src/index.ts)
+Source: [`packages/workspace/workspace-git/src/index.ts:25`](../packages/workspace/workspace-git/src/index.ts)
 
 ## Loadable plugins with no config
 

@@ -57,3 +57,5 @@ kind: "package-reference"
 None.
 
 </details>
+
+**运行时不变式：** 不发布伴生入口。主机记录在变更边界完成校验，命令连接没有持久的次级投影。

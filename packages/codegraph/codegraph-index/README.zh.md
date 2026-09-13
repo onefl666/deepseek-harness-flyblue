@@ -51,3 +51,5 @@ Web GUI 的 host 平面 CodeGraph 索引生命周期。`ctx.codegraphIndex` 提�
 None.
 
 </details>
+
+**运行时不变式：** 不发布伴生入口。初始化任务只存在于进程内，从不写入会话日志；索引状态由工作区 `.codegraph/` 目录持有。

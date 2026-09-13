@@ -8,7 +8,7 @@ import { randomUUID } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-agent-presets'
-import { ManualCompactionError } from '@deepseek-ai/dsh-compaction'
+import type { ManualCompactionError, ManualCompactionErrorCode } from '@deepseek-ai/dsh-compaction'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import type { PlanExecution } from './types.ts'
@@ -41,6 +41,26 @@ export type HandoffOutcome =
   | { kind: 'cleared'; childSessionId: SessionId }
   | { kind: 'compact-cancelled' }
   | { kind: 'cleared-fallback' }
+
+/**
+ * Whether a rejection is the compaction service reporting its own cancellation,
+ * which is the agent being cancelled mid-compaction rather than this caller's
+ * own abort reason.
+ *
+ * `@deepseek-ai/dsh-compaction` is an optional peer, so its error class is not a
+ * loadable value in this package; the class stamps its name on every instance
+ * and `cancelled` is the one code this handoff reacts to, so the check reads
+ * that published contract instead of the constructor.
+ *
+ * @param error - value the compaction call rejected with.
+ * @returns true when the rejection is a cancelled compaction.
+ */
+function isCancelledCompaction(error: unknown): error is ManualCompactionError {
+  return error instanceof Error
+    && error.name === 'ManualCompactionError'
+    && 'code' in error
+    && (error as { code?: ManualCompactionErrorCode }).code === 'cancelled'
+}
 
 /**
  * Steer the approved-plan prompt into an idle agent.
@@ -88,9 +108,7 @@ export async function compactThenExecute(
   try {
     await compaction.compactNow(agent, signal)
   } catch (error: unknown) {
-    if (error instanceof ManualCompactionError && error.code === 'cancelled') {
-      return { kind: 'compact-cancelled' }
-    }
+    if (isCancelledCompaction(error)) return { kind: 'compact-cancelled' }
     host.logger.warn('dsh-plan-handoff: compaction failed; executing with current context: %o', error)
     steerApprovedPlan(agent, plan, true)
     return { kind: 'kept' }

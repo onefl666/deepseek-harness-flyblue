@@ -331,30 +331,30 @@ Host service for the shared Git state used by graph and file-change panels.
 /**
  * Read working-tree status.
  * @param workspaceId - Registered workspace containing the repository.
- * @returns Porcelain status entries for index and working-tree changes.
+ * @returns Porcelain status entries whose paths are relative to the repository root.
  */
 @Remote async status(workspaceId: WorkspaceId): Promise<GitStatusEntry[]>
 
 /**
- * List local branches and the current branch.
+ * List local branches and the attached branch.
  * @param workspaceId - Registered workspace containing the repository.
- * @returns Local branch names and the current branch when attached.
+ * @returns Local branch names and the attached branch, absent while HEAD is detached.
  */
-@Remote async branches(workspaceId: WorkspaceId): Promise<{ current: string | null; branches: string[] }>
+@Remote async branches(workspaceId: WorkspaceId): Promise<GitBranchEntry>
 
 /**
- * Read a bounded commit graph without exposing arbitrary process execution.
- * @param workspaceId - Registered workspace containing the repository.
- * @returns Commit rows up to the configured graph limit.
+ * Read the repository this workspace resolves to plus a bounded commit graph.
+ * @param workspaceId - Registered workspace.
+ * @returns Repository identity and commit rows, or a null repository when the directory is outside every work tree.
  */
-@Remote async graph(workspaceId: WorkspaceId): Promise<GitGraphEntry[]>
+@Remote async graph(workspaceId: WorkspaceId): Promise<GitGraphView>
 
 /**
  * Create a branch at the current HEAD.
  * @param workspaceId - Registered workspace containing the repository.
  * @param name - New local branch name interpreted by Git.
  */
-@Remote createBranch(workspaceId: WorkspaceId, name: string): Promise<void>
+@Remote async createBranch(workspaceId: WorkspaceId, name: string): Promise<void>
 
 /**
  * Switch only when no merge/rebase/cherry-pick is active and the tree is clean.
@@ -364,26 +364,26 @@ Host service for the shared Git state used by graph and file-change panels.
 @Remote async switchBranch(workspaceId: WorkspaceId, name: string): Promise<void>
 
 /**
- * Stage one workspace-relative path.
+ * Stage one repository-relative path.
  * @param workspaceId - Registered workspace containing the repository.
- * @param path - Workspace-relative path passed after Git's option separator.
+ * @param path - Path as reported by status, passed after Git's option separator.
  */
-@Remote stage(workspaceId: WorkspaceId, path: string): Promise<void>
+@Remote async stage(workspaceId: WorkspaceId, path: string): Promise<void>
 
 /**
  * Remove one path from the index.
  * @param workspaceId - Registered workspace containing the repository.
- * @param path - Workspace-relative path passed after Git's option separator.
+ * @param path - Path as reported by status, passed after Git's option separator.
  */
-@Remote unstage(workspaceId: WorkspaceId, path: string): Promise<void>
+@Remote async unstage(workspaceId: WorkspaceId, path: string): Promise<void>
 
 /**
  * Discard one tracked file only after explicit confirmation.
  * @param workspaceId - Registered workspace containing the repository.
- * @param path - Workspace-relative tracked file path.
+ * @param path - Tracked path as reported by status.
  * @param confirmed - Explicit confirmation required before discarding changes.
  */
-@Remote discard(workspaceId: WorkspaceId, path: string, confirmed: boolean): Promise<void>
+@Remote async discard(workspaceId: WorkspaceId, path: string, confirmed: boolean): Promise<void>
 ```
 
 Source: [`packages/workspace/workspace-git/src/index.ts`](../../packages/workspace/workspace-git/src/index.ts)

@@ -79,3 +79,5 @@ None; UI presentation is outside the model request.
 None.
 
 </details>
+
+**Runtime invariant:** No companion is published. Tool registration follows the optional SSH service lifecycle, and the tool registry owns consistency.

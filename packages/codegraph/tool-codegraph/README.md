@@ -141,3 +141,5 @@ None; UI presentation is outside the model request.
 None.
 
 </details>
+
+**Runtime invariant:** No companion is published. This model-facing adapter has no independent lifecycle stream; execution relations are owned by the bundled engine it calls.

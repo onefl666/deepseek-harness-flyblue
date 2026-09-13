@@ -40,3 +40,5 @@ None; browser SSH operations do not participate in provider requests.
 None.
 
 </details>
+
+**Runtime invariant:** No companion is published. The client panel only projects the SSH Remote service and owns no independent runtime state.

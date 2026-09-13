@@ -144,3 +144,5 @@ Codegraph is a local SQLite symbol graph. Call `codegraph_explore` first on inde
 None.
 
 </details>
+
+**运行时不变式：** 不发布伴生入口。该面向模型的适配器没有独立的生命周期流；执行关系由它调用的内置引擎持有。

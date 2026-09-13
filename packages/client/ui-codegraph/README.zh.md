@@ -79,3 +79,5 @@ host 的 `@deepseek-ai/dsh-codegraph-index` 服务负责状态、进程和自动
 None.
 
 </details>
+
+**运行时不变式：** 不发布伴生入口。设置页与停靠提示不持有持久状态：释放由 HMR 安全用例证明，关闭状态是会话级存储，索引事实来自 Remote 轮询。

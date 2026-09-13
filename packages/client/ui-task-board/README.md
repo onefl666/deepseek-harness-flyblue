@@ -44,3 +44,5 @@ None; task-board rendering and mutations do not participate in provider requests
 None.
 
 </details>
+
+**Runtime invariant:** No companion is published. The client panel only projects task-board snapshots and owns no independent runtime state.

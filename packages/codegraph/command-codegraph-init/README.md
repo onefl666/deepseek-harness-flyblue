@@ -79,3 +79,5 @@ Discovery and command bookkeeping do not affect the cache. A later successful ex
 None.
 
 </details>
+
+**Runtime invariant:** No companion is published. This command adapter owns no state or event stream: the index manager owns the spawn lifecycle, and the command registry owns registration and dispatch.

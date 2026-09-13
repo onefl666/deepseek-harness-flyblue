@@ -4,8 +4,8 @@
   "include": ["src"],
   "references": [
     { "path": "../../../vendor/cordis" },
+    { "path": "../../../vendor/schemastery" },
     { "path": "../../util/brand" },
-    { "path": "../../runtime-diagnostics/invariants" },
     { "path": "../../typert/protocol" },
     { "path": "../workspace" }
   ]

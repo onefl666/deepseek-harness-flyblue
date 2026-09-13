@@ -566,6 +566,10 @@ function main(): void {
   const files = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' })
     .split('\0')
     .filter(file => file !== '' && !excluded(file))
+    // `git ls-files` reads the index, so a path deleted from the worktree and
+    // not yet staged is still listed. It holds no token to rewrite, and reading
+    // it would abort the whole check instead of reporting residue.
+    .filter(file => existsSync(resolve(root, file)))
 
   const counts = new Map<string, { files: number; lines: number }>()
   const failures: string[] = []

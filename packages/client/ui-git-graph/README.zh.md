@@ -1,5 +1,5 @@
 ---
-description: "首个已注册工作区 Git 工作树、分支与提交图的浏览器设置区块；面向 Git 体验的使用者与维护者。"
+description: "所选工作区 Git 工作树、分支与提交图的浏览器设置区块；面向 Git 体验的使用者与维护者。"
 kind: "package-reference"
 ---
 
@@ -10,10 +10,9 @@ kind: "package-reference"
 ## 概述
 
 
-浏览器设置区段，显示第一个已登记工作区的 Git 工作树、分支和提交图谱。插件在 `settings.section` 中注册 `git-graph`，通过生成的 remote 读取 `workspaceGit.status()`、`workspaceGit.graph()` 和 `workspaceGit.branches()`，按已暂存/未暂存/未跟踪/冲突分类呈现变更，并提供暂存、取消暂存和二次确认的丢弃操作。分支卡片可以切换本地分支，并在当前 HEAD 上新建分支。
+浏览器设置区段，显示一个工作区的 Git 工作树、分支和提交图谱。它在 `settings.section` 中注册 `git-graph`，通过生成的 remote 读取 `workspaceGit.status()`、`graph()` 和 `branches()`，并提供暂存、取消暂存、二次确认的丢弃，以及分支的切换与创建。
 
-该区段是纯展示客户端投影：工作区身份来自共享工作区数据源，Git 访问和安全仍由 Host 上的 `@deepseek-ai/dsh-workspace-git` 负责，RPC 失败渲染为带重试的警报横幅。
-
+区段跟随当前正在使用的会话所属工作区，也可以指向别处。仓库身份随图谱应答一起返回，因此不在任何工作树内的工作区呈现为独立空状态；泳道由纯函数分配并以 SVG 绘制。Git 访问与安全仍由 `@deepseek-ai/dsh-workspace-git` 负责。
 
 -----
 
@@ -34,8 +33,9 @@ kind: "package-reference"
 <a id="known-limitations-and-deferred-work"></a>
 ## 已知限制与暂缓事项
 
-- 区段始终选择第一个已登记工作区，不提供工作区选择器。
-- 提交图谱渲染泳道与合并主干，不绘制水平连接曲线。
+- 提交图谱只覆盖 HEAD 可达历史；其它分支出现在分支卡片和提交引用装饰中。
+- 选择的工作区只保留在组件内；关闭再打开设置面板会回到当前会话所属的工作区。
+- 提交行高固定，因此一行中的引用标签超出可用宽度时会被裁切（完整列表见该行的悬停提示）。
 
 <a id="dev-note"></a>
 ### 开发备注
@@ -46,3 +46,5 @@ kind: "package-reference"
 None.
 
 </details>
+
+**运行时不变式：** 不发布伴生入口。该客户端面板只投射不可变的 RPC 快照，不持有独立的运行时状态。

@@ -3617,7 +3617,7 @@ export interface Config {
 }
 ```
 
-来源：[`packages/workspace/workspace-git/src/index.ts:14`](../packages/workspace/workspace-git/src/index.ts)
+来源：[`packages/workspace/workspace-git/src/index.ts:25`](../packages/workspace/workspace-git/src/index.ts)
 
 ## 无配置的可加载插件
 

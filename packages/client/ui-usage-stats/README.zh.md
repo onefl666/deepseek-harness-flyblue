@@ -54,3 +54,5 @@ kind: "package-reference"
 None.
 
 </details>
+
+**运行时不变式：** 不发布伴生入口。该客户端面板只渲染派生用量快照，不持有独立的运行时状态。

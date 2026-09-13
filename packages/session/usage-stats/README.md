@@ -62,3 +62,5 @@ None; it never assembles or sends a model request.
 None.
 
 </details>
+
+**Runtime invariant:** No companion is published. All values are read-only projections derived from authoritative session logs on demand.

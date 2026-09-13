@@ -44,3 +44,5 @@ None; workspace browsing does not participate in provider requests.
 None.
 
 </details>
+
+**Runtime invariant:** No companion is published. The client panel only renders bounded workspace reads and owns no independent runtime state.

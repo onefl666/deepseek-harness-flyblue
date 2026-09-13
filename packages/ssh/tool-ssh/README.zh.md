@@ -81,3 +81,5 @@ kind: "package-reference"
 None.
 
 </details>
+
+**运行时不变式：** 不发布伴生入口。工具注册跟随可选的 SSH 服务生命周期，一致性由工具注册表持有。

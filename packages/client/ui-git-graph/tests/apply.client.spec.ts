@@ -3,12 +3,17 @@ import { describe, expect, it, vi } from 'vitest'
 import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
 import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { resolveSlotLabel } from '@deepseek-ai/dsh-client-ui-slots'
+import type { WorkspaceId } from '@deepseek-ai/dsh-workspace/types'
 import { apply, inject } from '../src/client/index.ts'
 import { en, zh } from '../src/client/locales.ts'
 import { GitGraphSection } from '../src/client/section.tsx'
 import type { GitGraphInjected } from '../src/client/section.tsx'
+import { apply as nodeApply } from '../src/index.ts'
 
-async function bench(workspaceIds: readonly string[] = []) {
+/** The workspace every verb call in these cases addresses. */
+const WORKSPACE = 'ws-1' as WorkspaceId
+
+async function bench() {
   const ctx = new Context()
   await ctx.plugin(SlotRegistry).await()
   const locale = new LocaleRuntime(ctx)
@@ -29,9 +34,10 @@ async function bench(workspaceIds: readonly string[] = []) {
   const unstage = vi.fn(async () => failure)
   const discard = vi.fn(async () => failure)
   ctx.provide('remote.workspaceGit', { graph, status, branches, createBranch, switchBranch, stage, unstage, discard })
-  ctx.provide('workspaces', {
-    list: { getSnapshot: () => ({ items: workspaceIds.map(workspaceId => ({ workspaceId })) }) },
-  } as never)
+  // The section reads its scope from the global useWorkspaces seat, which the
+  // Workspace Controller backs; the plugin declares that dependency without
+  // calling the service itself.
+  ctx.provide('workspaces', { list: { getSnapshot: () => ({ items: [] }) } } as never)
   return { ctx, locale, slots: ctx.get('slots') as SlotRegistry, graph, status, branches, createBranch, switchBranch, stage, unstage, discard }
 }
 
@@ -47,8 +53,12 @@ describe('ui-git-graph apply', () => {
     expect(inject).toEqual(['slots', 'locale', 'remote', 'remote.workspaceGit', 'workspaces'])
   })
 
+  it('node-half apply is an intentional no-op', () => {
+    expect(() => { nodeApply() }).not.toThrow()
+  })
+
   it('registers the settings section and wires every Remote verb through its inject face', async () => {
-    const { ctx, locale, slots, graph, status, branches, createBranch, switchBranch, stage, unstage, discard } = await bench(['ws-1'])
+    const { ctx, locale, slots, graph, status, branches, createBranch, switchBranch, stage, unstage, discard } = await bench()
     locale.setLocale('zh')
     declare(slots)
     const fiber = ctx.plugin({ inject: [...inject], apply })
@@ -59,51 +69,38 @@ describe('ui-git-graph apply', () => {
     expect(entry.options).toMatchObject({ id: 'git-graph', order: 42 })
     expect(resolveSlotLabel(entry.options.label)).toBe('Git 图谱')
     const injected = (entry.inject as unknown as () => GitGraphInjected)()
-    await injected.graph('ws-1')
-    expect(graph).toHaveBeenCalledWith('ws-1')
-    await injected.status('ws-1')
-    expect(status).toHaveBeenCalledWith('ws-1')
-    await injected.branches('ws-1')
-    expect(branches).toHaveBeenCalledWith('ws-1')
-    await injected.createBranch('ws-1', 'feat')
-    expect(createBranch).toHaveBeenCalledWith('ws-1', 'feat')
-    await injected.switchBranch('ws-1', 'main')
-    expect(switchBranch).toHaveBeenCalledWith('ws-1', 'main')
-    await injected.stage('ws-1', 'a.ts')
-    expect(stage).toHaveBeenCalledWith('ws-1', 'a.ts')
-    await injected.unstage('ws-1', 'a.ts')
-    expect(unstage).toHaveBeenCalledWith('ws-1', 'a.ts')
-    await injected.discard('ws-1', 'a.ts', true)
-    expect(discard).toHaveBeenCalledWith('ws-1', 'a.ts', true)
-    expect(injected.workspaceId()).toBe('ws-1')
+    // The section resolves its scope itself, so every verb is addressed by the
+    // workspace id its caller passes rather than by one the face captured.
+    await injected.graph(WORKSPACE)
+    expect(graph).toHaveBeenCalledWith(WORKSPACE)
+    await injected.status(WORKSPACE)
+    expect(status).toHaveBeenCalledWith(WORKSPACE)
+    await injected.branches(WORKSPACE)
+    expect(branches).toHaveBeenCalledWith(WORKSPACE)
+    await injected.createBranch(WORKSPACE, 'feat')
+    expect(createBranch).toHaveBeenCalledWith(WORKSPACE, 'feat')
+    await injected.switchBranch(WORKSPACE, 'main')
+    expect(switchBranch).toHaveBeenCalledWith(WORKSPACE, 'main')
+    await injected.stage(WORKSPACE, 'a.ts')
+    expect(stage).toHaveBeenCalledWith(WORKSPACE, 'a.ts')
+    await injected.unstage(WORKSPACE, 'a.ts')
+    expect(unstage).toHaveBeenCalledWith(WORKSPACE, 'a.ts')
+    await injected.discard(WORKSPACE, 'a.ts', true)
+    expect(discard).toHaveBeenCalledWith(WORKSPACE, 'a.ts', true)
 
     await fiber.dispose()
     expect(slots.entries('settings.section')).toHaveLength(0)
     expect(() => locale.register('gitgraph', { zh, en })).not.toThrow()
   })
 
-  it('resolves the workspace id from the shared workspace source', async () => {
-    const { ctx, locale, slots } = await bench(['ws-a', 'ws-b'])
+  it('labels the entry in the active locale', async () => {
+    const { ctx, locale, slots } = await bench()
     locale.setLocale('en')
     declare(slots)
     const fiber = ctx.plugin({ inject: [...inject], apply })
     await fiber.await()
     const entry = slots.entries('settings.section')[0]!
     expect(resolveSlotLabel(entry.options.label)).toBe('Git graph')
-    const injected = (entry.inject as unknown as () => GitGraphInjected)()
-    expect(injected.workspaceId()).toBe('ws-a')
-    await fiber.dispose()
-  })
-
-  it('reports no workspace when the shared source is empty', async () => {
-    const { ctx, locale, slots } = await bench()
-    locale.setLocale('zh')
-    declare(slots)
-    const fiber = ctx.plugin({ inject: [...inject], apply })
-    await fiber.await()
-    const entry = slots.entries('settings.section')[0]!
-    const injected = (entry.inject as unknown as () => GitGraphInjected)()
-    expect(injected.workspaceId()).toBeUndefined()
     await fiber.dispose()
   })
 })

@@ -51,3 +51,5 @@ None; task-board RPCs do not assemble or send model requests.
 None.
 
 </details>
+
+**Runtime invariant:** No companion is published. Ledger writes are validated and serialized at each operation boundary, so there is no second live projection to compare.

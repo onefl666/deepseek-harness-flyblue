@@ -54,3 +54,5 @@ None; workspace-file RPCs do not assemble or send model requests.
 None.
 
 </details>
+
+**Runtime invariant:** No companion is published. The service is stateless across calls and revalidates path confinement for every filesystem operation.

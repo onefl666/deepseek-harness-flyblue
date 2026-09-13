@@ -49,3 +49,5 @@ None; this package never writes session events or prompt sections.
 None.
 
 </details>
+
+**Runtime invariant:** No companion is published. Init jobs are process-local and never enter the session log; indexed state is owned by the workspace `.codegraph/` tree.

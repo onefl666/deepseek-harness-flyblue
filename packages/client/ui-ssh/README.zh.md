@@ -41,3 +41,5 @@ kind: "package-reference"
 None.
 
 </details>
+
+**运行时不变式：** 不发布伴生入口。该客户端面板只投射 SSH Remote 服务，不持有独立的运行时状态。

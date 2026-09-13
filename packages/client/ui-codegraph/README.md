@@ -79,3 +79,5 @@ None; the dock and settings page never enter the model request.
 None.
 
 </details>
+
+**Runtime invariant:** No companion is published. The settings page and dock prompt own no durable state: disposal is proven by the HMR-safety spec, dismissed state is a session-scoped store, and index facts arrive from Remote polling.

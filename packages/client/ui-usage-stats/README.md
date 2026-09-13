@@ -51,3 +51,5 @@ None; it never participates in provider requests.
 None.
 
 </details>
+
+**Runtime invariant:** No companion is published. The client panel only renders derived usage snapshots and owns no independent runtime state.

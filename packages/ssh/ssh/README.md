@@ -54,3 +54,5 @@ The service adds no request tokens; loading or unloading its tool consumer can c
 None.
 
 </details>
+
+**Runtime invariant:** No companion is published. Host records are validated at mutation boundaries, and command connections have no durable secondary projection.
