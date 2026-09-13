@@ -76,7 +76,7 @@ export default defineConfig([{
   fixedExtension: false,
   dts: false,
   clean: false,
-  deps: { alwaysBundle: [/.*/] },
+  deps: { alwaysBundle: [/.*/], onlyBundle: false },
   plugins: [moduleProxyPlugin, shellParserOnlyPlugin],
   outputOptions: { codeSplitting: false },
 }, {
