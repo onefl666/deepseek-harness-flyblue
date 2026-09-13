@@ -527,7 +527,8 @@ describe('SectionChrome', () => {
 
   it('disables the refresh control for caller reasons beyond busy', () => {
     render(<SectionChrome title="t" intro="i" busy={false} refreshDisabled onRefresh={() => {}} labels={labels} />)
-    expect(screen.getByRole('button', { name: 'Refresh' }).disabled).toBe(true)
+    const refresh = screen.getByRole('button', { name: 'Refresh' }) as HTMLButtonElement
+    expect(refresh.disabled).toBe(true)
   })
 
   it('announces the failure summary with the raw detail and retries through the strip', () => {
