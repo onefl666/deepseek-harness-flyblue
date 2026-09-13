@@ -86,6 +86,8 @@ flowchart LR
   cfg --> plugin_dsh_base_permission_unconfined
   plugin_dsh_base_shell_env["shell-env<br/>@deepseek-ai/dsh-shell-env"]
   cfg --> plugin_dsh_base_shell_env
+  plugin_dsh_base_windows_shell["windows-shell<br/>@deepseek-ai/dsh-windows-shell"]
+  cfg --> plugin_dsh_base_windows_shell
   plugin_dsh_base_tool_bash["tool-bash<br/>@deepseek-ai/dsh-tool-bash"]
   cfg --> plugin_dsh_base_tool_bash
   plugin_dsh_base_tool_pwsh["tool-pwsh<br/>@deepseek-ai/dsh-tool-pwsh"]
@@ -223,6 +225,7 @@ flowchart LR
 | `permission` | `@deepseek-ai/dsh-permission-presets` |
 | `permission-unconfined` | `danger-full-access` |
 | `shell-env` | `@deepseek-ai/dsh-shell-env` |
+| `windows-shell` | `@deepseek-ai/dsh-windows-shell` |
 | `tool-bash` | `@deepseek-ai/dsh-tool-bash` |
 | `tool-pwsh` | `@deepseek-ai/dsh-tool-pwsh` |
 | `tool-jobs` | `@deepseek-ai/dsh-tool-jobs` |

@@ -50,7 +50,7 @@ describe('dsh-base bundle', () => {
     expect(manifest.dependencies).toHaveProperty('@deepseek-ai/dsh-web-fetch-http')
   })
 
-  it('gates each shell stack by platform with a symmetric disabled expression', () => {
+  it('gates each shell stack by platform and env with a symmetric disabled expression', () => {
     const root = fileURLToPath(new URL('..', import.meta.url))
     const parsed = yaml.load(
       readFileSync(resolve(root, 'cordis.patch.yml'), 'utf8'),
@@ -63,22 +63,34 @@ describe('dsh-base bundle', () => {
         : [],
     )
     // Symmetric gating: each stack's executor and tool rows carry the same
-    // platform fact, inverted between the bash and pwsh twins, so exactly one
-    // shell stack mounts per host. Evaluate with a platform-scoped context
-    // (the `with` scope shadows the global `process`) so both outcomes pin on
-    // every host.
-    for (const [id, win32, linux] of [
-      ['bash-sandbox', true, false],
-      ['tool-bash', true, false],
-      ['pwsh-sandbox', false, true],
-      ['tool-pwsh', false, true],
+    // platform and DSH_WINDOWS_SHELL facts, complementary between the bash and
+    // pwsh twins, so exactly one shell stack mounts per host; the windows-shell
+    // preference row rides every win32 stack. Evaluate with a platform- and
+    // env-scoped context (the `with` scope shadows the global `process`) so
+    // every outcome pins on any host.
+    for (const [id, win32, win32Pwsh, linux] of [
+      ['bash-sandbox', true, true, false],
+      ['tool-bash', false, true, false],
+      ['pwsh-sandbox', true, false, true],
+      ['tool-pwsh', true, false, true],
+      ['windows-shell', false, false, true],
     ] as const) {
       const row = rows.find(candidate => candidate.id === id)
       if (row === undefined) throw new Error(`base patch must mount ${id}`)
       const expression = (row.disabled as { __jsExpr?: string } | undefined)?.__jsExpr
       if (expression === undefined) throw new Error(`${id} must gate on a !!js disabled expression`)
-      expect(Boolean(evaluate({ process: { platform: 'win32' } }, expression)), `${id} on win32`).toBe(win32)
-      expect(Boolean(evaluate({ process: { platform: 'linux' } }, expression)), `${id} on linux`).toBe(linux)
+      const disabledOn = (platform: string, windowsShell?: string): boolean => Boolean(evaluate(
+        {
+          process: {
+            platform,
+            env: windowsShell === undefined ? {} : { DSH_WINDOWS_SHELL: windowsShell },
+          },
+        },
+        expression,
+      ))
+      expect(disabledOn('win32'), `${id} on win32`).toBe(win32)
+      expect(disabledOn('win32', 'pwsh'), `${id} on win32/pwsh`).toBe(win32Pwsh)
+      expect(disabledOn('linux'), `${id} on linux`).toBe(linux)
     }
     // The platform layer folded into these rows: no separate patch file ships.
     expect(existsSync(resolve(root, 'windows.cordis.patch.yml'))).toBe(false)

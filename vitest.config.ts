@@ -337,6 +337,7 @@ export default defineConfig({
         'packages/client/ui-commands/src/client/PopupSelectView.tsx',
         'packages/client/ui-model-selection/src/index.ts',
         'packages/client/ui-permission-presets/src/index.ts',
+        'packages/client/ui-windows-shell/src/index.ts',
         'packages/client/ui-model-selection/src/client/ModelSelect.tsx',
         'packages/client/ui-model-selection/src/client/directory.ts',
         'packages/client/ui-model-selection/src/client/index.ts',

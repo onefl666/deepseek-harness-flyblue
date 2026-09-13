@@ -32,12 +32,13 @@ shell 组为 agent（智能体）提供命令执行能力：运行前台命令�
 | [`pwsh-local`](pwsh-local/README.zh.md) | 在 Windows 上以全新 `pwsh -Command` 进程运行 PowerShell 命令 | 注册 `ctx.shell` |
 | [`pwsh-sandbox`](pwsh-sandbox/README.zh.md) | 通过沙箱能力限制 PowerShell 命令运行 | 注册 `ctx.shell` |
 | [`shell-env`](shell-env/README.zh.md) | 提供每条 shell 命令都会收到的受管 `DSH_*` 环境 | `ctx.shellEnv` |
+| [`windows-shell`](windows-shell/README.zh.md) | 拥有持久的 Windows shell 偏好与启动期 `DSH_WINDOWS_SHELL` 播种 | settings 命名空间 `windows-shell` |
 | [`tool-bash`](tool-bash/README.zh.md) | 以 `bash` 工具向模型公开 Bash 执行与后台任务 | 注册到 `ctx.tools` |
 | [`tool-bash-persistent`](tool-bash-persistent/README.zh.md) | 在单个限定所有者范围的持久 Bash 会话中运行模型的 shell 调用 | 注册到 `ctx.tools` |
 | [`tool-pwsh`](tool-pwsh/README.zh.md) | 以 `pwsh` 工具向模型公开 PowerShell 执行 | 注册到 `ctx.tools` |
 | [`tool-pwsh-persistent`](tool-pwsh-persistent/README.zh.md) | 在单个限定所有者范围的持久 PowerShell 会话中运行模型的 shell 调用 | 注册到 `ctx.tools` |
 
-profile 层恰好选择一个执行器实现（本发行版保留 POSIX 行，并把 win32 层默认切到 Git Bash；`DSH_WINDOWS_SHELL=pwsh` 换回复受限 PowerShell 行；同时挂载两个会因服务重复注册而在加载期失败）以及所需的面向模型工具。沙箱化组合还会选择一个 `ctx.sandbox` 提供方与 `ctx.sandboxPolicy`；[base 组合包](../bundle/base/cordis.patch.yml)负责随产品交付的接线配置。
+profile 层恰好选择一个执行器实现（本发行版保留 POSIX 行，并把 win32 层默认切到 Git Bash；`DSH_WINDOWS_SHELL=pwsh` 换回复受限 PowerShell 行；同时挂载两个会因服务重复注册而在加载期失败）以及所需的面向模型工具。持久的 `windows-shell` 设置偏好会在下次启动时播种该变量，显式设置的变量仍按次优先；见 [windows-shell-preference Agent Note](../../.agents/notes/implemented/feature/2026-09-13-windows-shell-preference.zh.md)。沙箱化组合还会选择一个 `ctx.sandbox` 提供方与 `ctx.sandboxPolicy`；[base 组合包](../bundle/base/cordis.patch.yml)负责随产品交付的接线配置。
 
 -----
 

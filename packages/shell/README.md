@@ -32,12 +32,13 @@ The shell group provides command execution to agents: run a foreground command a
 | [`pwsh-local`](pwsh-local/README.md) | Runs PowerShell commands as fresh `pwsh -Command` processes on Windows | registers `ctx.shell` |
 | [`pwsh-sandbox`](pwsh-sandbox/README.md) | Runs PowerShell commands confined through the sandbox capability | registers `ctx.shell` |
 | [`shell-env`](shell-env/README.md) | Supplies the managed `DSH_*` environment every shell command receives | `ctx.shellEnv` |
+| [`windows-shell`](windows-shell/README.md) | Owns the durable Windows shell preference and the boot-time `DSH_WINDOWS_SHELL` seed | settings namespace `windows-shell` |
 | [`tool-bash`](tool-bash/README.md) | Exposes Bash execution and background jobs to the model as the `bash` tool | registers on `ctx.tools` |
 | [`tool-bash-persistent`](tool-bash-persistent/README.md) | Runs model shell calls in one owner-isolated persistent Bash session | registers on `ctx.tools` |
 | [`tool-pwsh`](tool-pwsh/README.md) | Exposes PowerShell execution to the model as the `pwsh` tool | registers on `ctx.tools` |
 | [`tool-pwsh-persistent`](tool-pwsh-persistent/README.md) | Runs model shell calls in one owner-isolated persistent PowerShell session | registers on `ctx.tools` |
 
-A profile layer selects exactly one executor implementation (this distribution keeps the POSIX rows and defaults the win32 layer to Git Bash; `DSH_WINDOWS_SHELL=pwsh` swaps in the confined PowerShell rows; mounting two fails loudly at load time on the duplicate service registration) and the model-facing tools it needs. A sandboxed composition also selects a `ctx.sandbox` provider and `ctx.sandboxPolicy`; the [base bundle](../bundle/base/cordis.patch.yml) owns the shipped wiring.
+A profile layer selects exactly one executor implementation (this distribution keeps the POSIX rows and defaults the win32 layer to Git Bash; `DSH_WINDOWS_SHELL=pwsh` swaps in the confined PowerShell rows; mounting two fails loudly at load time on the duplicate service registration) and the model-facing tools it needs. The durable `windows-shell` settings preference seeds that variable at the next launch, with an explicitly set variable still winning per invocation; see the [windows-shell-preference Agent Note](../../.agents/notes/implemented/feature/2026-09-13-windows-shell-preference.md). A sandboxed composition also selects a `ctx.sandbox` provider and `ctx.sandboxPolicy`; the [base bundle](../bundle/base/cordis.patch.yml) owns the shipped wiring.
 
 -----
 

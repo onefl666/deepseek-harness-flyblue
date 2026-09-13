@@ -277,6 +277,15 @@
     - id: shell-env
       name: '@deepseek-ai/dsh-shell-env'
 
+    # Durable preference for which win32 shell stack the rows above mount: the
+    # General-settings row writes the `windows-shell` section, and the next
+    # launch seeds DSH_WINDOWS_SHELL from it before the first composition (an
+    # explicitly set variable still wins per invocation). Restart-scoped — one
+    # executor mounts per host and a session's tool roster locks once it turns.
+    - id: windows-shell
+      name: '@deepseek-ai/dsh-windows-shell'
+      disabled: !!js process.platform !== 'win32'
+
     - id: tool-bash
       name: '@deepseek-ai/dsh-tool-bash'
       disabled: !!js process.platform === 'win32' && process.env.DSH_WINDOWS_SHELL === 'pwsh'

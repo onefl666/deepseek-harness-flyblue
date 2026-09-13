@@ -259,6 +259,7 @@
     { "path": "./packages/llm/llm-pi-ai" },
     { "path": "./packages/shell/bash-local" },
     { "path": "./packages/shell/shell-env" },
+    { "path": "./packages/shell/windows-shell" },
     { "path": "./packages/shell/gitbash-local" },
     { "path": "./packages/shell/gitbash-sandbox" },
     { "path": "./packages/shell/pwsh-local" },

@@ -118,6 +118,7 @@
     "@deepseek-ai/dsh-web-fetch-http": "workspace:^",
     "@deepseek-ai/dsh-web-search-deepseek": "workspace:^",
     "@deepseek-ai/dsh-workflow-worker-thread": "workspace:^",
+    "@deepseek-ai/dsh-windows-shell": "workspace:^",
     "@deepseek-ai/dsh-agent-instructions": "workspace:^"
   },
   "peerDependencies": {

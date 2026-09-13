@@ -60,7 +60,7 @@ describe('the shipped shell composition (real bundle layers)', () => {
     )
     const byId = new Map(rows.map(row => [row.id, row]))
     // One shared patch set, three rosters: the shell stacks gate themselves.
-    for (const id of ['bash-sandbox', 'gitbash-local', 'pwsh-sandbox', 'tool-bash', 'tool-pwsh', 'permission-unconfined']) {
+    for (const id of ['bash-sandbox', 'gitbash-local', 'pwsh-sandbox', 'tool-bash', 'tool-pwsh', 'permission-unconfined', 'windows-shell']) {
       expect(byId.has(id), `row ${id}`).toBe(true)
     }
     // POSIX is untouched: the confined bash stack mounts, whatever the env var.
@@ -74,6 +74,13 @@ describe('the shipped shell composition (real bundle layers)', () => {
     expect(disabledOn(byId.get('pwsh-sandbox')!, 'win32'), 'pwsh-sandbox on win32').toBe(true)
     expect(disabledOn(byId.get('gitbash-local')!, 'win32', 'pwsh'), 'gitbash-local on win32/pwsh').toBe(true)
     expect(disabledOn(byId.get('pwsh-sandbox')!, 'win32', 'pwsh'), 'pwsh-sandbox on win32/pwsh').toBe(false)
+    // The durable shell preference rides every win32 stack; POSIX never
+    // mounts it, so its settings namespace (and row) stays absent there.
+    for (const shell of ['unset', 'pwsh'] as const) {
+      expect(disabledOn(byId.get('windows-shell')!, 'linux', shell), `windows-shell on linux/${shell}`).toBe(true)
+    }
+    expect(disabledOn(byId.get('windows-shell')!, 'win32'), 'windows-shell on win32').toBe(false)
+    expect(disabledOn(byId.get('windows-shell')!, 'win32', 'pwsh'), 'windows-shell on win32/pwsh').toBe(false)
     // Host shell-tool rows are disabled on every platform; sessions mount
     // their own rows instead.
     expect(byId.get('tool-bash')?.disabled).toBe(true)
@@ -97,7 +104,7 @@ describe('the shipped shell composition (real bundle layers)', () => {
     // dependency closure into the profile's node_modules, so every bare
     // plugin name in the base patch must resolve from there.
     const cliManifest = JSON.parse(readFileSync(anchor, 'utf8')) as { dependencies?: Record<string, string> }
-    for (const name of ['@deepseek-ai/dsh-pwsh-sandbox', '@deepseek-ai/dsh-tool-pwsh', '@deepseek-ai/dsh-gitbash-local']) {
+    for (const name of ['@deepseek-ai/dsh-pwsh-sandbox', '@deepseek-ai/dsh-tool-pwsh', '@deepseek-ai/dsh-gitbash-local', '@deepseek-ai/dsh-windows-shell']) {
       expect(cliManifest.dependencies?.[name], `cold-start closure must reach ${name}`).toBeDefined()
     }
     expect(warnings).toEqual([])

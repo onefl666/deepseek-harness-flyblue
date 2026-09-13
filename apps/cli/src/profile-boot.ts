@@ -34,6 +34,7 @@ import {
 } from '@deepseek-ai/dsh-app-boot'
 import { resolveDshHome } from '@deepseek-ai/dsh-home-paths'
 import { installProxyFromEnvironment } from '@deepseek-ai/dsh-http-proxy'
+import { seedWindowsShellEnvironment } from '@deepseek-ai/dsh-windows-shell'
 import { DSH_LAUNCH_ENVIRONMENT_KEY, type LaunchEnvironmentSnapshot } from '@deepseek-ai/dsh-launch-environment'
 import { provideCmdline, type AppReady } from '@deepseek-ai/dsh-cmdline'
 import { createProcessShutdown, type ProcessShutdown } from './process-shutdown.ts'
@@ -288,6 +289,11 @@ export async function runProfile(options: RunProfileOptions): Promise<{ ctx: Con
     options.environment,
     (message) => { process.stderr.write(`${NAME}: ${message}\n`) },
   )
+
+  // The durable windows-shell preference is a composition fact: seeding the
+  // env key before the first mount lets the win32 shell rows read it, while an
+  // explicitly set variable keeps its per-invocation override.
+  seedWindowsShellEnvironment()
 
   const composed = await composeProfile(options.profile, options.patchFiles, options.fromDefaultProfile)
   const app: { current?: Context } = {}
