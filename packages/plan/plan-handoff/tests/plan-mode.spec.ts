@@ -570,7 +570,7 @@ describe('/plan', () => {
     const plainSteer = vi.fn()
     ;(plainAgent as unknown as { steer: typeof plainSteer }).steer = plainSteer
     expect(ctx.commands.list(plainAgent)).toEqual([
-      { definitionId: '@deepseek-ai/dsh-plan-mode', name: 'plan', description: 'Enter or leave plan mode', input: { hint: '[off|message]' } },
+      { definitionId: '@deepseek-ai/dsh-plan-mode', name: 'plan', description: 'Enter or leave plan mode', input: { hint: '[off|message]', attachments: true } },
     ])
 
     const signal = new AbortController().signal
@@ -652,6 +652,88 @@ describe('/plan', () => {
     expect((await ctx.commands.execute(agent, '/plan off', [], signal))?.result)
       .toEqual({ kind: 'success', text: 'Plan mode off.' })
     expect(foldPlanMode(agent.session.snapshotEvents())).toBe(false)
+  })
+
+  it('steers mixed attachments with or without text and refuses them on /plan off', async () => {
+    const ctx = await setup()
+    await ctx.plugin(CommandRuntime)
+    await new Promise(resolve => setImmediate(resolve))
+    let saved = 0
+    const saveImage = (input: { mediaType: string }) => {
+      saved += 1
+      return Promise.resolve({
+        attachmentId: `att-${saved}`, mediaType: input.mediaType, bytes: 3, width: 1, height: 1,
+      })
+    }
+    ctx.provide('attachments', {
+      imageLimits: {
+        maxImageBytes: 1024, maxImagesPerMessage: 4, maxMessageImageBytes: 1024,
+        maxImagePixels: 1_000_000, mediaTypes: ['image/png'],
+      },
+      validateImage: () => Promise.resolve(),
+      saveImage,
+      async saveImages(inputs: readonly { mediaType: string }[]) {
+        const refs = []
+        for (const input of inputs) refs.push(await saveImage(input))
+        return refs
+      },
+      saveFile(input: { data: Uint8Array; name?: string }) {
+        saved += 1
+        return Promise.resolve({
+          attachmentId: `att-${saved}`, bytes: input.data.byteLength, name: input.name ?? 'attachment',
+        })
+      },
+    })
+    ctx.commands.registerFileReceiptResolver((agent, receiptId) => receiptId === 'receipt-notes'
+      ? { attachmentId: `file-${agent.id}` as never, bytes: 5, name: 'notes.txt' }
+      : undefined)
+    const signal = new AbortController().signal
+    const attachments = [
+      { type: 'image' as const, mediaType: 'image/png' as const, data: 'AAAA', name: 'diagram.png' },
+      { type: 'file' as const, receiptId: 'receipt-notes' },
+    ]
+
+    const agent = await agentWithSession(ctx, 'imaged-plan-command')
+    openTurn(agent.session)
+    const steer = vi.fn()
+    ;(agent as unknown as { steer: typeof steer }).steer = steer
+    const withMessage = await ctx.commands.execute(agent, '/plan sketch the layout', attachments, signal)
+    expect(withMessage?.result.kind).toBe('success')
+    expect(steer).toHaveBeenCalledExactlyOnceWith({
+      id: expect.any(String) as unknown,
+      role: 'user',
+      content: [
+        { type: 'image', attachment: expect.objectContaining({ attachmentId: 'att-1' }) as unknown },
+        { type: 'file', attachment: expect.objectContaining({ attachmentId: 'file-imaged-plan-command', name: 'notes.txt' }) as unknown },
+        { type: 'text', text: 'sketch the layout' },
+      ],
+      source: { kind: 'user' },
+    })
+
+    const bareAgent = await agentWithSession(ctx, 'imaged-bare-plan-command')
+    openTurn(bareAgent.session)
+    const bareSteer = vi.fn()
+    ;(bareAgent as unknown as { steer: typeof bareSteer }).steer = bareSteer
+    expect((await ctx.commands.execute(bareAgent, '/plan', attachments, signal))?.result)
+      .toEqual({ kind: 'success', text: 'Entering plan mode (applies from the next step). Use /plan off to leave.' })
+    expect(bareSteer).toHaveBeenCalledExactlyOnceWith({
+      id: expect.any(String) as unknown,
+      role: 'user',
+      content: [
+        { type: 'image', attachment: expect.objectContaining({ attachmentId: 'att-2' }) as unknown },
+        { type: 'file', attachment: expect.objectContaining({ attachmentId: 'file-imaged-bare-plan-command', name: 'notes.txt' }) as unknown },
+      ],
+      source: { kind: 'user' },
+    })
+    expect(ctx.planMode.get(bareAgent)).toEqual({ active: false, pending: true })
+
+    const activeAgent = await agentWithSession(ctx, 'imaged-off-plan-command', { active: true })
+    const offSteer = vi.fn()
+    ;(activeAgent as unknown as { steer: typeof offSteer }).steer = offSteer
+    expect((await ctx.commands.execute(activeAgent, '/plan off', attachments, signal))?.result)
+      .toEqual({ kind: 'error', text: 'Attachments cannot accompany /plan off.' })
+    expect(offSteer).not.toHaveBeenCalled()
+    expect(ctx.planMode.get(activeAgent)).toEqual({ active: true })
   })
 
   it('removes the contributed command when the plan-mode plugin is disposed', async () => {

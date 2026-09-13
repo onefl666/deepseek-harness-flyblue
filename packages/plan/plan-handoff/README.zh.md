@@ -10,7 +10,7 @@ kind: "package-reference"
 ## 概述
 
 
-按 agent（智能体）记录的 plan 协作状态：部署持有的指引、`/plan [message]` 进入、`/plan off` 退出，以及审阅后可选保留 / 压缩 / 清空上下文再执行的 `exit_plan_mode`。Plan mode 是软性指引；沙箱模式与审批策略独立强制限制。
+按 agent（智能体）记录的 plan 协作状态：部署持有的指引、`/plan [message]` 进入、`/plan off` 退出，以及审阅后可选保留 / 压缩 / 清空上下文再执行的 `exit_plan_mode`。`/plan` 可连同可选消息携带按选择顺序排列的图片与文件附件。Plan mode 是软性指引；沙箱模式与审批策略独立强制限制。
 
 本包在已交付组合中替换 `@deepseek-ai/dsh-plan-mode`。`ctx.planMode`、`plan/mode`、`/plan` 与 `exit_plan_mode` 名称不变。
 
@@ -82,6 +82,20 @@ through exit_plan_mode.
 #### KV Cache effect
 
 该段落在 plan mode 内稳定；进入或离开会从顺序 50 起改变系统提示词。
+
+### Human command
+
+#### What the model sees
+
+`/plan`、`/plan off` 及其终端结果都不进入模型历史。去除首尾空白后不等于 `off` 的后缀，或携带已准入附件的裸 `/plan`，会在选定 plan mode 后经 `agent.steer()` 成为一条用户消息：先是按选择顺序的已准入图片与文件块，后缀非空时再附上文本块。带附件的 `/plan off` 在模式变更前失败，因此派发它的编辑器会保留原附件。
+
+#### Token effect
+
+该条消息的历史 token 成本与单独提交同样内容相同。无附件的裸 `/plan` 与 `/plan off` 不增加 token；带附件的裸 `/plan` 有常规的图片与文件句柄成本；当最后一条请求头已描述当前模式时，激活状态下的退出会附加一条保留的切换提示。
+
+#### KV Cache effect
+
+该用户消息是仅追加的对话增长。进入或离开 plan mode 会改变更早的策略段落；提示追加在可复用请求前缀之后。
 
 ### Exit tool and execution prompt
 

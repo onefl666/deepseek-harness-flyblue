@@ -10,7 +10,7 @@ English | [中文](README.zh.md)
 ## Summary
 
 
-Logged, per-agent plan collaboration state with deployment-owned guidance, `/plan [message]` entry, `/plan off` exit, and a reviewed `exit_plan_mode` that offers keep / compact / clear execution after approval. Plan mode is soft guidance; sandbox mode and approval policy enforce restrictions independently.
+Logged, per-agent plan collaboration state with deployment-owned guidance, `/plan [message]` entry, `/plan off` exit, and a reviewed `exit_plan_mode` that offers keep / compact / clear execution after approval. `/plan` accepts ordered image and file attachments alongside its optional message. Plan mode is soft guidance; sandbox mode and approval policy enforce restrictions independently.
 
 This package replaces `@deepseek-ai/dsh-plan-mode` in shipped compositions. `ctx.planMode`, `plan/mode`, `/plan`, and `exit_plan_mode` keep the same names.
 
@@ -79,6 +79,20 @@ Inactive mode adds no tokens; active mode adds the configured section to every r
 #### KV Cache effect
 
 The section is stable within plan mode, but entering or leaving changes the system prompt from order 50 onward.
+
+### Human command
+
+#### What the model sees
+
+`/plan`, `/plan off`, and their terminal results stay outside model history. A trimmed suffix other than the exact `off` argument, or a bare `/plan` carrying admitted attachments, becomes one user message through `agent.steer()` after plan mode is selected: admitted image and file blocks in selection order, then the trimmed text block when the suffix is non-empty. `/plan off` with attachments fails before the mode changes, so the dispatching composer retains the originals.
+
+#### Token effect
+
+The steered message costs the same history tokens as submitting that content separately. Bare `/plan` without attachments and `/plan off` add none; bare `/plan` with attachments has the normal image and file-handle cost, and an active exit that the last request header already described adds the retained switch notice.
+
+#### KV Cache effect
+
+The user message is append-only conversation growth. Entering or leaving plan mode changes the earlier policy section; a notice is appended after the reusable request prefix.
 
 ### Exit tool and execution prompt
 
