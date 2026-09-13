@@ -29,6 +29,10 @@ const REVIEW_EXPECTED = join(SNAPSHOT_DIR, 'review.expected.md')
 const SIDEBAR_EXPECTED = join(SNAPSHOT_DIR, 'sidebar.expected.md')
 const APPROVED_EXPECTED = join(SNAPSHOT_DIR, 'approved.expected.md')
 const APPROVED_EXPANDED_EXPECTED = join(SNAPSHOT_DIR, 'approved-expanded.expected.md')
+// The rendered plan:policy section: the only model-visible pin for the
+// deployment's plan guidance, because headless corpus scenarios cannot enter
+// plan mode (their argv tasks never dispatch the /plan command).
+const PLAN_POLICY_EXPECTED = join(SNAPSHOT_DIR, 'plan-policy.expected.md')
 const MODE = webSnapshotMode()
 
 // One command line: /plan enters plan mode and submits the rest as the turn's
@@ -110,6 +114,18 @@ describe('web e2e: plan review takeover round trip', () => {
     // World state: the approval reached the tool, and plan mode is left behind.
     const results = sessionEvents.filter(e => e.type === 'tool/result')
     expect(JSON.stringify(results.at(-1))).toContain('Plan approved')
+    // The anchors are the section's own first and last sentences, so the pin
+    // covers the whole rendered plan:policy text without depending on the
+    // other prompt sections this composition mounts.
+    const planPolicy = /You are in plan mode\.[\s\S]*?do not proceed with implementation\./.exec(
+      sessionEvents
+        .filter((event): event is Extract<SessionEvent, { type: 'system/message' }> => event.type === 'system/message')
+        .flatMap(event => event.data.message.content)
+        .flatMap(block => block.type === 'text' ? [block.text] : [])
+        .join(''),
+    )?.[0] ?? ''
+    expect(planPolicy, 'plan:policy section rendered in the system prompt').not.toBe('')
+    await compareOrRefreshGolden(PLAN_POLICY_EXPECTED, planPolicy, MODE)
     await expect.poll(() => page.getByText('DONE', { exact: true }).count(), { timeout: 15_000 }).toBeGreaterThanOrEqual(1)
     // Card gone; regular input restored.
     expect(await page.locator('[data-plan-review-key]').count()).toBe(0)
@@ -130,7 +146,7 @@ describe('web e2e: plan review takeover round trip', () => {
   it.skipIf(MODE === 'record')('keeps the fixture inventory closed', async () => {
     await assertFixtureInventory(SNAPSHOT_DIR, [
       'session.v3.jsonl', 'review.expected.md', 'sidebar.expected.md',
-      'approved.expected.md', 'approved-expanded.expected.md',
+      'approved.expected.md', 'approved-expanded.expected.md', 'plan-policy.expected.md',
     ])
   })
 })
