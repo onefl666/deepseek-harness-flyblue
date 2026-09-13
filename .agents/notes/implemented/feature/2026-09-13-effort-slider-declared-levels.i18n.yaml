@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-13-effort-slider-declared-levels.md
+2026-09-13-effort-slider-declared-levels.md: aa88f9585e0f3973fdfa161e140accd443e30c85
+2026-09-13-effort-slider-declared-levels.zh.md: fcdd57feba125d60cf16627bd5d20ebf1d3fbd21

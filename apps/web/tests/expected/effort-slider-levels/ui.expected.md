@@ -1,0 +1,6 @@
+- menu "模型与推理等级":
+  - region "Effort settings":
+    - text: 关闭
+    - button "关于推理等级"
+    - slider "推理等级": "0"
+    - switch "滑动变祖器"

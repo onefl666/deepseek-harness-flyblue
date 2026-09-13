@@ -28,13 +28,14 @@ Status: implemented
 
 ## 后果
 
-仍加载 `dsh-web-app` 的新建或已有 web profile，会在输入框模型席位上看到该滑块，**设置 → 通用设置**也会多出大肥鱼 thumb 开关。CLI、headless 和 ACP 组装不挂该行。停用 `effort-slider` 会恢复原生芯片，且不移除 `/model`。
+仍加载 `dsh-web-app` 的新建或已有 web profile，会在输入框模型席位上看到该滑块，**设置 → 通用设置**也会多出大肥鱼 thumb 与 Ultracode 氛围开关。CLI、headless 和 ACP 组装不挂该行。停用 `effort-slider` 会恢复原生芯片，且不移除 `/model`。
 
 ## 测试
 
-`verify-cordis-config` 要求该包出现在 `packages/bundle/web-app/package.json`；knip 在 web-app 中忽略它，因为该行只在 `cordis.patch.yml` 中指名。`third-party/` 与 `vendor/` 一样成为翻译配对的发现排除项：它是钉住的依赖目录树，不是持续演进的翻译源文档。渲染输入框模型芯片或**设置 → 通用设置**的组装后 Web 快照已按滑块触发器与大肥鱼行刷新。declared-reasoning 场景通过自己的 overlay 把推理声明契约钉在原生 `ui-model-selection` 菜单上，因此继续断言适配器公布的精确等级列表，而不是驱动滑块的界面。
+`verify-cordis-config` 要求该包出现在 `packages/bundle/web-app/package.json`；knip 在 web-app 中忽略它，因为该行只在 `cordis.patch.yml` 中指名。`third-party/` 与 `vendor/` 一样成为翻译配对的发现排除项：它是钉住的依赖目录树，不是持续演进的翻译源文档。渲染输入框模型芯片或**设置 → 通用设置**的组装后 Web 快照已按滑块触发器、大肥鱼行与 Ultracode 氛围行刷新。declared-reasoning 场景通过自己的 overlay 把推理声明契约钉在原生 `ui-model-selection` 菜单上；滑块自己的声明档位界面由 effort-slider 场景单独断言，两个入口因此各自独立地描述同一份适配器公布的档位。
 
 ## 相关
 
+- [推理滑块跟随模型声明的推理档位](2026-09-13-effort-slider-declared-levels.zh.md)
 - [Web 输入框的会话模型选择](../../archived/feature/2026-07-24-web-session-model-selector.md)
 - [默认模型跟随选择器](../../archived/feature/2026-08-07-default-model-follows-the-picker.md)

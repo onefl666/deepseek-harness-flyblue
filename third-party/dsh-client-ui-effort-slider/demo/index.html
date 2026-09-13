@@ -93,18 +93,13 @@
       </select>
     </label>
     <label>等级
-      <input id="level" type="range" min="0" max="5" step="1" value="0" />
+      <input id="level" type="range" min="0" max="3" step="1" value="0" />
       <output id="levelOut">Off</output>
     </label>
-    <fieldset>
-      <legend>支持的档位</legend>
-      <label><input type="checkbox" data-level-toggle checked />Off</label>
-      <label><input type="checkbox" data-level-toggle checked />Low</label>
-      <label><input type="checkbox" data-level-toggle checked />Medium</label>
-      <label><input type="checkbox" data-level-toggle checked />High</label>
-      <label><input type="checkbox" data-level-toggle checked />Extra</label>
-      <label><input type="checkbox" data-level-toggle checked />Max</label>
-    </fieldset>
+    <label>档位集合
+      <select id="levels"></select>
+    </label>
+    <label><input type="checkbox" id="ultracode" checked />Ultracode 氛围</label>
     <label><input type="checkbox" id="liang" />滑动变祖器</label>
     <label><input type="checkbox" id="chibi" />大肥鱼</label>
   </div>
@@ -131,13 +126,74 @@
   <script src="../src/ds-effort-slider.js"></script>
   <script>
     (function () {
-      var LEVEL_NAMES = ["Off", "Low", "Medium", "High", "Extra", "Max"];
+      // 滑块档位来自真实配置：演示页用几组「适配器会公布的档位」验证
+      // 档数、顺序、标签与特效是否跟着走。
+      var LEVEL_SETS = [
+        {
+          id: "deepseek",
+          label: "Off / Low / High / Max（DeepSeek）",
+          levels: [
+            { id: "off", label: "关闭", canonical: "off" },
+            { id: "low", label: "低", canonical: "low" },
+            { id: "high", label: "高", canonical: "high" },
+            { id: "max", label: "最高", canonical: "max" }
+          ]
+        },
+        {
+          id: "pi",
+          label: "Off / High / Max（pi-ai 声明）",
+          levels: [
+            { id: "off", label: "关闭", canonical: "off" },
+            { id: "high", label: "高", canonical: "high" },
+            { id: "max", label: "最高", canonical: "max" }
+          ]
+        },
+        {
+          id: "full",
+          label: "六档全集",
+          levels: [
+            { id: "off", label: "关闭", canonical: "off" },
+            { id: "low", label: "低", canonical: "low" },
+            { id: "medium", label: "中", canonical: "medium" },
+            { id: "high", label: "高", canonical: "high" },
+            { id: "extra", label: "超高", canonical: "extra" },
+            { id: "max", label: "最高", canonical: "max" }
+          ]
+        },
+        {
+          id: "xhigh",
+          label: "Off / Xhigh / Max（pi-ai 扩展档）",
+          levels: [
+            { id: "off", label: "关闭", canonical: "off" },
+            { id: "xhigh", label: "极高", canonical: "xhigh" },
+            { id: "max", label: "最高", canonical: "max" }
+          ]
+        },
+        {
+          id: "custom",
+          label: "含未知档位（Ultra）",
+          levels: [
+            { id: "off", label: "关闭", canonical: "off" },
+            { id: "ultra", label: "Ultra", canonical: undefined },
+            { id: "max", label: "最高", canonical: "max" }
+          ]
+        }
+      ];
+
       var slider = document.getElementById("slider");
       var stage = document.getElementById("stage");
       var mode = document.getElementById("mode");
       var level = document.getElementById("level");
       var levelOut = document.getElementById("levelOut");
-      var toggles = Array.prototype.slice.call(document.querySelectorAll("[data-level-toggle]"));
+      var levelSelect = document.getElementById("levels");
+      var active = LEVEL_SETS[0];
+
+      LEVEL_SETS.forEach(function (set) {
+        var option = document.createElement("option");
+        option.value = set.id;
+        option.textContent = set.label;
+        levelSelect.appendChild(option);
+      });
 
       // Panel mode needs a positioned host wide enough for the popup; the
       // demo swaps the wrapper class and lets the component do the rest.
@@ -150,38 +206,52 @@
         host.classList.toggle("anchor", !inline);
       }
 
-      function applyLevel() {
-        slider.value = Number(level.value);
-        levelOut.textContent = LEVEL_NAMES[Number(level.value)];
+      function levelName(index) {
+        var entry = active.levels[index];
+        return entry ? entry.label : "";
       }
 
-      function applySupported() {
-        slider.supported = toggles.map(function (box) { return box.checked; });
+      function applyLevel() {
+        slider.value = Number(level.value);
+        levelOut.textContent = levelName(Number(level.value));
+      }
+
+      function applyLevelSet() {
+        slider.levels = active.levels;
+        level.max = String(active.levels.length - 1);
+        if (Number(level.value) > active.levels.length - 1) level.value = "0";
+        applyLevel();
       }
 
       mode.addEventListener("change", applyMode);
       level.addEventListener("input", applyLevel);
-      toggles.forEach(function (box) { box.addEventListener("change", applySupported); });
+      levelSelect.addEventListener("change", function () {
+        active = LEVEL_SETS.filter(function (set) {
+          return set.id === levelSelect.value;
+        })[0] || LEVEL_SETS[0];
+        applyLevelSet();
+      });
 
+      slider.addEventListener("ds-liang-toggle", function (event) {
+        document.getElementById("liang").checked = event.detail.enabled;
+      });
       document.getElementById("liang").addEventListener("change", function (event) {
         slider.liang = event.target.checked;
       });
       document.getElementById("chibi").addEventListener("change", function (event) {
         slider.chibi = event.target.checked;
       });
-
-      // The component's own liang switch stays in sync with the demo control.
-      slider.addEventListener("ds-liang-toggle", function (event) {
-        document.getElementById("liang").checked = event.detail.enabled;
+      document.getElementById("ultracode").addEventListener("change", function (event) {
+        slider.ultracode = event.target.checked;
       });
       slider.addEventListener("change", function (event) {
         level.value = String(event.detail.index);
-        levelOut.textContent = LEVEL_NAMES[event.detail.index];
+        levelOut.textContent = event.detail.level;
       });
 
       applyMode();
-      applySupported();
-      applyLevel();
+      slider.ultracode = document.getElementById("ultracode").checked;
+      applyLevelSet();
     })();
   </script>
 </body>

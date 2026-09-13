@@ -28,13 +28,14 @@ The plugin is not rewritten as a `@deepseek-ai/dsh-client-*` workspace package: 
 
 ## Consequences
 
-A new or existing web profile that still loads `dsh-web-app` shows the slider on the composer model seat, and **Settings → General** gains the Big Fat Fish thumb switch. CLI, headless, and ACP assemblies do not mount the row. Disabling `effort-slider` restores the native chip without removing `/model`.
+A new or existing web profile that still loads `dsh-web-app` shows the slider on the composer model seat, and **Settings → General** gains the Big Fat Fish thumb and Ultracode ambience switches. CLI, headless, and ACP assemblies do not mount the row. Disabling `effort-slider` restores the native chip without removing `/model`.
 
 ## Testing
 
-`verify-cordis-config` requires the package in `packages/bundle/web-app/package.json`; knip ignores it there because the row names it only in `cordis.patch.yml`. `third-party/` joins `vendor/` as a translation-pairing discovery exclusion: a pinned dependency tree, not evolving translation source. The assembled Web goldens that render the composer model chip or **Settings → General** were refreshed to the slider's trigger and the Big Fat Fish row. The declared-reasoning scenario pins the reasoning-declaration contract to the native `ui-model-selection` menu through its overlay, so it keeps asserting the exact adapter-advertised level list instead of driving the slider's surface.
+`verify-cordis-config` requires the package in `packages/bundle/web-app/package.json`; knip ignores it there because the row names it only in `cordis.patch.yml`. `third-party/` joins `vendor/` as a translation-pairing discovery exclusion: a pinned dependency tree, not evolving translation source. The assembled Web goldens that render the composer model chip or **Settings → General** were refreshed to the slider's trigger and the Big Fat Fish row. The declared-reasoning scenario pins the reasoning-declaration contract to the native `ui-model-selection` menu through its overlay; the slider's own declared-level surface is asserted separately by the effort-slider scenario, so both entries describe the same adapter-advertised offer independently.
 
 ## Related
 
+- [The effort slider follows the model's declared reasoning levels](2026-09-13-effort-slider-declared-levels.md)
 - [Session model selection in the Web composer](../../archived/feature/2026-07-24-web-session-model-selector.md)
 - [Default model follows the picker](../../archived/feature/2026-08-07-default-model-follows-the-picker.md)

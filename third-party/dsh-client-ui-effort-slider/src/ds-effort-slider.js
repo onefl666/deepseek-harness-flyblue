@@ -7,40 +7,55 @@ const LEVELS = [
   { label: "Max", canonical: "max" },
 ];
 
-// 滑动变祖器（梁）feature：六档固定绑定六段，段首帧号 0/6/12/18/24/30，
-// 拖动时帧号随连续值逐帧变化，松手吸附后停在段首帧。
+// 滑动变祖器（梁）feature：六段名按比例铺在任意档位数上，段首帧号
+// 0/6/12/18/24/30，拖动时帧号随连续值逐帧变化，松手吸附后停在段首帧。
 const LIANG_STAGES = ["小难梁", "牢梁", "梁子", "梁圣", "梁神", "梁祖"];
 const LIANG_MAX_FRAME = 30;
 
-// Level identity: non-Max slots are deliberately monochrome — a very subtle
-// neutral gray that barely deepens with level, so the slider reads clean and
-// the only color moment is Max, which keeps its vivid violet identity (pixel
-// field + flowing gradient label). SOFT/DEEP are the lighter and darker poles
-// used by fills and shadows.
-const LEVEL_COLORS = [
-  [158, 158, 158], // Off
-  [151, 151, 151], // Low
-  [144, 144, 144], // Medium
-  [192, 186, 236], // High — light periwinkle
-  [186, 176, 232], // Extra
-  [182, 156, 240], // Max — light blue-purple
-];
-const LEVEL_COLORS_SOFT = [
-  [214, 214, 214],
-  [210, 210, 210],
-  [206, 206, 206],
-  [212, 208, 242],
-  [208, 202, 240],
-  [206, 184, 244],
-];
-const LEVEL_COLORS_DEEP = [
-  [120, 120, 120],
-  [114, 114, 114],
-  [108, 108, 108],
-  [124, 110, 190],
-  [120, 102, 186],
-  [114, 74, 198],
-];
+// Level identity is keyed by tier rather than by slider position: the level
+// count follows the model's real reasoning offers, so a positional palette
+// would repaint one level differently from one model to the next. Tiers below
+// High stay a barely-deepening neutral gray so the slider reads clean; High
+// keeps a light periwinkle and Max its vivid blue-purple identity (pixel field
+// + flowing gradient label). SOFT/DEEP are the lighter and darker poles used
+// by fills and shadows.
+const TIER_COLORS = {
+  off: [158, 158, 158],
+  minimal: [158, 158, 158],
+  low: [151, 151, 151],
+  medium: [144, 144, 144],
+  high: [192, 186, 236],
+  extra: [186, 176, 232],
+  xhigh: [186, 176, 232],
+  max: [182, 156, 240],
+  custom: [158, 158, 158],
+};
+const TIER_COLORS_SOFT = {
+  off: [214, 214, 214],
+  minimal: [214, 214, 214],
+  low: [210, 210, 210],
+  medium: [206, 206, 206],
+  high: [212, 208, 242],
+  extra: [208, 202, 240],
+  xhigh: [208, 202, 240],
+  max: [206, 184, 244],
+  custom: [214, 214, 214],
+};
+const TIER_COLORS_DEEP = {
+  off: [120, 120, 120],
+  minimal: [120, 120, 120],
+  low: [114, 114, 114],
+  medium: [108, 108, 108],
+  high: [124, 110, 190],
+  extra: [120, 102, 186],
+  xhigh: [120, 102, 186],
+  max: [114, 74, 198],
+  custom: [120, 120, 120],
+};
+
+// Tiers whose level carries the pixel field (max) or its weaker ripple prelude
+// (high / xhigh / extra). Unknown level names get neither.
+const RIPPLE_TIERS = { high: "high", xhigh: "extra", extra: "extra" };
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const smoothstep = (edge0, edge1, value) => {
@@ -63,6 +78,31 @@ const interpColor = (a, b, t) => [
   mix(a[2], b[2], t),
 ];
 
+// Unknown level names collapse to this tier: neutral color, no field.
+const CUSTOM_TIER = "custom";
+
+/** Tier of one level entry; a name no tier knows collapses to {@link CUSTOM_TIER}. */
+function levelTier(level) {
+  const canonical = level ? level.canonical : void 0;
+  return typeof canonical === "string" && TIER_COLORS[canonical] ? canonical : CUSTOM_TIER;
+}
+
+/** 滑动变祖器段号：档位数 count 下第 index 档，最高档恒为最后一段（梁祖）。 */
+function liangStageForIndex(index, count) {
+  if (!Number.isFinite(count) || count <= 1) return 0;
+  const safe = clamp(index, 0, count - 1);
+  return clamp(
+    Math.round((safe * (LIANG_STAGES.length - 1)) / (count - 1)),
+    0,
+    LIANG_STAGES.length - 1,
+  );
+}
+
+/** One tier-color triplet per level, in level order. */
+function tierPalette(levels, table) {
+  return levels.map((level) => table[levelTier(level)] || table[CUSTOM_TIER]);
+}
+
 let instanceCount = 0;
 
 // Timing adapter. The Web Component never touches native browser timer globals
@@ -79,11 +119,11 @@ let effortTiming = {
 class DsEffortSlider extends HTMLElement {
   static get observedAttributes() {
     return [
-      "value", "open", "disabled", "supported", "inline",
+      "value", "open", "disabled", "inline",
       "label", "axis-low", "axis-high", "tooltip",
       "input-aria-label", "help-aria-label",
       "liang", "liang-asset-base", "liang-label",
-      "chibi", "chibi-sprite",
+      "chibi", "chibi-sprite", "ultracode",
     ];
   }
 
@@ -94,6 +134,9 @@ class DsEffortSlider extends HTMLElement {
     this._value = 0;
     this._levelIndex = 0;
     this._levels = LEVELS;
+    this._levelPalette = tierPalette(LEVELS, TIER_COLORS);
+    this._levelPaletteSoft = tierPalette(LEVELS, TIER_COLORS_SOFT);
+    this._levelPaletteDeep = tierPalette(LEVELS, TIER_COLORS_DEEP);
     this._ticks = [];
     this._dragging = false;
     this._canvasFrame = 0;
@@ -104,7 +147,14 @@ class DsEffortSlider extends HTMLElement {
     this._closeTimer = 0;
     this._lastCanvasFrame = 0;
     this._maxStartedAt = 0;
+    // 目标强度（0/1）；每帧朝它做指数逼近，因此任何时刻改变目标都是从当前值
+    // 续走的非线性动画，而不是重新播放。_reveal 驱动整个像素场，_ultracodeIntensity
+    // 只驱动画布上的氛围（冲击波 + 极光），所以关掉开关不会动到像素场本身。
+    this._revealTarget = 0;
     this._reveal = 0;
+    this._ultracodeTarget = 0;
+    this._ultracodeIntensity = 0;
+    this._lastTick = 0;
     this._isMax = false;
     this._reflectingValue = false;
     this._reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -139,6 +189,12 @@ class DsEffortSlider extends HTMLElement {
           syntax: "<color>";
           inherits: true;
           initial-value: #787878;
+        }
+
+        @property --ds-effort-ultracode {
+          syntax: "<number>";
+          inherits: true;
+          initial-value: 0;
         }
 
         :host {
@@ -181,12 +237,16 @@ class DsEffortSlider extends HTMLElement {
           --light-strength: 0;
           --ds-effort-width: min(21rem, calc(100vw - 2rem));
           --ease-decay: cubic-bezier(0.2, 0, 0, 1);
+          /* Ultracode 氛围强度：0→1 由 CSS 过渡驱动，因此每一帧都从"当前值"
+             续走 —— 快速来回切换档位时不会从头重播，也不会有跳变。 */
+          --ds-effort-ultracode: 0;
           transition-property:
             --ds-effort-progress,
             --ds-effort-level-color,
             --ds-effort-level-soft,
-            --ds-effort-level-deep;
-          transition-duration: 360ms;
+            --ds-effort-level-deep,
+            --ds-effort-ultracode;
+          transition-duration: 360ms, 360ms, 360ms, 360ms, 420ms;
           transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
           display: block;
           width: var(--ds-effort-width);
@@ -200,8 +260,23 @@ class DsEffortSlider extends HTMLElement {
           -moz-osx-font-smoothing: grayscale;
         }
 
+        :host([data-max][ultracode]) {
+          --ds-effort-ultracode: 1;
+          /* Entering is quicker than leaving: the destination state owns the
+             timing, so the two directions read differently on purpose. */
+          transition-duration: 360ms, 360ms, 360ms, 360ms, 340ms;
+          transition-timing-function:
+            cubic-bezier(0.25, 1, 0.5, 1),
+            cubic-bezier(0.25, 1, 0.5, 1),
+            cubic-bezier(0.25, 1, 0.5, 1),
+            cubic-bezier(0.25, 1, 0.5, 1),
+            cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
         :host([data-dragging]) {
-          transition-duration: 0ms;
+          /* Dragging zeroes only the geometry/color transitions; the ambience
+             keeps its ramp so dragging into Max still blooms. */
+          transition-duration: 0ms, 0ms, 0ms, 0ms, 420ms;
         }
 
         *, *::before, *::after {
@@ -225,7 +300,12 @@ class DsEffortSlider extends HTMLElement {
           bottom: 3.25rem;
           width: 100%;
           padding: 0.75rem 1rem;
-          border: 1px solid var(--ds-effort-outline);
+          border: 1px solid
+            color-mix(
+              in srgb,
+              var(--ds-effort-outline),
+              transparent calc(100% * var(--ds-effort-ultracode))
+            );
           border-radius: 1rem;
           background: color-mix(in srgb, var(--ds-effort-surface) 88%, transparent);
           -webkit-backdrop-filter: blur(10px) saturate(1.3);
@@ -233,7 +313,11 @@ class DsEffortSlider extends HTMLElement {
           box-shadow:
             0 1px 2px rgba(62, 56, 50, 0.05),
             0 4px 10px rgba(62, 56, 50, 0.04),
-            0 12px 28px rgba(62, 56, 50, 0.06);
+            0 12px 28px rgba(62, 56, 50, 0.06),
+            0 0 0 1px
+              color-mix(in srgb, var(--ds-effort-accent) calc(42% * var(--ds-effort-ultracode)), transparent),
+            0 10px 34px
+              color-mix(in srgb, var(--ds-effort-accent) calc(30% * var(--ds-effort-ultracode)), transparent);
           opacity: 1;
           transform: translateY(0);
           transform-origin: bottom right;
@@ -340,7 +424,7 @@ class DsEffortSlider extends HTMLElement {
           color: var(--ds-effort-level-color);
         }
 
-        :host([data-level="3"]) .level-current {
+        :host([data-tier="high"]) .level-current {
           background: linear-gradient(90deg, #9ec2ff, #6aa2ff, #9ec2ff);
           background-size: 200% auto;
           -webkit-background-clip: text;
@@ -350,7 +434,8 @@ class DsEffortSlider extends HTMLElement {
           transition-property: opacity, transform, filter;
         }
 
-        :host([data-level="4"]) .level-current {
+        :host([data-tier="xhigh"]) .level-current,
+        :host([data-tier="extra"]) .level-current {
           background: linear-gradient(90deg, #c79bfb, #ad79f6, #c79bfb);
           background-size: 200% auto;
           -webkit-background-clip: text;
@@ -676,7 +761,7 @@ class DsEffortSlider extends HTMLElement {
           opacity: 0;
         }
 
-        :host([data-level="3"]) .track-fill {
+        :host([data-tier="high"]) .track-fill {
           background: radial-gradient(
             ellipse closest-side at var(--fill-x, 50%) 50%,
             rgba(130, 172, 255, 0.24) 0%,
@@ -684,7 +769,8 @@ class DsEffortSlider extends HTMLElement {
           );
         }
 
-        :host([data-level="4"]) .track-fill {
+        :host([data-tier="xhigh"]) .track-fill,
+        :host([data-tier="extra"]) .track-fill {
           background: radial-gradient(
             ellipse closest-side at var(--fill-x, 50%) 50%,
             rgba(176, 140, 250, 0.24) 0%,
@@ -745,7 +831,10 @@ class DsEffortSlider extends HTMLElement {
           );
         }
 
-        :host([data-max][data-pixels-ready]) .pixel-field {
+        /* Visibility follows "the field is being drawn", not "we are at Max":
+           leaving Max keeps the canvas alive until its intensity reaches zero,
+           so the CSS fade and the canvas wipe run together. */
+        :host([data-pixels-ready]) .pixel-field {
           opacity: 1;
         }
 
@@ -778,11 +867,6 @@ class DsEffortSlider extends HTMLElement {
           transition-property: opacity;
           transition-duration: 180ms;
           transition-timing-function: var(--ease-decay);
-        }
-
-        .tick[data-disabled] {
-          background: rgba(128, 128, 128, 0.22);
-          opacity: 0.45;
         }
 
         .tick.on {
@@ -1082,13 +1166,8 @@ class DsEffortSlider extends HTMLElement {
           transition-timing-function: var(--ease-decay);
         }
 
-        .trigger-bar:nth-child(1) { height: 30%; }
-        .trigger-bar:nth-child(2) { height: 44%; }
-        .trigger-bar:nth-child(3) { height: 58%; }
-        .trigger-bar:nth-child(4) { height: 72%; }
-        .trigger-bar:nth-child(5) { height: 86%; }
-        .trigger-bar:nth-child(6) { height: 100%; }
-
+        /* Bar height is set inline from the real level count, so the stack
+           always spans the full signal scale. */
         .trigger-bar.on {
           background: var(--ds-effort-level-color);
           box-shadow: 0 0 5px color-mix(in srgb, var(--ds-effort-level-color) 55%, transparent);
@@ -1159,6 +1238,78 @@ class DsEffortSlider extends HTMLElement {
           height: 2rem;
         }
 
+        /* ---------- Ultracode 氛围（最高档 + 开关开启） ---------- */
+        /* 两层装饰始终存在，只有"强度"随 --ds-effort-ultracode 变化：这样淡出
+           也是一次真实的过渡，而不是把元素撤掉导致的瞬灭。 */
+        /* 1px 流动渐变环：mask 掉内容盒，只留描边那一圈。阴影即外发光。 */
+        .panel::before {
+          content: "";
+          position: absolute;
+          inset: -1px;
+          padding: 1px;
+          border-radius: inherit;
+          background: linear-gradient(100deg, #a2c1ff, #ae9aef, #c9b9ea, #a2c1ff);
+          background-size: 300% 100%;
+          -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          -webkit-mask-composite: xor;
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask-composite: exclude;
+          box-shadow: 0 0 0 color-mix(in srgb, var(--ds-effort-accent) 0%, transparent);
+          opacity: var(--ds-effort-ultracode);
+          pointer-events: none;
+          animation: ds-effort-ultracode-flow 5s linear infinite;
+          /* Leaving: slower and softer. The rule that wins is the destination
+             state's, so entering and leaving get different curves. */
+          transition-property: opacity, box-shadow;
+          transition-duration: 560ms;
+          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        :host([data-max][ultracode]) .panel::before {
+          box-shadow: 0 10px 34px color-mix(in srgb, var(--ds-effort-accent) 32%, transparent);
+          transition-duration: 340ms;
+          transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes ds-effort-ultracode-flow {
+          to { background-position: 300% center; }
+        }
+
+        /* 内层极光洗色：低透明度斜向渐变压在面板内容之下，不改变任何排版。 */
+        .panel::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          z-index: -1;
+          border-radius: inherit;
+          background: linear-gradient(
+            115deg,
+            rgba(162, 193, 255, 0.14) 0%,
+            rgba(174, 154, 239, 0.1) 42%,
+            rgba(201, 185, 234, 0.05) 68%,
+            transparent 100%
+          );
+          opacity: var(--ds-effort-ultracode);
+          pointer-events: none;
+          transition-property: opacity;
+          transition-duration: 560ms;
+          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        :host([data-max][ultracode]) .panel::after {
+          transition-duration: 340ms;
+          transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Inline mode lays the panel out statically inside the menu; the ring
+           still needs the panel as its containing block, so restore relative
+           positioning without picking up the popup bottom offset. */
+        :host([inline][data-max][ultracode]) .panel {
+          position: relative;
+          right: auto;
+          bottom: auto;
+        }
+
         @media (max-width: 479px) {
           :host {
             --ds-effort-width: calc(100vw - 1.5rem);
@@ -1202,11 +1353,27 @@ class DsEffortSlider extends HTMLElement {
             animation: none;
           }
 
-          :host([data-level="3"]) .level-current,
-          :host([data-level="4"]) .level-current {
+          :host([data-tier="high"]) .level-current,
+          :host([data-tier="xhigh"]) .level-current,
+          :host([data-tier="extra"]) .level-current {
             background: none;
             color: var(--ds-effort-level-color);
             animation: none;
+          }
+
+          /* Ultracode 氛围在减动效下退化为静态紫描边：状态照常显示，只是
+             强度不再渐变、流光不再循环。 */
+          :host([data-max][ultracode]) .panel {
+            animation: none;
+          }
+
+          .panel::before {
+            animation: none;
+            transition-duration: 0.001ms;
+          }
+
+          .panel::after {
+            transition-duration: 0.001ms;
           }
 
           :host([open]) .panel {
@@ -1229,9 +1396,7 @@ class DsEffortSlider extends HTMLElement {
             aria-label="Effort level: Default"
           >
             <span class="trigger-value">Default</span>
-            <span class="trigger-bars" aria-hidden="true">
-              ${LEVELS.map(() => '<span class="trigger-bar"></span>').join("")}
-            </span>
+            <span class="trigger-bars" aria-hidden="true"></span>
           </button>
         </div>
 
@@ -1313,7 +1478,8 @@ class DsEffortSlider extends HTMLElement {
     this._tooltipText = this.shadowRoot.querySelector(".tooltip");
     this._trigger = this.shadowRoot.querySelector(".trigger");
     this._triggerValue = this.shadowRoot.querySelector(".trigger-value");
-    this._bars = this.shadowRoot.querySelectorAll(".trigger-bar");
+    this._barsEl = this.shadowRoot.querySelector(".trigger-bars");
+    this._bars = [];
     this._helpWrap = this.shadowRoot.querySelector(".help-wrap");
     this._helpButton = this.shadowRoot.querySelector(".help-button");
     this._liangPortrait = this.shadowRoot.querySelector(".liang-portrait");
@@ -1338,11 +1504,11 @@ class DsEffortSlider extends HTMLElement {
     });
     this._syncOpenState();
     this._syncDisabledState();
-    this._parseSupported();
     this._syncInlineState();
     this._syncTexts();
     this._syncLiang();
     this._syncChibi();
+    this._syncUltracode();
 
     this._input.addEventListener("pointerdown", (event) => this._onPointerDown(event), { signal });
     this._input.addEventListener("pointerup", (event) => this._onPointerUp(event), { signal });
@@ -1438,9 +1604,9 @@ class DsEffortSlider extends HTMLElement {
     ) {
       this._syncTexts();
     }
-    if (name === "supported") this._parseSupported();
     if (name === "liang" || name === "liang-asset-base" || name === "liang-label") this._syncLiang();
     if (name === "chibi" || name === "chibi-sprite") this._syncChibi();
+    if (name === "ultracode") this._syncUltracode();
   }
 
   get value() {
@@ -1470,18 +1636,6 @@ class DsEffortSlider extends HTMLElement {
 
   set disabled(nextDisabled) {
     this.toggleAttribute("disabled", Boolean(nextDisabled));
-  }
-
-  get supported() {
-    return this._supportedSet;
-  }
-
-  set supported(value) {
-    if (value == null) {
-      this.removeAttribute("supported");
-      return;
-    }
-    this.setAttribute("supported", JSON.stringify(value));
   }
 
   get levels() {
@@ -1521,6 +1675,15 @@ class DsEffortSlider extends HTMLElement {
     this.toggleAttribute("chibi", Boolean(next));
   }
 
+  /** Ultracode 氛围光效开关：属性本身即状态，光环由 CSS 依属性匹配。 */
+  get ultracode() {
+    return this.hasAttribute("ultracode");
+  }
+
+  set ultracode(next) {
+    this.toggleAttribute("ultracode", Boolean(next));
+  }
+
   /** 当前档位对应的梁段名（如「梁祖」）。 */
   get liangStage() {
     return LIANG_STAGES[clamp(this._levelIndex, 0, LIANG_STAGES.length - 1)];
@@ -1528,6 +1691,9 @@ class DsEffortSlider extends HTMLElement {
 
   _syncLevels() {
     if (!this._ticksEl) return;
+    this._levelPalette = tierPalette(this._levels, TIER_COLORS);
+    this._levelPaletteSoft = tierPalette(this._levels, TIER_COLORS_SOFT);
+    this._levelPaletteDeep = tierPalette(this._levels, TIER_COLORS_DEEP);
     this._ticksEl.textContent = "";
     this._ticks = [];
     for (let i = 0; i < this._levels.length; i += 1) {
@@ -1536,8 +1702,21 @@ class DsEffortSlider extends HTMLElement {
       this._ticksEl.appendChild(tick);
       this._ticks.push(tick);
     }
+    // Trigger bars carry the real level count; each bar's height is its rank's
+    // share of the full signal scale, so the stack reads the same at any count.
+    if (this._barsEl) {
+      this._barsEl.textContent = "";
+      this._bars = [];
+      for (let i = 0; i < this._levels.length; i += 1) {
+        const bar = document.createElement("span");
+        bar.className = "trigger-bar";
+        bar.style.height = `${(100 * (i + 1)) / this._levels.length}%`;
+        this._barsEl.appendChild(bar);
+        this._bars.push(bar);
+      }
+    }
     this._input.max = String(this._levels.length - 1);
-    this._supportedSet = new Set(this._levels.map((_, i) => i));
+    this._input.setAttribute("aria-valuemax", String(this._levels.length - 1));
     this._syncTickStates();
     this._setValue(this._value, { animateLabel: false, reflect: false });
   }
@@ -1545,12 +1724,10 @@ class DsEffortSlider extends HTMLElement {
   _syncTickStates() {
     this.toggleAttribute(
       "data-max-supported",
-      this._levels.some((level) => level.canonical === "max"),
+      this._levels.some((level) => levelTier(level) === "max"),
     );
     for (let i = 0; i < this._ticks.length; i += 1) {
-      const tick = this._ticks[i];
-      tick.style.setProperty("--tick-frac", String(this._valueToDisplay(i)));
-      tick.toggleAttribute("data-disabled", !this._isSupported(i));
+      this._ticks[i].style.setProperty("--tick-frac", String(this._valueToDisplay(i)));
     }
   }
 
@@ -1560,45 +1737,6 @@ class DsEffortSlider extends HTMLElement {
     const idx = clamp(Number.isFinite(value) ? value : 0, 0, n - 1);
     if (n <= 1) return 0.5;
     return idx / (n - 1);
-  }
-
-  _parseSupported() {
-    const raw = this.getAttribute("supported");
-    const allIndices = this._levels.map((_, i) => i);
-    let set = new Set(allIndices);
-    if (raw) {
-      let parsed = null;
-      try {
-        parsed = JSON.parse(raw);
-      } catch {
-        parsed = null;
-      }
-      if (Array.isArray(parsed) && parsed.length) {
-        const booleanList =
-          parsed.length === this._levels.length &&
-          parsed.every((entry) => typeof entry === "boolean");
-        const candidate = new Set();
-        parsed.forEach((entry, index) => {
-          if (booleanList) {
-            if (entry) candidate.add(index);
-          } else if (typeof entry === "number" && Number.isInteger(entry)) {
-            candidate.add(entry);
-          }
-        });
-        if (candidate.size) set = candidate;
-      }
-    }
-    // index 0 (Default) is ALWAYS treated as supported.
-    set.add(0);
-    for (const index of Array.from(set)) {
-      if (index < 0 || index >= this._levels.length || !Number.isInteger(index)) set.delete(index);
-    }
-    this._supportedSet = new Set([...set].sort((a, b) => a - b));
-    if (this._ticks.length) this._syncTickStates();
-  }
-
-  _isSupported(index) {
-    return this._supportedSet ? this._supportedSet.has(index) : true;
   }
 
   _cancelTimer(key) {
@@ -1695,8 +1833,8 @@ class DsEffortSlider extends HTMLElement {
   _labelTextForIndex(index) {
     const level = this._levels[index];
     const base = level ? level.label : "";
-    if (this.liang && index >= 0 && index < LIANG_STAGES.length) {
-      return `${base} ${LIANG_STAGES[index]}`;
+    if (this.liang && index >= 0) {
+      return `${base} ${LIANG_STAGES[liangStageForIndex(index, this._levels.length)]}`;
     }
     return base;
   }
@@ -1709,6 +1847,8 @@ class DsEffortSlider extends HTMLElement {
     if (this._triggerValue && this._triggerValue.textContent !== text) {
       this._triggerValue.textContent = text;
     }
+    // 梁段名是可见文案的一部分，范围值描述也要跟着走。
+    if (this._input) this._input.setAttribute("aria-valuetext", text);
     if (this._trigger) {
       this._trigger.setAttribute("aria-label", `Effort level: ${text}`);
     }
@@ -1733,10 +1873,10 @@ class DsEffortSlider extends HTMLElement {
   }
 
   _liangFrameForValue(value) {
-    // 六档各占 5 个帧位的连续映射（同 Liang 原版：段内 6 帧含段首）
+    // 任意档位数都铺满 0..30 的帧序列（段内连续，段首对齐）
     const v = clamp(Number.isFinite(value) ? value : 0, 0, this._levels.length - 1);
-    const span = 30 / Math.max(1, this._levels.length - 1);
-    return clamp(Math.round(v * span), 0, 30);
+    const span = LIANG_MAX_FRAME / Math.max(1, this._levels.length - 1);
+    return clamp(Math.round(v * span), 0, LIANG_MAX_FRAME);
   }
 
   _resizeLiangCanvas() {
@@ -1768,8 +1908,11 @@ class DsEffortSlider extends HTMLElement {
   }
 
   _updateLiangAria(frame) {
-    // 与原版一致：每 5 帧一段；30 帧单独归入最后一段
-    const stageIndex = clamp(Math.floor(frame / 5), 0, LIANG_STAGES.length - 1);
+    // 帧号按比例归到六段：30 帧落在最后一段
+    const stageIndex = liangStageForIndex(
+      (frame / LIANG_MAX_FRAME) * (LIANG_STAGES.length - 1),
+      LIANG_STAGES.length,
+    );
     this._liangCanvas.setAttribute("aria-label", `梁系强度：${LIANG_STAGES[stageIndex]}`);
   }
 
@@ -1796,6 +1939,13 @@ class DsEffortSlider extends HTMLElement {
     this.toggleAttribute("chibi", enabled);
     // 帧循环（静止 720ms / 拖拽 420ms / reduced-motion 冻结）全部由
     // CSS keyframes + [data-dragging] 属性驱动，无需 JS 定时器。
+  }
+
+  // Ultracode 氛围：光环由 CSS 按强度过渡。这里只负责把画布上的氛围强度指向
+  // 新目标 —— 无论当前强度在哪，它都会从那里续走。
+  _syncUltracode() {
+    this._ultracodeTarget = this._isMax && this.ultracode ? 1 : 0;
+    if (this._ultracodeTarget !== this._ultracodeIntensity) this._ensureCanvasLoop();
   }
 
   _onDocumentPointerDown(event) {
@@ -1889,16 +2039,16 @@ class DsEffortSlider extends HTMLElement {
     const t = smoothstep(0, 1, v - i);
     const n = Math.min(i + 1, this._levels.length - 1);
     return {
-      base: interpColor(LEVEL_COLORS[i], LEVEL_COLORS[n], t),
-      soft: interpColor(LEVEL_COLORS_SOFT[i], LEVEL_COLORS_SOFT[n], t),
-      deep: interpColor(LEVEL_COLORS_DEEP[i], LEVEL_COLORS_DEEP[n], t),
+      base: interpColor(this._levelPalette[i], this._levelPalette[n], t),
+      soft: interpColor(this._levelPaletteSoft[i], this._levelPaletteSoft[n], t),
+      deep: interpColor(this._levelPaletteDeep[i], this._levelPaletteDeep[n], t),
     };
   }
 
   _updateTicks(activeIndex) {
     if (!this._ticks) return;
     this._ticks.forEach((tick, i) => {
-      tick.classList.toggle("on", i <= activeIndex && this._isSupported(i));
+      tick.classList.toggle("on", i <= activeIndex);
     });
   }
 
@@ -1925,8 +2075,6 @@ class DsEffortSlider extends HTMLElement {
     this.style.setProperty("--ds-effort-level-color", rgb(color.base));
     this.style.setProperty("--ds-effort-level-soft", rgb(color.soft));
     this.style.setProperty("--ds-effort-level-deep", rgb(color.deep));
-    this.setAttribute("data-level", String(nextIndex));
-    this.toggleAttribute("data-glow", nextIndex >= 3);
 
     // 梁：拖动时逐帧换人像（连续值 → 帧号），松手吸附后停在段首帧
     if (this.liang) {
@@ -1950,20 +2098,20 @@ class DsEffortSlider extends HTMLElement {
 
     this._triggerValue.textContent = this._labelTextForIndex(nextIndex);
     this._trigger.setAttribute("aria-label", `Effort level: ${this._labelTextForIndex(nextIndex)}`);
-    const isMax = Boolean(level && level.canonical === "max");
+    const tier = levelTier(level);
+    this.setAttribute("data-tier", tier);
+    const isMax = tier === "max";
     this._setMax(isMax);
-    // High/Extra 时启动"点阵 + 水波纹"场（Max 的弱化前奏）；离开则停止
-    const mode = isMax ? "max" : nextIndex === 3 || nextIndex === 4 ? String(nextIndex) : null;
+    this.toggleAttribute("data-glow", tier === "high" || tier === "xhigh" || tier === "extra" || isMax);
+    // High/Xhigh/Extra 时启动"点阵 + 水波纹"场（Max 的弱化前奏）。
+    // 模式清空时循环不立刻停：Max 的淡出还要靠它把强度收回到 0。
+    const mode = isMax ? "max" : RIPPLE_TIERS[tier] || null;
     if (mode !== this._fieldMode) {
       this._fieldMode = mode;
       this._rippleStart = Date.now();
-      this.toggleAttribute("data-field", mode === "3" || mode === "4");
-      if (mode && mode !== "max") {
-        this._ensureCanvasLoop();
-      } else if (!mode) {
-        this._cancelTimer("_canvasFrame");
-        this._drawPixelField(Date.now());
-      }
+      if (mode && mode !== "max") this.setAttribute("data-field", mode);
+      else this.removeAttribute("data-field");
+      this._ensureCanvasLoop();
     }
 
     if (reflect) {
@@ -2015,26 +2163,22 @@ class DsEffortSlider extends HTMLElement {
     if (isMax === this._isMax) return;
     this._isMax = isMax;
     this.toggleAttribute("data-max", isMax);
-    if (isMax) {
-      this.setAttribute("data-pixels-ready", "");
-      this._reveal = this._reducedMotion.matches ? 1 : 0;
-      this._maxStartedAt = Date.now();
-      this._ensureCanvasLoop();
-    } else {
-      this._cancelTimer("_canvasFrame");
-      this.removeAttribute("data-pixels-ready");
-      this._reveal = 0;
-      this._drawPixelField(Date.now());
-    }
+    // The intensities are targets, never one-shot ramps: the draw loop eases the
+    // current values toward them, so reversing mid-flight resumes from where the
+    // field actually is instead of restarting.
+    this._revealTarget = isMax ? 1 : 0;
+    this._ultracodeTarget = isMax && this.ultracode ? 1 : 0;
+    this._maxStartedAt = Date.now();
+    this._lastTick = 0;
+    this.setAttribute("data-pixels-ready", "");
+    this._ensureCanvasLoop();
   }
 
   _onReducedMotionChange() {
-    if (this._isMax) {
-      this.setAttribute("data-pixels-ready", "");
-      this._reveal = this._reducedMotion.matches ? 1 : 0;
-      this._maxStartedAt = Date.now();
-      this._ensureCanvasLoop();
-    }
+    if (!this._isMax) return;
+    this.setAttribute("data-pixels-ready", "");
+    this._maxStartedAt = Date.now();
+    this._ensureCanvasLoop();
   }
 
   _resizeCanvas() {
@@ -2091,25 +2235,71 @@ class DsEffortSlider extends HTMLElement {
     this._pixelRows = rows;
   }
 
+  // Frame-rate-independent exponential approach. Because every frame reads the
+  // current value rather than elapsed time, changing a target mid-flight
+  // continues from that value — the curve is C0-continuous across interrupts.
+  _advanceIntensities(time) {
+    const dt = this._lastTick === 0 ? 16 : clamp(time - this._lastTick, 1, 64);
+    this._lastTick = time;
+    // Rising is quicker than falling, so the bloom arrives promptly and leaves
+    // gently. Both directions share the same interruptible exponential shape.
+    this._reveal = this._approach(this._reveal, this._revealTarget, dt, 240, 320);
+    this._ultracodeIntensity = this._approach(
+      this._ultracodeIntensity,
+      this._ultracodeTarget,
+      dt,
+      260,
+      360,
+    );
+  }
+
+  _approach(current, target, dt, tauUp, tauDown) {
+    const tau = target > current ? tauUp : tauDown;
+    const next = current + (target - current) * (1 - Math.exp(-dt / tau));
+    return Math.abs(target - next) < 0.002 ? target : next;
+  }
+
   _ensureCanvasLoop() {
     if (this._canvasFrame) return;
     if (this._reducedMotion.matches) {
+      this._reveal = this._revealTarget;
+      this._ultracodeIntensity = this._ultracodeTarget;
       this._drawPixelField(Date.now());
+      this._settleCanvas();
       return;
     }
     const frame = () => {
       const time = Date.now();
-      if (!this.isConnected || !this._fieldMode || this._reducedMotion.matches) {
+      if (!this.isConnected || this._reducedMotion.matches) {
         this._cancelTimer("_canvasFrame");
+        return;
+      }
+      if (!this._shouldDrawField()) {
+        this._settleCanvas();
         return;
       }
       if (time - this._lastCanvasFrame >= 33) {
         this._lastCanvasFrame = time;
-        if (this._isMax) this._reveal = smoothstep(0, 1, (time - this._maxStartedAt) / 1000);
+        this._advanceIntensities(time);
         this._drawPixelField(time);
+        this._settleCanvas();
       }
     };
     this._canvasFrame = effortTiming.raf(frame);
+  }
+
+  /** The canvas keeps running while a ripple field or any ambience intensity remains. */
+  _shouldDrawField() {
+    return this._fieldMode !== null || this._reveal > 0.002 || this._ultracodeIntensity > 0.002;
+  }
+
+  /** Retire the canvas once nothing is left to draw; clears the frozen last frame. */
+  _settleCanvas() {
+    if (this._shouldDrawField()) return;
+    this._cancelTimer("_canvasFrame");
+    this._lastTick = 0;
+    this.removeAttribute("data-pixels-ready");
+    this._drawPixelField(Date.now());
   }
 
   _drawPixelField(time) {
@@ -2120,11 +2310,12 @@ class DsEffortSlider extends HTMLElement {
     const height = this._canvas.height / ratio;
     context.setTransform(ratio, 0, 0, ratio, 0, 0);
     context.clearRect(0, 0, width, height);
-    if (this._fieldMode === "3" || this._fieldMode === "4") {
+    if (this._fieldMode === "high" || this._fieldMode === "extra") {
       this._drawRippleField(context, width, height, time, this._fieldMode);
       return;
     }
-    if (!this._isMax) return;
+    // 离开 Max 后 intensity 仍会在若干帧内收到 0，这段时间要把场画完。
+    if (this._reveal <= 0.002) return;
 
     const reveal = this._reducedMotion.matches ? 1 : this._reveal;
     const frontier = 1 - reveal;
@@ -2205,10 +2396,13 @@ class DsEffortSlider extends HTMLElement {
       );
 
       let lightAmount = flowingFlicker;
+      // Ultracode 让入场推进前沿更亮更宽，成为一道扫过轨道的冲击波。
+      const revealSpread = this.ultracode ? 0.03 : 0.012;
+      const revealGain = this.ultracode ? 0.72 : 0.4;
       const revealGlow = reveal < 0.995
-        ? Math.exp(-((nX - frontier) ** 2) / 0.012) * (1 - smoothstep(0.7, 1, reveal))
+        ? Math.exp(-((nX - frontier) ** 2) / revealSpread) * (1 - smoothstep(0.7, 1, reveal))
         : 0;
-      lightAmount = Math.max(lightAmount, revealGlow * (0.4 + base * 0.4));
+      lightAmount = Math.max(lightAmount, revealGlow * (revealGain + base * 0.4));
 
       const peakHighlight =
         lightAmount > 0.4
@@ -2265,13 +2459,52 @@ class DsEffortSlider extends HTMLElement {
       context.fillRect(x + gap * 0.5, y + gap * 0.5, cell - gap, cell - gap);
     }
 
+    // Ultracode 氛围：入场冲击波（推进前沿上一条明亮的竖向波峰）与稳态极光，
+    // 两者都乘以氛围强度 —— 关掉开关或离开 Max 时会跟着淡出，而不是瞬灭。
+    const bloom = this._ultracodeIntensity;
+    if (bloom > 0.002 && this._revealTarget === 1 && reveal < 0.995) {
+      const crest = frontier * width;
+      const crestFade = (1 - smoothstep(0.72, 1, reveal)) * bloom;
+      const shockwave = context.createLinearGradient(crest - 26, 0, crest + 26, 0);
+      shockwave.addColorStop(0, "rgba(162, 193, 255, 0)");
+      shockwave.addColorStop(0.5, "rgba(226, 216, 255, 0.85)");
+      shockwave.addColorStop(1, "rgba(162, 193, 255, 0)");
+      context.globalCompositeOperation = "lighter";
+      context.globalAlpha = crestFade;
+      context.fillStyle = shockwave;
+      context.fillRect(crest - 26, 0, 52, height);
+      context.globalCompositeOperation = "source-over";
+      context.globalAlpha = 1;
+    }
+
+    // 稳态：一层缓慢横扫的紫色极光压在像素场上，让静止的场也有呼吸。
+    if (bloom > 0.002) {
+      const sweepPeriod = 7000;
+      const sweep = ((elapsed % sweepPeriod) / sweepPeriod) * 2 - 0.5;
+      const bandCenter = sweep * width;
+      const aurora = context.createLinearGradient(
+        bandCenter - width * 0.45,
+        0,
+        bandCenter + width * 0.45,
+        0,
+      );
+      aurora.addColorStop(0, "rgba(162, 193, 255, 0)");
+      aurora.addColorStop(0.5, "rgba(174, 154, 239, 0.30)");
+      aurora.addColorStop(1, "rgba(201, 185, 234, 0)");
+      context.globalCompositeOperation = "lighter";
+      context.globalAlpha = reveal * bloom;
+      context.fillStyle = aurora;
+      context.fillRect(0, 0, width, height);
+      context.globalCompositeOperation = "source-over";
+    }
+
     context.restore();
     context.globalAlpha = 1;
   }
 
-  // High(3)/Extra(4) 的弱化粒子场：稀疏点阵 + 随机闪烁 + 展开动画 +
+  // High/Xhigh/Extra 的弱化粒子场：稀疏点阵 + 随机闪烁 + 展开动画 +
   // 明暗水波纹。复用 Max 的预计算网格哈希，强度比 Max 弱很多，
-  // 颜色区分（High 蓝 / Extra 紫）。
+  // 颜色区分（High 蓝 / Xhigh、Extra 紫）。
   _drawRippleField(context, width, height, time, mode) {
     const ratio = Math.min(window.devicePixelRatio || 1, 2);
     const canvasWidth = this._canvas.width / ratio;
@@ -2281,8 +2514,8 @@ class DsEffortSlider extends HTMLElement {
       this._thumb.offsetWidth * 0.5;
     const originX = clamp(thumbX, 4, canvasWidth - 4);
 
-    // 蓝(High) / 紫(Extra) —— 区分于 Max 的深紫像素场
-    const blue = mode === "3" ? [130, 172, 255] : [176, 140, 250];
+    // 蓝(High) / 紫(Xhigh、Extra) —— 区分于 Max 的深紫像素场
+    const blue = mode === "high" ? [130, 172, 255] : [176, 140, 250];
     const elapsed = Math.max(0, time - (this._rippleStart || 0));
 
     const cells = this._pixelGrid || [];

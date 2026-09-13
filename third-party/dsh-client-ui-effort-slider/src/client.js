@@ -7,15 +7,29 @@
 // The demo/ page loads that component source directly.
 // =============================================================================
 
-// Canonical level tokens, ordered left to right. "default" is the special
-// leftmost slot that submits without reasoningEffort; "off" is a real level.
-const CANONICAL_ORDER = ["off", "low", "medium", "high", "extra", "max"];
-const DEFAULT_ALIASES = new Set([
-  "default", "off", "none", "disabled", "no", "auto",
-  "no reasoning", "no-reasoning", "no_reasoning",
-  "no effort", "no_effort",
-]);
-const MAX_ALIASES = new Set(["max", "maximum", "ultracode"]);
+// Canonical level tokens, ordered low to high. The slider never invents a
+// level: it renders exactly the adapter-declared effort list, in the adapter's
+// order. These tokens only pick a localized label and a visual tier for a
+// declared effort; a vocabulary none of them knows keeps the adapter's own
+// text and gets no bespoke color or effect.
+const CANONICAL_ORDER = ["off", "minimal", "low", "medium", "high", "xhigh", "extra", "max"];
+const TIER_ALIASES = {
+  default: "off",
+  none: "off",
+  disabled: "off",
+  no: "off",
+  auto: "off",
+  "no reasoning": "off",
+  "no-reasoning": "off",
+  "no_reasoning": "off",
+  "no effort": "off",
+  "no_effort": "off",
+  maximum: "max",
+  ultracode: "max",
+  med: "medium",
+  mid: "medium",
+  extreme: "extra",
+};
 
 function normalizeName(name) {
   return String(name == null ? "" : name)
@@ -25,59 +39,54 @@ function normalizeName(name) {
     .replace(/[()\[\]{}.,:;!?*"]/g, "");
 }
 
-// Map a provider effort display name to a canonical token. "default" means
-// the special Default slot; "off" is a real first level; unknown names
-// return undefined so they can be appended as adapter-specific extras.
-function canonicalToken(name) {
-  const n = normalizeName(name);
-  if (!n) return "default";
-  if (DEFAULT_ALIASES.has(n)) return n === "default" ? "default" : "off";
-  if (MAX_ALIASES.has(n)) return "max";
-  for (const token of CANONICAL_ORDER) {
-    if (n === token) return token;
-    if (n.includes(` ${token}`) || n.includes(`${token} `)) return token;
+// Tier of one adapter-declared effort, or undefined when the provider speaks a
+// vocabulary this UI has no tier for. The id is checked first: pi-ai ids are
+// the level token itself while names are only its capitalized display form.
+function tierToken(effort) {
+  for (const candidate of [effort.id, effort.name]) {
+    const n = normalizeName(candidate);
+    if (!n) continue;
+    if (TIER_ALIASES[n]) return TIER_ALIASES[n];
+    for (const token of CANONICAL_ORDER) {
+      if (n === token) return token;
+      if (n.includes(` ${token}`) || n.includes(`${token} `)) return token;
+    }
   }
-  if (n === "med" || n === "mid") return "medium";
-  if (n === "extreme") return "extra";
   return void 0;
 }
 
-function effortNameForId(reasoning, id) {
-  if (!reasoning || !Array.isArray(reasoning.efforts)) return void 0;
-  const eff = reasoning.efforts.find((e) => e.id === id);
-  return eff ? eff.name : void 0;
+// The slider's level list: exactly the efforts the model advertises, in their
+// advertised order. Known tiers take the localized label; everything else
+// keeps the adapter's own name so nothing is renamed away from the real config.
+function levelsFromReasoning(reasoning, t) {
+  if (!reasoning || !Array.isArray(reasoning.efforts)) return [];
+  return reasoning.efforts.map((effort) => {
+    const canonical = tierToken(effort);
+    const key = canonical === void 0 ? void 0 : `level.${canonical}`;
+    const localized = key === void 0 ? void 0 : t(key);
+    return {
+      id: effort.id,
+      canonical,
+      name: effort.name,
+      label: localized === void 0 || localized === key ? effort.name : localized,
+    };
+  });
 }
 
-// Fixed slider positions: Off is the leftmost real level; Default and any
-// adapter-specific strengths are offered below the slider.
-function computeSupported(reasoning) {
-  const supported = LEVELS.map(() => false);
-  if (reasoning && Array.isArray(reasoning.efforts)) {
-    for (const eff of reasoning.efforts) {
-      const idx = LEVELS.findIndex((level) => level.canonical === canonicalToken(eff.name));
-      if (idx >= 0) supported[idx] = true;
-    }
-  }
-  return supported;
+// The tier the component paints and animates with, mirroring its own table.
+function tierOf(level) {
+  return level && typeof level.canonical === "string" ? level.canonical : void 0;
 }
 
-// Nearest supported position at or below `from`; -1 when none exists.
-function nearestSupportedBelow(supported, from) {
-  for (let i = Math.min(from, supported.length - 1); i >= 0; i -= 1) {
-    if (supported[i]) return i;
-  }
-  return -1;
-}
-
-function effortIdForCanonical(reasoning, canonical) {
-  if (!reasoning || !Array.isArray(reasoning.efforts)) return void 0;
-  const eff = reasoning.efforts.find((e) => canonicalToken(e.name) === canonical);
-  return eff ? eff.id : void 0;
-}
+// 菜单里三块面板的深度：决定切换时哪一侧是"前进"，从而决定滑入/滑出的方向。
+const PANE_ORDER = { root: 0, model: 1, effort: 2 };
+// 面板进场/退场时长（毫秒）。退场略短于进场，切换才会显得跟手。
+const PANE_EXIT_MS = 240;
 
 // --- feature preference stores (localStorage-backed) -------------------------
-// 滑动变祖器（梁）与大肥鱼 thumb 的开关状态。组件内嵌的 liang 开关走
-// liangStore，设置页的 chibi 开关走 chibiStore；两处均持久化到当前浏览器。
+// 滑动变祖器（梁）、大肥鱼 thumb 与 Ultracode 氛围的开关状态。组件内嵌的梁开关走
+// liangStore，设置页的 chibi / ultracode 开关走各自的 store；三处均持久化到
+// 当前浏览器。氛围光效默认开启，用户关掉后三层光效一起消失。
 function readPref(key, fallback) {
   try {
     const raw = window.localStorage.getItem(key);
@@ -114,25 +123,29 @@ function makePrefStore(key, fallback) {
 
 const LIANG_STORAGE_KEY = "dsh-client-ui-effort-slider.liang";
 const CHIBI_STORAGE_KEY = "dsh-client-ui-effort-slider.chibi";
+const ULTRACODE_STORAGE_KEY = "dsh-client-ui-effort-slider.ultracode";
 const liangStore = makePrefStore(LIANG_STORAGE_KEY, false);
 const chibiStore = makePrefStore(CHIBI_STORAGE_KEY, false);
+const ultracodeStore = makePrefStore(ULTRACODE_STORAGE_KEY, true);
 
 // --- React wrapper around <ds-effort-slider> -------------------------------
 // React renders the custom element; all non-string interactions happen through
 // a ref + effect so we never fight React's attribute serialization.
 function EffortSlider(props) {
-  const { supported, value, disabled, onChange, labels, liang, chibi, onLiangChange } = props;
+  const { levels, value, disabled, onChange, labels, liang, chibi, ultracode, onLiangChange } = props;
   const ref = React.useRef(null);
   const onChangeRef = React.useRef(onChange);
   onChangeRef.current = onChange;
   const onLiangChangeRef = React.useRef(onLiangChange);
   onLiangChangeRef.current = onLiangChange;
 
+  // Level count must land before value: `value` clamps against the level list,
+  // so a shorter list applied afterwards would strand the thumb out of range.
   React.useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    el.supported = supported;
-  }, [supported]);
+    el.levels = levels;
+  }, [levels]);
 
   React.useEffect(() => {
     const el = ref.current;
@@ -151,6 +164,12 @@ function EffortSlider(props) {
     if (!el) return;
     el.chibi = Boolean(chibi);
   }, [chibi]);
+
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.ultracode = Boolean(ultracode);
+  }, [ultracode]);
 
   React.useEffect(() => {
     const el = ref.current;
@@ -222,9 +241,8 @@ function Chevron({ direction, className }) {
 // chooseEffort 的相等判断和 ModelDirectory 的 generation 计数器承担。
 function EffortPane(props) {
   const {
-    t, errorMessage, onReload, supported, value, onChange,
-    liang, chibi, onLiangChange, defaultActive, extras, activeEffort,
-    onChooseDefault, onChooseExtra,
+    t, errorMessage, onReload, levels, value, onChange,
+    liang, chibi, ultracode, onLiangChange,
   } = props;
   return [
     errorMessage !== null && React.createElement(
@@ -233,57 +251,37 @@ function EffortPane(props) {
       React.createElement("span", null, t("error.action", { message: errorMessage })),
       React.createElement("button", { type: "button", className: "ds-effort-retry", onClick: onReload }, t("action.reload")),
     ),
-    [
-      React.createElement(EffortSlider, {
-        key: "slider",
-        supported,
-        value,
-        onChange,
-        liang,
-        chibi,
-        onLiangChange,
-        labels: {
-          label: t("effort.title"),
-          axisLow: t("effort.axisLow"),
-          axisHigh: t("effort.axisHigh"),
-          tooltip: t("effort.tooltip"),
-          inputAria: t("effort.ariaLabel"),
-          helpAria: t("effort.helpAria"),
-          liangToggle: t("liang.toggle"),
-        },
-      }),
-      React.createElement(
-        "div",
-        { key: "extras", className: "ds-effort-extras" },
-        React.createElement(
-          "button",
-          {
-            type: "button",
-            role: "menuitemradio",
-            "aria-checked": defaultActive,
-            className: "ds-effort-extraItem" + (defaultActive ? " ds-effort-extraItemActive" : ""),
-            onClick: onChooseDefault,
+    // A model advertising a single effort has nothing to slide: it reads as one
+    // fixed level chip instead of a degenerate one-stop range.
+    levels.length < 2
+      ? React.createElement(
+          "div",
+          { className: "ds-effort-levelList", key: "single-level" },
+          levels.map((level) => React.createElement(
+            "span",
+            { className: "ds-effort-levelChip", key: level.id },
+            level.label,
+          )),
+        )
+      : React.createElement(EffortSlider, {
+          key: "slider",
+          levels,
+          value,
+          onChange,
+          liang,
+          chibi,
+          ultracode,
+          onLiangChange,
+          labels: {
+            label: t("effort.title"),
+            axisLow: t("effort.axisLow"),
+            axisHigh: t("effort.axisHigh"),
+            tooltip: t("effort.tooltip"),
+            inputAria: t("effort.ariaLabel"),
+            helpAria: t("effort.helpAria"),
+            liangToggle: t("liang.toggle"),
           },
-          React.createElement("span", null, t("effort.providerDefault")),
-        ),
-        extras.map((eff) => {
-          const active = activeEffort === eff.id;
-          return React.createElement(
-            "button",
-            {
-              type: "button",
-              role: "menuitemradio",
-              "aria-checked": active,
-              className: "ds-effort-extraItem" + (active ? " ds-effort-extraItemActive" : ""),
-              key: eff.id,
-              onClick: () => onChooseExtra(eff),
-            },
-            React.createElement("span", null, eff.name),
-            active && React.createElement("span", { className: "ds-effort-check" }, "✓"),
-          );
         }),
-      ),
-    ],
   ];
 }
 
@@ -298,23 +296,29 @@ function EffortModelSelect(props) {
   );
   const [open, setOpen] = React.useState(false);
   const [pane, setPane] = React.useState("root");
+  // 正在退场的上一块面板，以及当前面板是否已到达"就位"状态。两者都由 CSS
+  // 过渡驱动，所以中途再切换是从当前值续走，不会重播。
+  const [leavingPane, setLeavingPane] = React.useState(null);
+  const [paneSettled, setPaneSettled] = React.useState(true);
   const lastActionRef = React.useRef("load");
   const [toast, setToast] = React.useState(null);
   const toastSeq = React.useRef(0);
   const [chosenIndex, setChosenIndex] = React.useState(null);
-  const [defaultChosen, setDefaultChosen] = React.useState(false);
   const rootRef = React.useRef(null);
   const triggerRef = React.useRef(null);
   const itemRefs = React.useRef([]);
   const [liang, setLiang] = React.useState(() => liangStore.getSnapshot());
   const [chibi, setChibi] = React.useState(() => chibiStore.getSnapshot());
+  const [ultracode, setUltracode] = React.useState(() => ultracodeStore.getSnapshot());
 
   React.useEffect(() => {
     const unsubLiang = liangStore.subscribe(() => setLiang(liangStore.getSnapshot()));
     const unsubChibi = chibiStore.subscribe(() => setChibi(chibiStore.getSnapshot()));
+    const unsubUltracode = ultracodeStore.subscribe(() => setUltracode(ultracodeStore.getSnapshot()));
     return () => {
       unsubLiang();
       unsubChibi();
+      unsubUltracode();
     };
   }, []);
 
@@ -343,54 +347,64 @@ function EffortModelSelect(props) {
 
   const effectiveEffort = current ? (current.reasoningEffort ?? (reasoning ? reasoning.defaultEffort : void 0)) : void 0;
 
-  const supported = React.useMemo(() => computeSupported(reasoning), [reasoning]);
+  // The slider's levels ARE the adapter-declared list: one position per real
+  // effort, no phantom slots and nothing left over to offer elsewhere.
+  const levels = React.useMemo(() => levelsFromReasoning(reasoning, t), [reasoning, t]);
 
-  // The level that is actually applied (may differ from the user's chosen
-  // slider position when the chosen level is not supported by the model).
-  const appliedLevel = React.useMemo(() => {
-    if (reasoning === void 0) return void 0;
-    const effId = effectiveEffort;
-    if (effId === void 0) return { label: t("effort.providerDefault"), canonical: "default" };
-    const name = effortNameForId(reasoning, effId);
-    return { label: name || effId, canonical: canonicalToken(name) };
-  }, [reasoning, effectiveEffort, t]);
+  // Index of the effort actually applied. The provider default resolves to the
+  // level it names, so the thumb always rests on a real level.
+  const appliedIndex = React.useMemo(() => {
+    const found = levels.findIndex((level) => level.id === effectiveEffort);
+    return found >= 0 ? found : 0;
+  }, [levels, effectiveEffort]);
 
-  // Where the thumb should rest when the user has not clicked a slider slot.
-  const derivedIndex = React.useMemo(() => {
-    const applied = appliedLevel;
-    if (applied && applied.canonical && applied.canonical !== "default") {
-      const idx = LEVELS.findIndex((level) => level.canonical === applied.canonical);
-      if (idx >= 0) return idx;
-    }
-    return 0;
-  }, [appliedLevel]);
+  const appliedLevel = levels[appliedIndex];
 
-  const sliderIndex = chosenIndex !== null ? chosenIndex : derivedIndex;
-  const activeBars = Math.round(sliderIndex);
+  const sliderIndex = chosenIndex !== null ? chosenIndex : appliedIndex;
 
-  const effortLabel = defaultChosen
-    ? t("effort.providerDefault")
-    : (appliedLevel ? appliedLevel.label : void 0);
+  // The chip names the level the slider rests on. With no explicit effort the
+  // provider default resolves to the level it names, and a model advertising no
+  // default at all rests on its first level — there is no separate Default
+  // state. A model with no reasoning metadata advertises no level at all.
+  const baseEffortLabel = reasoning === void 0 || appliedLevel === void 0
+    ? void 0
+    : appliedLevel.label;
 
-  // 梁开启时：档位名后加段名（如「Max 梁祖」）。段名与组件内 LIANG_STAGES
-  // 同源（构建时同作用域拼接）。
-  const liangSuffix = liang && appliedLevel && appliedLevel.canonical && appliedLevel.canonical !== "default"
-    ? (() => {
-        const idx = LEVELS.findIndex((level) => level.canonical === appliedLevel.canonical);
-        return idx >= 0 && idx < LIANG_STAGES.length ? LIANG_STAGES[idx] : void 0;
-      })()
+  // 梁开启时：档位名后加段名（如「Max 梁祖」）。段名与组件同源，按档位数
+  // 比例取值（构建时同作用域拼接）。
+  const liangSuffix = liang && levels.length > 1
+    ? LIANG_STAGES[liangStageForIndex(sliderIndex, levels.length)]
     : void 0;
-  const displayEffortLabel = effortLabel === void 0 || liangSuffix === void 0
-    ? effortLabel
-    : `${effortLabel} ${liangSuffix}`;
+  const displayEffortLabel = baseEffortLabel === void 0 || liangSuffix === void 0
+    ? baseEffortLabel
+    : `${baseEffortLabel} ${liangSuffix}`;
 
-  // Adapter-specific strengths that do not map to a slider level.
-  const extraEfforts = React.useMemo(() => {
-    if (!reasoning || !Array.isArray(reasoning.efforts)) return [];
-    return reasoning.efforts.filter((eff) => canonicalToken(eff.name) === void 0);
-  }, [reasoning]);
+  // The one tier that turns on the Ultracode ambience.
+  const isMaxApplied = tierOf(appliedLevel) === "max";
 
   const busy = state ? state.status === "selecting" : false;
+
+  // 面板切换：上一个面板留在原地退场（同一个 DOM 节点换 class，因此 React
+  // 复用它，过渡从当前可见状态续走），新面板下一帧落到"就位"。
+  const goToPane = (next) => {
+    if (next === pane) return;
+    const forward = (PANE_ORDER[next] || 0) >= (PANE_ORDER[pane] || 0);
+    setLeavingPane({ pane, forward });
+    setPane(next);
+    setPaneSettled(false);
+  };
+
+  React.useEffect(() => {
+    // 让浏览器先用"进场"状态绘制一帧，随后的 class 变化才有过渡可跑。
+    const handle = effortTiming.timeout(() => setPaneSettled(true), 16);
+    return () => handle();
+  }, [pane]);
+
+  React.useEffect(() => {
+    if (leavingPane === null) return;
+    const handle = effortTiming.timeout(() => setLeavingPane(null), PANE_EXIT_MS);
+    return () => handle();
+  }, [leavingPane]);
 
   const reload = () => {
     lastActionRef.current = "load";
@@ -424,6 +438,8 @@ function EffortModelSelect(props) {
 
   const show = () => {
     setPane("root");
+    setLeavingPane(null);
+    setPaneSettled(true);
     setOpen(true);
     reload();
   };
@@ -431,6 +447,8 @@ function EffortModelSelect(props) {
   const close = (restoreFocus) => {
     setOpen(false);
     setPane("root");
+    setLeavingPane(null);
+    setPaneSettled(true);
     if (restoreFocus) {
       effortTiming.timeout(() => {
         if (triggerRef.current) triggerRef.current.focus();
@@ -465,31 +483,22 @@ function EffortModelSelect(props) {
       return;
     }
     setChosenIndex(null);
-    setDefaultChosen(false);
     lastActionRef.current = "select";
     const targetChoice = choices.find((c) =>
       c.selection.provider === selection.provider && c.selection.model === selection.model,
     );
     const targetReasoning = targetChoice ? targetChoice.model.reasoning : void 0;
     let finalSelection = selection;
-    const targetSupported = computeSupported(targetReasoning);
-    const currentCanonical = appliedLevel ? appliedLevel.canonical : "default";
-    if (currentCanonical && currentCanonical !== "default") {
-      const currentIdx = LEVELS.findIndex((level) => level.canonical === currentCanonical);
-      if (currentIdx >= 0 && !targetSupported[currentIdx]) {
-        const down = nearestSupportedBelow(targetSupported, currentIdx);
-        if (down >= 0) {
-          const effId = effortIdForCanonical(targetReasoning, LEVELS[down].canonical);
-          if (effId !== void 0) finalSelection = { ...selection, reasoningEffort: effId };
-          toastSeq.current += 1;
-          setToast({ seq: toastSeq.current, text: t("downgrade.toast", { level: LEVELS[down].label }) });
-        } else {
-          toastSeq.current += 1;
-          setToast({ seq: toastSeq.current, text: t("downgrade.default") });
-        }
-      } else if (currentIdx >= 0 && targetSupported[currentIdx]) {
-        const effId = effortIdForCanonical(targetReasoning, LEVELS[currentIdx].canonical);
-        if (effId !== void 0) finalSelection = { ...selection, reasoningEffort: effId };
+    // Carry the level over only when the new model advertises the same effort
+    // id; otherwise leave the choice to the provider default and say so.
+    if (effectiveEffort !== void 0) {
+      const targetLevels = levelsFromReasoning(targetReasoning, t);
+      const carried = targetLevels.find((level) => level.id === effectiveEffort);
+      if (carried !== void 0) {
+        finalSelection = { ...selection, reasoningEffort: carried.id };
+      } else {
+        toastSeq.current += 1;
+        setToast({ seq: toastSeq.current, text: t("switch.default") });
       }
     }
     select(finalSelection).then(settleSelection);
@@ -497,57 +506,14 @@ function EffortModelSelect(props) {
 
   const chooseEffort = (index) => {
     if (current == null) return;
-    const base = { provider: current.provider, model: current.model };
-    const level = LEVELS[index];
+    const level = levels[index];
     if (!level) return;
-    setDefaultChosen(false);
-    // The thumb always rests where the user clicked; unsupported positions
-    // apply the nearest supported level below instead.
+    // The thumb always rests where the user clicked; every position is a real
+    // adapter-declared effort, so the click and the applied level agree.
     setChosenIndex(index);
-    if (supported[index]) {
-      const effId = effortIdForCanonical(reasoning, level.canonical);
-      if (effId === void 0) return;
-      if (effectiveEffort === effId) return;
-      lastActionRef.current = "select";
-      select({ ...base, reasoningEffort: effId }).then(settleEffortSelection);
-      return;
-    }
-    const down = nearestSupportedBelow(supported, index);
-    if (down >= 0) {
-      const effId = effortIdForCanonical(reasoning, LEVELS[down].canonical);
-      if (effId !== void 0) {
-        if (effectiveEffort !== effId) {
-          lastActionRef.current = "select";
-          select({ ...base, reasoningEffort: effId }).then(settleEffortSelection);
-        }
-        toastSeq.current += 1;
-        setToast({ seq: toastSeq.current, text: t("downgrade.toast", { level: LEVELS[down].label }) });
-        return;
-      }
-    }
-    if (effectiveEffort !== void 0) {
-      lastActionRef.current = "select";
-      select(base).then(settleEffortSelection);
-    }
-    toastSeq.current += 1;
-    setToast({ seq: toastSeq.current, text: t("downgrade.default") });
-  };
-
-  const chooseDefault = () => {
-    if (current == null) return;
-    setChosenIndex(null);
-    setDefaultChosen(true);
-    if (current.reasoningEffort === void 0) return;
+    if (effectiveEffort === level.id) return;
     lastActionRef.current = "select";
-    select({ provider: current.provider, model: current.model }).then(settleEffortSelection);
-  };
-
-  const chooseExtraEffort = (eff) => {
-    if (current == null) return;
-    if (effectiveEffort === eff.id) return;
-    setDefaultChosen(false);
-    lastActionRef.current = "select";
-    select({ provider: current.provider, model: current.model, reasoningEffort: eff.id })
+    select({ provider: current.provider, model: current.model, reasoningEffort: level.id })
       .then(settleEffortSelection);
   };
 
@@ -555,7 +521,7 @@ function EffortModelSelect(props) {
   const triggerLabel = displayEffortLabel === void 0 ? modelLabel : `${modelLabel} · ${displayEffortLabel}`;
   const triggerAria = currentChoice === void 0
     ? t("trigger.selectAria")
-    : effortLabel === void 0
+    : baseEffortLabel === void 0
       ? t("trigger.aria", { model: modelLabel })
       : t("trigger.ariaEffort", { model: modelLabel, effort: displayEffortLabel });
 
@@ -578,7 +544,7 @@ function EffortModelSelect(props) {
   const onRootKeyDown = (event) => {
     if (event.key === "Escape" && open) {
       event.preventDefault();
-      if (pane !== "root") setPane("root");
+      if (pane !== "root") goToPane("root");
       else close(true);
       return;
     }
@@ -603,52 +569,29 @@ function EffortModelSelect(props) {
     close();
   };
 
-  return React.createElement(
-    "div",
-    { ref: rootRef, className: "ds-effort-root", onKeyDown: onRootKeyDown, onBlur },
-    // trigger
-    React.createElement(
-      "button",
-      {
-        ref: triggerRef,
-        type: "button",
-        className: "ds-effort-trigger" + (activeBars >= LEVELS.length - 1 ? " ds-effort-triggerMax" : ""),
-        "aria-label": triggerAria,
-        "aria-haspopup": "menu",
-        "aria-expanded": open,
-        "aria-controls": open ? menuId : void 0,
-        title: triggerLabel,
-        disabled: locked,
-        onClick: () => {
-          if (open) close();
-          else show();
-        },
-      },
-      React.createElement("span", { className: "ds-effort-triggerLabel" }, modelLabel),
-      displayEffortLabel !== void 0 && React.createElement("span", { className: "ds-effort-triggerEffort" }, displayEffortLabel),
-      React.createElement(Chevron, { direction: "down", className: open ? " ds-effort-chevronOpen" : "" }),
-    ),
-    // menu
-    open && React.createElement(
-      "div",
-      { id: menuId, className: "ds-effort-menu", role: "menu", "aria-label": t("menu.aria"), "aria-busy": state && (state.status === "loading" || busy) },
-      pane === "root" && [
+  // One pane's content, keyed by pane name. Rendered for the active pane and,
+  // briefly, for the pane that is leaving.
+  const renderPaneContent = (key) => {
+    if (key === "root") {
+      return [
         React.createElement(
           "button",
-          { ref: itemRef(), type: "button", role: "menuitem", className: "ds-effort-cell", onClick: () => setPane("model") },
+          { ref: itemRef(), type: "button", role: "menuitem", className: "ds-effort-cell", onClick: () => goToPane("model") },
           React.createElement("span", { className: "ds-effort-cellLabel" }, t("menu.model")),
           React.createElement("span", { className: "ds-effort-cellValue" }, modelLabel),
           React.createElement(Chevron, { direction: "right" }),
         ),
         reasoning !== void 0 && React.createElement(
           "button",
-          { ref: itemRef(), type: "button", role: "menuitem", className: "ds-effort-cell", onClick: () => setPane("effort") },
+          { ref: itemRef(), type: "button", role: "menuitem", className: "ds-effort-cell", onClick: () => goToPane("effort") },
           React.createElement("span", { className: "ds-effort-cellLabel" }, t("menu.effort")),
           React.createElement("span", { className: "ds-effort-cellValue" }, displayEffortLabel),
           React.createElement(Chevron, { direction: "right" }),
         ),
-      ],
-      pane === "model" && [
+      ];
+    }
+    if (key === "model") {
+      return [
         state && state.status === "loading" && React.createElement("div", { className: "ds-effort-status" }, t("status.loading")),
         state && state.error !== null && lastActionRef.current === "load" && React.createElement(
           "div",
@@ -701,24 +644,80 @@ function EffortModelSelect(props) {
           }),
         ),
         state && state.status === "ready" && choices.length === 0 && React.createElement("div", { className: "ds-effort-empty" }, t("empty.models")),
-      ],
-      pane === "effort" && React.createElement(EffortPane, {
-        key: "effort-pane",
-        t,
-        errorMessage: state && state.error !== null && lastActionRef.current === "load" ? state.error : null,
-        onReload: reload,
-        supported,
-        value: sliderIndex,
-        onChange: chooseEffort,
-        liang,
-        chibi,
-        onLiangChange: (next) => liangStore.set(next),
-        defaultActive: Boolean(defaultChosen || (appliedLevel && appliedLevel.canonical === "default")),
-        extras: extraEfforts,
-        activeEffort: effectiveEffort,
-        onChooseDefault: chooseDefault,
-        onChooseExtra: chooseExtraEffort,
-      }),
+      ];
+    }
+    return React.createElement(EffortPane, {
+      t,
+      errorMessage: state && state.error !== null && lastActionRef.current === "load" ? state.error : null,
+      onReload: reload,
+      levels,
+      value: sliderIndex,
+      onChange: chooseEffort,
+      liang,
+      chibi,
+      ultracode,
+      onLiangChange: (next) => liangStore.set(next),
+    });
+  };
+
+  return React.createElement(
+    "div",
+    { ref: rootRef, className: "ds-effort-root", onKeyDown: onRootKeyDown, onBlur },
+    // trigger
+    React.createElement(
+      "button",
+      {
+        ref: triggerRef,
+        type: "button",
+        className: "ds-effort-trigger"
+          + (isMaxApplied ? " ds-effort-triggerMax" : "")
+          + (isMaxApplied && ultracode ? " ds-effort-ultracode" : ""),
+        "aria-label": triggerAria,
+        "aria-haspopup": "menu",
+        "aria-expanded": open,
+        "aria-controls": open ? menuId : void 0,
+        title: triggerLabel,
+        disabled: locked,
+        onClick: () => {
+          if (open) close();
+          else show();
+        },
+      },
+      React.createElement("span", { className: "ds-effort-triggerLabel" }, modelLabel),
+      displayEffortLabel !== void 0 && React.createElement("span", { className: "ds-effort-triggerEffort" }, displayEffortLabel),
+      React.createElement(Chevron, { direction: "down", className: open ? " ds-effort-chevronOpen" : "" }),
+    ),
+    // menu
+    open && React.createElement(
+      "div",
+      { id: menuId, className: "ds-effort-menu", role: "menu", "aria-label": t("menu.aria"), "aria-busy": state && (state.status === "loading" || busy) },
+      React.createElement(
+        "div",
+        {
+          className: "ds-effort-panes",
+          style: { "--ds-effort-pane-dir": leavingPane !== null && !leavingPane.forward ? -1 : 1 },
+        },
+        // The active pane leads so keyboard traversal index 0 is always a live
+        // control; the leaving pane is inert, absolutely placed, and short-lived.
+        React.createElement(
+          "div",
+          {
+            key: "pane-" + pane,
+            className: "ds-effort-pane" + (paneSettled ? " ds-effort-paneReady" : " ds-effort-paneEnter"),
+          },
+          renderPaneContent(pane),
+        ),
+        leavingPane !== null && React.createElement(
+          "div",
+          {
+            key: "pane-" + leavingPane.pane,
+            className: "ds-effort-pane ds-effort-paneLeave",
+            inert: "",
+            "aria-hidden": "true",
+          },
+          renderPaneContent(leavingPane.pane),
+        ),
+      ),
     ),
     toast !== null && React.createElement(
       "div",
@@ -730,10 +729,9 @@ function EffortModelSelect(props) {
 }
 
 // --- Settings page switches --------------------------------------------------
-// 大肥鱼 thumb 开关：注入 DSH「设置-通用设置」的 settings.general.item 插槽。
-function ChibiThumbSetting({ t }) {
-  // useSyncExternalStore：开关状态实时跟随 store，任何一处变更立即重渲染
-  const enabled = React.useSyncExternalStore(chibiStore.subscribe, chibiStore.getSnapshot);
+// 「设置-通用设置」里的两个开关：大肥鱼 thumb 与 Ultracode 氛围。两者都是
+// localStorage 偏好 + useSyncExternalStore，改动实时生效、无需刷新。
+function PrefSettingRow({ t, store, titleKey, descriptionKey }) {
   // 插槽未注入 t 时回退到内嵌词典（zh/en 由页面 lang 决定）
   const txt = (key) => {
     if (t) return t(key);
@@ -741,6 +739,7 @@ function ChibiThumbSetting({ t }) {
     const dict = lang && lang.startsWith("en") ? DICT_EN : DICT_ZH;
     return dict[key] || key;
   };
+  const enabled = React.useSyncExternalStore(store.subscribe, store.getSnapshot);
 
   return React.createElement(
     "div",
@@ -748,8 +747,8 @@ function ChibiThumbSetting({ t }) {
     React.createElement(
       "div",
       { className: "ds-effort-setting-copy" },
-      React.createElement("div", { className: "ds-effort-setting-title" }, txt("chibi.setting.title")),
-      React.createElement("div", { className: "ds-effort-setting-description" }, txt("chibi.setting.description")),
+      React.createElement("div", { className: "ds-effort-setting-title" }, txt(titleKey)),
+      React.createElement("div", { className: "ds-effort-setting-description" }, txt(descriptionKey)),
     ),
     React.createElement(
       "button",
@@ -757,13 +756,33 @@ function ChibiThumbSetting({ t }) {
         type: "button",
         role: "switch",
         "aria-checked": enabled,
-        "aria-label": txt("chibi.setting.title"),
+        "aria-label": txt(titleKey),
         className: "ds-effort-setting-switch",
-        onClick: () => chibiStore.set(!enabled),
+        onClick: () => store.set(!enabled),
       },
       React.createElement("span", { className: "ds-effort-setting-knob" }),
     ),
   );
+}
+
+/** 大肥鱼 thumb 开关。 */
+function ChibiThumbSetting(props) {
+  return React.createElement(PrefSettingRow, {
+    ...props,
+    store: chibiStore,
+    titleKey: "chibi.setting.title",
+    descriptionKey: "chibi.setting.description",
+  });
+}
+
+/** Ultracode 氛围光效开关（默认开启）。 */
+function UltracodeSetting(props) {
+  return React.createElement(PrefSettingRow, {
+    ...props,
+    store: ultracodeStore,
+    titleKey: "ultracode.setting.title",
+    descriptionKey: "ultracode.setting.description",
+  });
 }
 
 // --- locale dictionaries -----------------------------------------------------
@@ -777,18 +796,26 @@ const DICT_ZH = {
   "menu.aria": "模型与推理等级",
   "menu.model": "模型",
   "menu.effort": "推理等级",
-  "effort.providerDefault": "Default",
   "effort.title": "推理等级",
   "effort.axisLow": "更快",
   "effort.axisHigh": "更聪明",
   "effort.tooltip": "推理等级越高，思考时间越长。Max 会进行最深度的分析和代码检查。",
   "effort.ariaLabel": "推理等级",
   "effort.helpAria": "关于推理等级",
+  "level.off": "关闭",
+  "level.minimal": "极简",
+  "level.low": "低",
+  "level.medium": "中",
+  "level.high": "高",
+  "level.xhigh": "极高",
+  "level.extra": "超高",
+  "level.max": "最高",
   "liang.toggle": "滑动变祖器",
   "chibi.setting.title": "大肥鱼滑块",
   "chibi.setting.description": "用大肥鱼替换滑块按钮",
-  "downgrade.toast": "已降级到 {level}",
-  "downgrade.default": "当前档位不可用，已回退到 Default",
+  "ultracode.setting.title": "Ultracode 氛围光效",
+  "ultracode.setting.description": "最高推理等级时，为推理面板与输入框加上紫色光效",
+  "switch.default": "新模型没有该档位，已改用它的默认档位",
   "status.loading": "正在刷新模型列表…",
   "error.action": "模型操作失败：{message}",
   "retry": "重试",
@@ -806,18 +833,26 @@ const DICT_EN = {
   "menu.aria": "Model and reasoning effort",
   "menu.model": "Model",
   "menu.effort": "Effort",
-  "effort.providerDefault": "Default",
   "effort.title": "Reasoning effort",
   "effort.axisLow": "Faster",
   "effort.axisHigh": "Smarter",
   "effort.tooltip": "Higher effort spends more time reasoning. Max adds the deepest analysis and code pass.",
   "effort.ariaLabel": "Effort level",
   "effort.helpAria": "About effort levels",
+  "level.off": "Off",
+  "level.minimal": "Minimal",
+  "level.low": "Low",
+  "level.medium": "Medium",
+  "level.high": "High",
+  "level.xhigh": "Xhigh",
+  "level.extra": "Extra",
+  "level.max": "Max",
   "liang.toggle": "Liang Calibrator",
   "chibi.setting.title": "Big Fat Fish slider",
   "chibi.setting.description": "Replace the slider thumb with the big fat fish",
-  "downgrade.toast": "Downgraded to {level}",
-  "downgrade.default": "This level is unavailable; fell back to Default",
+  "ultracode.setting.title": "Ultracode ambience",
+  "ultracode.setting.description": "Add a violet glow to the effort panel and composer at the top effort level",
+  "switch.default": "The new model has no such level; using its default level",
   "status.loading": "Refreshing model list…",
   "error.action": "Model operation failed: {message}",
   "retry": "Retry",
@@ -830,18 +865,40 @@ const DICT_EN = {
 // --- CSS (deep/light via DSW alias tokens) ----------------------------------
 const CSS = `
 .ds-effort-root{position:relative;min-width:0}
-.ds-effort-trigger{min-width:0;max-width:220px;height:28px;color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border:none;border-radius:24px;outline:none;align-items:center;gap:4px;padding:0 4px 0 8px;font-size:13px;font-weight:500;line-height:20px;display:flex}
+.ds-effort-trigger{min-width:0;max-width:220px;height:28px;color:var(--dsw-alias-label-secondary);cursor:pointer;background:0 0;border:none;border-radius:24px;outline:none;align-items:center;gap:4px;padding:0 4px 0 8px;font-size:13px;font-weight:500;line-height:20px;display:flex;transition:box-shadow 560ms cubic-bezier(.4,0,.2,1),background-color 150ms ease-out}
 .ds-effort-trigger:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover,var(--dsw-alias-bg-layer-2))}
 .ds-effort-trigger:focus-visible{box-shadow:0 0 0 2px var(--dsw-alias-border-l2,var(--dsw-alias-brand-primary))}
 .ds-effort-trigger:disabled{color:var(--dsw-alias-label-tertiary);cursor:default}
-.ds-effort-triggerLabel{text-overflow:ellipsis;white-space:nowrap;min-width:0;overflow:hidden}
+.ds-effort-triggerLabel{text-overflow:ellipsis;white-space:nowrap;min-width:0;overflow:hidden;transition:color 560ms cubic-bezier(.4,0,.2,1)}
 .ds-effort-triggerEffort{color:var(--dsw-alias-label-tertiary);flex:none}
 .ds-effort-triggerMax .ds-effort-triggerEffort{background:linear-gradient(90deg,#c9b9ea,#ae9aef,#a2c1ff,#c5b0f4,#c9b9ea);background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:ds-effort-trigger-flow 3.2s linear infinite}
 @keyframes ds-effort-trigger-flow{to{background-position:200% center}}
+/* Ultracode 氛围：触发器带一圈紫色光晕；输入框（composer card）由 :has() 命中做
+   整卡描边与光晕 —— 插件只注入全局样式，不写自身子树之外的 DOM。
+   进出都是过渡而非一次性 keyframes：目的地状态决定曲线，所以"亮起"更快、
+   "熄灭"更缓，且中途打断时从当前强度续走。 */
+.ds-effort-ultracode{position:relative;box-shadow:0 0 0 1px color-mix(in srgb,#8c73c9 38%,transparent),0 0 12px color-mix(in srgb,#8c73c9 30%,transparent);transition-duration:340ms,150ms;transition-timing-function:cubic-bezier(.16,1,.3,1),ease-out}
+.ds-effort-ultracode .ds-effort-triggerLabel{color:var(--dsw-alias-label-primary);transition-duration:340ms;transition-timing-function:cubic-bezier(.16,1,.3,1)}
+/* 描边环常驻、只让 opacity 归零：规则撤销时才会真的淡出，而不是元素瞬灭。 */
+[data-composer-card]::before{content:"";position:absolute;inset:-1px;padding:1px;border-radius:23px;background:linear-gradient(100deg,#a2c1ff,#ae9aef,#c9b9ea,#a2c1ff);background-size:300% 100%;-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;opacity:0;pointer-events:none;animation:ds-effort-card-flow 5s linear infinite;transition:opacity 560ms cubic-bezier(.4,0,.2,1)}
+[data-composer-card]:has(.ds-effort-ultracode)::before{opacity:1;transition-duration:340ms;transition-timing-function:cubic-bezier(.16,1,.3,1)}
+[data-composer-card]{box-shadow:var(--dsw-elevation-soft),0 0 0 1px color-mix(in srgb,#a17ec2 0%,transparent),0 6px 28px color-mix(in srgb,#8c73c9 0%,transparent);transition:box-shadow 560ms cubic-bezier(.4,0,.2,1)}
+[data-composer-card]:has(.ds-effort-ultracode){box-shadow:var(--dsw-elevation-soft),0 0 0 1px color-mix(in srgb,#a17ec2 40%,transparent),0 6px 28px color-mix(in srgb,#8c73c9 26%,transparent);transition-duration:340ms;transition-timing-function:cubic-bezier(.16,1,.3,1)}
+@keyframes ds-effort-card-flow{to{background-position:300% center}}
+@media (prefers-reduced-motion:reduce){[data-composer-card]::before{animation:none}.ds-effort-trigger,[data-composer-card],[data-composer-card]::before,.ds-effort-triggerLabel{transition-duration:0.001ms}}
 .ds-effort-chevron{color:var(--dsw-alias-label-tertiary);flex:none;transition:transform .12s}
 .ds-effort-chevronOpen{transform:rotate(180deg)}
 .ds-effort-menu{z-index:20;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-specific-menu,var(--dsw-alias-bg-layer-1));width:min(252px,100vw - 32px);max-height:min(400px,100vh - 96px);box-shadow:var(--dsw-shadow-lv3,0 12px 28px rgba(0,0,0,.12));color:var(--dsw-alias-label-primary);border-radius:12px;flex-direction:column;padding:4px;display:flex;position:absolute;bottom:calc(100% + 8px);right:0;overflow-y:auto;overflow-x:hidden;transform-origin:bottom right;animation:ds-effort-menu-in 160ms cubic-bezier(.22,.61,.36,1)}
 @keyframes ds-effort-menu-in{from{opacity:0;transform:scale(.97) translateY(4px)}}
+/* 面板切换：三块面板各自是一个带稳定 key 的节点，切换时同一个节点换 class，
+   于是过渡从它当前的可见状态续走 —— 连续快速点击也只是改变目标，不会重播。
+   --ds-effort-pane-dir 由前进/后退决定，+1 向左推、-1 向右推。 */
+.ds-effort-panes{position:relative;display:flex;flex-direction:column;gap:2px;min-width:0}
+.ds-effort-pane{display:flex;flex-direction:column;gap:2px;min-width:0;transition:opacity 260ms cubic-bezier(.22,1,.36,1),transform 260ms cubic-bezier(.22,1,.36,1),filter 260ms cubic-bezier(.22,1,.36,1)}
+.ds-effort-paneEnter{opacity:0;transform:translateX(calc(var(--ds-effort-pane-dir,1) * 12px));filter:blur(2px)}
+.ds-effort-paneReady{opacity:1;transform:translateX(0);filter:blur(0)}
+.ds-effort-paneLeave{position:absolute;inset:0 0 auto;pointer-events:none;opacity:0;transform:translateX(calc(var(--ds-effort-pane-dir,1) * -12px));filter:blur(2px);transition-duration:200ms;transition-timing-function:cubic-bezier(.4,0,.2,1)}
+@media (prefers-reduced-motion:reduce){.ds-effort-pane{transition-duration:0.001ms}}
 .ds-effort-status,.ds-effort-empty{color:var(--dsw-alias-label-tertiary);padding:10px;font-size:13px;line-height:20px}
 .ds-effort-error,.ds-effort-warning{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-state-error-primary);border-radius:8px;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px;padding:7px 8px;font-size:12px;line-height:18px;display:flex}
 .ds-effort-warning{color:var(--dsw-alias-state-warn-primary,var(--dsw-alias-label-primary))}
@@ -861,12 +918,10 @@ const CSS = `
 .ds-effort-description{font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary)}
 .ds-effort-selected{background:var(--dsw-alias-interactive-bg-selected,var(--dsw-alias-bg-layer-2))}
 .ds-effort-check{color:var(--dsw-alias-brand-primary);flex:none;font-size:13px;line-height:20px}
-.ds-effort-extraItem{width:100%;border:0;background:0 0;border-radius:8px;cursor:pointer;padding:5px 8px;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;line-height:20px;color:var(--dsw-alias-label-secondary);text-align:left}
-.ds-effort-extraItem:hover{background:var(--dsw-alias-interactive-bg-hover,var(--dsw-alias-bg-layer-2))}
-.ds-effort-extraItemActive{color:var(--dsw-alias-label-primary)}
-.ds-effort-extras{margin-top:8px;border-top:1px solid var(--dsw-alias-border-l1);padding-top:8px;display:flex;flex-wrap:wrap;gap:6px}
-.ds-effort-extras .ds-effort-extraItem{width:auto;border:1px solid var(--dsw-alias-border-l1);padding:4px 10px;border-radius:999px;justify-content:flex-start}
-.ds-effort-extras .ds-effort-extraItemActive{border-color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-interactive-bg-selected,var(--dsw-alias-bg-layer-2));color:var(--dsw-alias-label-primary)}
+/* A model advertising a single effort renders one static chip instead of a
+   one-stop range. */
+.ds-effort-levelList{margin-top:8px;padding-top:8px;border-top:1px solid var(--dsw-alias-border-l1);display:flex;flex-wrap:wrap;gap:6px}
+.ds-effort-levelChip{border:1px solid var(--dsw-alias-brand-primary);background:var(--dsw-alias-interactive-bg-selected,var(--dsw-alias-bg-layer-2));color:var(--dsw-alias-label-primary);padding:4px 10px;border-radius:999px;font-size:13px;line-height:20px}
 .ds-effort-toast{position:absolute;top:calc(100% + 6px);right:0;z-index:30;max-width:280px;background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-state-error-primary);border:1px solid var(--dsw-alias-border-l1);border-radius:8px;padding:8px 10px;font-size:12px;line-height:18px;display:flex;align-items:flex-start;gap:8px;box-shadow:var(--dsw-shadow-lv3,0 12px 28px rgba(0,0,0,.12));overflow:hidden;animation:ds-effort-toast-in 220ms cubic-bezier(.22,.61,.36,1)}
 .ds-effort-toast::after{content:"";position:absolute;left:0;bottom:0;height:2px;width:100%;background:currentColor;opacity:.45;animation:ds-effort-toast-countdown 2.6s linear forwards}
 .ds-effort-toastClose{cursor:pointer;background:0 0;border:0;color:inherit;font-size:14px;line-height:18px;padding:0}
@@ -922,14 +977,19 @@ return {
       ctx.effect(() => locale.register(NS, { zh: DICT_ZH, en: DICT_EN }), "ds-effort-slider: dictionaries");
     }
 
-    // 大肥鱼 thumb 开关 → DSH「设置-通用设置」插槽
+    // 大肥鱼 thumb 与 Ultracode 氛围开关 → DSH「设置-通用设置」插槽。
+    // 同一个 inject 里产出两条注册，随声明一起安装、一起回滚。
     if (slots && typeof slots.inject === "function") {
-      slots.inject("settings.general.item", () =>
-        slots.register(
+      slots.inject("settings.general.item", function* () {
+        yield slots.register(
           { name: "settings.general.item", id: "effort-slider-chibi-thumb", order: 20 },
           ChibiThumbSetting,
-        ),
-      );
+        );
+        yield slots.register(
+          { name: "settings.general.item", id: "effort-slider-ultracode", order: 21 },
+          UltracodeSetting,
+        );
+      });
     }
 
     slots.inject("conversation.input.model", () => slots.register({
