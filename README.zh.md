@@ -20,21 +20,11 @@ DeepSeek Harness 处于 _开发者预览_ 阶段，正在快速迭代。**未来
 
 ## 运行
 
-### 通过 `npm` 运行
-
-安装 `Node.js`，然后运行：
-
-```sh
-npx @deepseek-ai/dsh web
-```
-
-该命令默认会在 `http://127.0.0.1:3080` 启动 Web UI，本机启动时还会用默认浏览器打开页面。通过 SSH 启动时只打印宿主机 URL，因为本地转发地址由 SSH 客户端或编辑器持有。传入 `--no-open` 可仅运行服务器而不打开浏览器。详见 [Web UI 指南](docs/user/guide/index.zh.md)。
-
 <a id="run-from-source"></a>
 
 ### 从源码运行
 
-如需从仓库源码运行：
+本分支只以源码形式分发。安装 `Node.js`（`^22.19.0 || >=24.0.0`），然后运行：
 
 ```sh
 git clone https://github.com/onefl666/deepseek-harness-flyblue.git
@@ -44,11 +34,11 @@ pnpm run build
 pnpm dsh web
 ```
 
-该命令会启动 Web UI，默认地址为 `http://127.0.0.1:3080`。详见 [Web UI 指南](docs/user/guide/index.zh.md)。输入框的模型芯片是 Claude 风格推理滑块（[DSH Claude Style Reasoning Slider](https://github.com/MEMZ-JZY/DSH-Claude-Style-Reasoning-Slider)）；在 web profile patch 中停用 `effort-slider` 行即可恢复原生触发器。
+`pnpm run build` 会准备仓库产物，`pnpm dsh web` 则直接使用这些已构建产物，不会重新构建。该命令默认在 `http://127.0.0.1:3080` 提供 Web UI，本机启动时会用默认浏览器打开；通过 SSH 启动时只打印宿主机 URL，因为本地转发地址由 SSH 客户端或编辑器持有，传入 `--no-open` 可只运行服务器而不打开浏览器。详见 [Web UI 指南](docs/user/guide/index.zh.md)。
+
+输入框的模型芯片是 Claude 风格推理滑块（[DSH Claude Style Reasoning Slider](https://github.com/MEMZ-JZY/DSH-Claude-Style-Reasoning-Slider)）；在 web profile patch 中停用 `effort-slider` 行即可恢复原生触发器。
 
 标准模式、PTC 模式和创造模式默认提供发行版附带的 [`@colbymchenry/codegraph`](https://www.npmjs.com/package/@colbymchenry/codegraph) 引擎上的 `codegraph_explore`。每个 workspace 仍需本地 `.codegraph/` 索引。Web UI 可从空白会话提示条、**设置 → 代码索引**或 `/codegraph-init` 创建索引；CLI 与 headless 用户自行运行 `codegraph init`。没有索引时工具仍会列出，并让 agent 改用普通文件工具。
-
-`pnpm run build` 会准备仓库产物。`pnpm dsh web` 会直接使用这些已构建产物，不会重新构建。
 
 ## 社区与支持
 

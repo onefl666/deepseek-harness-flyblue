@@ -18,19 +18,9 @@ Review the [safety notice](SAFETY.md) before running the project.
 
 ## Run
 
-### Run from `npm`
-
-Install `Node.js`, then run:
-
-```sh
-npx @deepseek-ai/dsh web
-```
-
-The command starts the Web UI at `http://127.0.0.1:3080` by default and opens it in the default browser for a local launch. An SSH launch only prints the host URL because the SSH client or editor owns the local forwarded address. Pass `--no-open` to run the server without opening a browser. See [Web UI guide](docs/user/guide/index.md).
-
 ### Run from source
 
-To run from a repository checkout:
+This fork is distributed as source only. Install `Node.js` (`^22.19.0 || >=24.0.0`), then run:
 
 ```sh
 git clone https://github.com/onefl666/deepseek-harness-flyblue.git
@@ -40,7 +30,9 @@ pnpm run build
 pnpm dsh web
 ```
 
-The command starts the Web UI, served at `http://127.0.0.1:3080` by default. See [Web UI guide](docs/user/guide/index.md). `pnpm run build` prepares the repository artifacts; `pnpm dsh web` uses those built artifacts without rebuilding. The composer model chip is a Claude-style reasoning slider ([DSH Claude Style Reasoning Slider](https://github.com/MEMZ-JZY/DSH-Claude-Style-Reasoning-Slider)); disable the `effort-slider` row in the web profile patch to restore the native trigger.
+`pnpm run build` prepares the repository artifacts, and `pnpm dsh web` uses those built artifacts without rebuilding. The command serves the Web UI at `http://127.0.0.1:3080` by default and opens it in the default browser for a local launch; an SSH launch only prints the host URL because the SSH client or editor owns the local forwarded address, and `--no-open` runs the server without opening a browser. See the [Web UI guide](docs/user/guide/index.md).
+
+The composer model chip is a Claude-style reasoning slider ([DSH Claude Style Reasoning Slider](https://github.com/MEMZ-JZY/DSH-Claude-Style-Reasoning-Slider)); disable the `effort-slider` row in the web profile patch to restore the native trigger.
 
 Standard, PTC, and Create modes include `codegraph_explore` from the bundled [`@colbymchenry/codegraph`](https://www.npmjs.com/package/@colbymchenry/codegraph) engine. Each workspace still needs a local `.codegraph/` index. The Web UI can create it from the blank-session prompt, **Settings → Code index**, or `/codegraph-init`; CLI and headless users run `codegraph init`. Without an index the tool stays listed and tells the agent to use ordinary file tools.
 
