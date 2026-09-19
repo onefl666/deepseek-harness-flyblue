@@ -1,12 +1,13 @@
 /**
  * Transport factory: creates the appropriate MCP transport based on the
  * plugin's resolved config. Stdio spawns a child process (with credential
- * scrubbing); Streamable HTTP connects to a URL.
+ * scrubbing); Streamable HTTP and legacy SSE connect to a URL.
  *
  * @module
  */
 
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
+import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { scrubbedParentEnv } from '@deepseek-ai/dsh-subprocess'
@@ -26,7 +27,7 @@ function buildChildEnv(extra: Record<string, string>): Record<string, string> {
  * Create an MCP transport from the resolved plugin config.
  *
  * @param config - Resolved plugin config discriminated on `transport`.
- * @returns A connected-ready MCP Transport (stdio or Streamable HTTP).
+ * @returns A connected-ready MCP Transport (stdio, Streamable HTTP, or SSE).
  */
 export function createTransport(config: Config): Transport {
   switch (config.transport) {
@@ -46,5 +47,11 @@ export function createTransport(config: Config): Transport {
         new URL(config.url),
         { requestInit: { headers: config.headers } },
       ) as Transport
+    case 'sse':
+      // oxlint-disable-next-line typescript/no-deprecated -- Servers mid-migration expose only the legacy HTTP+SSE endpoint.
+      return new SSEClientTransport(
+        new URL(config.url),
+        { requestInit: { headers: config.headers } },
+      )
   }
 }

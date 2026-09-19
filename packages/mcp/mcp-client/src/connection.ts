@@ -16,12 +16,16 @@
  */
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { ToolListChangedNotificationSchema } from '@modelcontextprotocol/sdk/types.js'
+import { SUPPORTED_PROTOCOL_VERSIONS, ToolListChangedNotificationSchema } from '@modelcontextprotocol/sdk/types.js'
+import type { ClientRequest } from '@modelcontextprotocol/sdk/types.js'
+import type { RequestOptions } from '@modelcontextprotocol/sdk/shared/protocol.js'
+import type { AnySchema, SchemaOutput } from '@modelcontextprotocol/sdk/server/zod-compat.js'
 import type { Context } from '@deepseek-ai/cordis'
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
 import { createTransport } from './transport.ts'
 import { syncTools } from './tools.ts'
 import type { ToolBridgeOptions, ToolDisposers } from './tools.ts'
+import type { McpConnectionStatus } from './types.ts'
 import type { Config } from './index.ts'
 
 /** Automatic reconnect policy for one MCP server connection. */
@@ -89,12 +93,66 @@ export function resolveReconnectPolicy(config: ReconnectConfig | undefined, path
   return Object.freeze({ enabled, initialDelayMs, maxDelayMs, maxAttempts })
 }
 
+/**
+ * The one explicit resolve step from raw `minProtocolVersion` to the floor the
+ * supervisor enforces. Only a version the SDK itself offers may be named, so a
+ * typo fails the plugin instance at load instead of at the first connection.
+ *
+ * @param value - Raw `minProtocolVersion`; omission accepts every supported version.
+ * @param path - Diagnostic prefix naming the config location in thrown messages.
+ * @returns The floor to enforce, or undefined when every supported version is acceptable.
+ */
+export function resolveMinProtocolVersion(value: string | undefined, path: string): string | undefined {
+  if (value === undefined) return undefined
+  if (!SUPPORTED_PROTOCOL_VERSIONS.includes(value)) {
+    throw new Error(
+      `${path}.minProtocolVersion must be one of ${SUPPORTED_PROTOCOL_VERSIONS.join(', ')}; received "${value}"`,
+    )
+  }
+  return value
+}
+
+/**
+ * MCP client that records the protocol version a server answers `initialize`
+ * with. The SDK always offers its own latest version, accepts any version it
+ * supports in the answer, and keeps the negotiated result private, so
+ * observing the documented response on the request path is the only way to
+ * enforce a configured floor for every transport.
+ */
+class ProtocolObservingClient extends Client {
+  /** Negotiated version; undefined until the initialize response settles. */
+  private negotiated: string | undefined
+
+  /** The version the server answered `initialize` with, once it has answered. */
+  get negotiatedProtocolVersion(): string | undefined {
+    return this.negotiated
+  }
+
+  override async request<T extends AnySchema>(
+    request: ClientRequest,
+    resultSchema: T,
+    options?: RequestOptions,
+  ): Promise<SchemaOutput<T>> {
+    const result: unknown = await super.request(request, resultSchema, options)
+    if (request.method === 'initialize' && result !== null && typeof result === 'object') {
+      const version = (result as { protocolVersion?: unknown }).protocolVersion
+      if (typeof version === 'string') this.negotiated = version
+    }
+    // oxlint-disable-next-line typescript/no-unsafe-return -- SchemaOutput<T> is the SDK's generic schema alias.
+    return result as SchemaOutput<T>
+  }
+}
+
+/** Readable text for a failed connection attempt. */
+function errorText(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
 /** Result from the initial connection attempt, for startup-await semantics. */
 export interface ConnectionOutcome {
   /** If the initial connection or tool sync failed, the error; otherwise absent. */
   error?: unknown
 }
-
 /** Handle for one plugin instance's supervised connection. */
 export interface ConnectionHandle {
   /**
@@ -122,6 +180,7 @@ export interface ConnectionHandle {
  */
 export function startConnection(ctx: Context, config: Config, policy: ResolvedReconnectPolicy): ConnectionHandle {
   const label = `mcp-client(${config.serverName})`
+  const minProtocolVersion = resolveMinProtocolVersion(config.minProtocolVersion, label)
   const opts: ToolBridgeOptions = {
     registrationFailure: 'contain',
     serverName: config.serverName,
@@ -148,6 +207,17 @@ export function startConnection(ctx: Context, config: Config, policy: ResolvedRe
   let connectedAt: number | undefined
   /** The real error from the first connection attempt, for startup-await diagnostics. */
   let firstAttemptError: unknown
+  /** The most recent attempt failure, for the status report that follows it. */
+  let lastAttemptError: unknown
+
+  /** Publish one connection-state transition to management surfaces. */
+  const report = (status: McpConnectionStatus, error?: unknown): void => {
+    if (error === undefined) {
+      ctx.emit('mcp/status', { serverName: config.serverName, status })
+      return
+    }
+    ctx.emit('mcp/status', { serverName: config.serverName, status, error: errorText(error) })
+  }
 
   /** A generation may act only while it is the current one on a live plugin. */
   const isCurrent = (generation: Client): boolean => !disposed && client === generation
@@ -196,6 +266,7 @@ export function startConnection(ctx: Context, config: Config, policy: ResolvedRe
         ? 'connection lost and reconnect is disabled — registered tools will fail until an HMR reload or Host restart'
         : 'connection failed and reconnect is disabled — no tools were registered; reload the plugin or restart the Host to connect'
       ctx.logger.error(`${label}: ${message}`)
+      report('failed', lastAttemptError ?? new Error(message))
       return
     }
     // A connection that stayed up past the stability window (= maxDelayMs, the
@@ -210,12 +281,15 @@ export function startConnection(ctx: Context, config: Config, policy: ResolvedRe
         for (const dispose of disposers.values()) dispose()
         disposers = new Map()
       })
-      ctx.logger.error(`${label}: giving up after ${policy.maxAttempts} consecutive failed reconnect attempts — tools unregistered; reload the plugin or restart the Host to reconnect`)
+      const giveUp = `${label}: giving up after ${policy.maxAttempts} consecutive failed reconnect attempts — tools unregistered; reload the plugin or restart the Host to reconnect`
+      ctx.logger.error(giveUp)
+      report('failed', lastAttemptError ?? new Error(giveUp))
       return
     }
     const delayMs = Math.min(policy.maxDelayMs, policy.initialDelayMs * 2 ** (failedAttempts - 1))
     const action = lostEstablishedConnection ? 'connection lost; reconnecting' : 'connection failed; retrying'
     ctx.logger.warn(`${label}: ${action} in ${delayMs}ms (attempt ${failedAttempts}/${policy.maxAttempts})`)
+    report('reconnecting', lastAttemptError)
     reconnectTimer = setTimeout(() => {
       reconnectTimer = undefined
       settling = connectGeneration(false)
@@ -235,7 +309,7 @@ export function startConnection(ctx: Context, config: Config, policy: ResolvedRe
    * @param startup - Whether this is the plugin's activation attempt.
    */
   async function connectGeneration(startup: boolean): Promise<void> {
-    const generation = new Client(
+    const generation = new ProtocolObservingClient(
       { name: 'dsh-mcp-client', version: '0.0.1' },
       { capabilities: {} },
     )
@@ -270,6 +344,15 @@ export function startConnection(ctx: Context, config: Config, policy: ResolvedRe
     )
     try {
       await generation.connect(createTransport(config))
+      if (minProtocolVersion !== undefined) {
+        const negotiated = generation.negotiatedProtocolVersion
+        if (negotiated === undefined || negotiated < minProtocolVersion) {
+          throw new Error(
+            `${label}: server negotiated MCP protocol version ${negotiated ?? '<none>'} `
+            + `below the configured minProtocolVersion ${minProtocolVersion}`,
+          )
+        }
+      }
       if (hasClosed()) {
         attemptSettled = true
         generationDown(generation)
@@ -277,6 +360,7 @@ export function startConnection(ctx: Context, config: Config, policy: ResolvedRe
       }
       await enqueueSync(generation, startup ? startupOpts : opts)
     } catch (error) {
+      lastAttemptError = error
       if (firstAttemptError === undefined) firstAttemptError = error
       // Disposal clears current ownership before it closes the generation, so
       // only a live supervisor reports an attempt failure.
@@ -301,7 +385,9 @@ export function startConnection(ctx: Context, config: Config, policy: ResolvedRe
     }
     if (!isCurrent(generation)) return
     connectedAt = Date.now()
+    lastAttemptError = undefined
     if (failedAttempts > 0) ctx.logger.info(`${label}: reconnected and re-synced tools (attempt ${failedAttempts}/${policy.maxAttempts})`)
+    report('connected')
   }
 
   /** The in-flight (or last settled) connection attempt; dispose awaits it for quiescence. */
@@ -346,6 +432,7 @@ export function startConnection(ctx: Context, config: Config, policy: ResolvedRe
       await syncChain
       for (const dispose of disposers.values()) dispose()
       disposers = new Map()
+      report('stopped')
     },
   }
 }
