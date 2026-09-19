@@ -16,7 +16,7 @@ import { createHash } from 'node:crypto'
 import { mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
-import { allocOverlapped, allocPtrSlot, decodePtr, decodeUint8At, decodeUint16At, decodeUint32At, getTempPath, isInvalidHandle, isNullPtr, ptrAddress, sameSidAt, throwLastError, throwWin32 } from './ffi.ts'
+import { allocOverlapped, allocPtrSlot, decodePtr, decodeUint8At, decodeUint16At, decodeUint32At, freeNative, getTempPath, isInvalidHandle, isNullPtr, ptrAddress, sameSidAt, throwLastError, throwWin32 } from './ffi.ts'
 import type { NativePtr, Win32Bindings } from './ffi.ts'
 import * as abi from './win32-abi.ts'
 
@@ -82,30 +82,36 @@ export function withPathLock<T>(api: Win32Bindings, path: string, action: () => 
     null, abi.OPEN_ALWAYS, 0, null,
   )
   if (isInvalidHandle(handle)) throwLastError(api, 'CreateFileW', lockPath)
+  // A 32-byte koffi allocation per locked path, and one lock per grant/revoke:
+  // freed by the single release below on every path out of the lock.
   const overlapped = allocOverlapped() // stays zeroed: offset 0, hEvent NULL
-  if (api.lockFileEx(handle, abi.LOCKFILE_EXCLUSIVE_LOCK, 0, 1, 0, overlapped) === 0) {
-    const win32Code = api.getLastError()
-    api.closeHandle(handle) // best-effort on the lock-failure path
-    throwWin32(api, 'LockFileEx', win32Code, lockPath)
-  }
-
-  let result: T
   try {
-    result = action()
-  } catch (error) {
-    // Best-effort release on the action-failure path: cleanup failures must
-    // not mask the action's error.
-    api.unlockFileEx(handle, 0, 1, 0, overlapped)
-    api.closeHandle(handle)
-    throw error
+    if (api.lockFileEx(handle, abi.LOCKFILE_EXCLUSIVE_LOCK, 0, 1, 0, overlapped) === 0) {
+      const win32Code = api.getLastError()
+      api.closeHandle(handle) // best-effort on the lock-failure path
+      throwWin32(api, 'LockFileEx', win32Code, lockPath)
+    }
+
+    let result: T
+    try {
+      result = action()
+    } catch (error) {
+      // Best-effort release on the action-failure path: cleanup failures must
+      // not mask the action's error.
+      api.unlockFileEx(handle, 0, 1, 0, overlapped)
+      api.closeHandle(handle)
+      throw error
+    }
+    if (api.unlockFileEx(handle, 0, 1, 0, overlapped) === 0) {
+      const win32Code = api.getLastError()
+      api.closeHandle(handle) // best-effort on the unlock-failure path
+      throwWin32(api, 'UnlockFileEx', win32Code, lockPath)
+    }
+    if (api.closeHandle(handle) === 0) throwLastError(api, 'CloseHandle', `lock file ${lockPath}`)
+    return result
+  } finally {
+    freeNative(overlapped)
   }
-  if (api.unlockFileEx(handle, 0, 1, 0, overlapped) === 0) {
-    const win32Code = api.getLastError()
-    api.closeHandle(handle) // best-effort on the unlock-failure path
-    throwWin32(api, 'UnlockFileEx', win32Code, lockPath)
-  }
-  if (api.closeHandle(handle) === 0) throwLastError(api, 'CloseHandle', `lock file ${lockPath}`)
-  return result
 }
 
 /**
@@ -125,12 +131,16 @@ function readCurrentDacl(api: Win32Bindings, path: string): { oldAcl: NativePtr 
   const daclSlot = allocPtrSlot()
   const saclSlot = allocPtrSlot()
   const descriptorSlot = allocPtrSlot()
-  const readResult = api.getNamedSecurityInfoW(
-    path, abi.SE_FILE_OBJECT, abi.DACL_SECURITY_INFORMATION,
-    ownerSlot, groupSlot, daclSlot, saclSlot, descriptorSlot,
-  )
-  if (readResult !== abi.ERROR_SUCCESS) throwWin32(api, 'GetNamedSecurityInfoW', readResult, path)
-  return { oldAcl: decodePtr(daclSlot), descriptor: decodePtr(descriptorSlot) }
+  try {
+    const readResult = api.getNamedSecurityInfoW(
+      path, abi.SE_FILE_OBJECT, abi.DACL_SECURITY_INFORMATION,
+      ownerSlot, groupSlot, daclSlot, saclSlot, descriptorSlot,
+    )
+    if (readResult !== abi.ERROR_SUCCESS) throwWin32(api, 'GetNamedSecurityInfoW', readResult, path)
+    return { oldAcl: decodePtr(daclSlot), descriptor: decodePtr(descriptorSlot) }
+  } finally {
+    for (const slot of [ownerSlot, groupSlot, daclSlot, saclSlot, descriptorSlot]) freeNative(slot)
+  }
 }
 
 /**
@@ -154,12 +164,17 @@ function mergeAndApply(
   label: string,
 ): void {
   const newAclSlot = allocPtrSlot()
-  const mergeResult = api.setEntriesInAclW(1, entry, oldAcl, newAclSlot)
-  if (mergeResult !== abi.ERROR_SUCCESS) {
-    if (descriptor !== null) api.localFree(descriptor) // frees the ACL block too
-    throwWin32(api, 'SetEntriesInAclW', mergeResult, `${label}(${path})`)
+  let newAcl: NativePtr | null = null
+  try {
+    const mergeResult = api.setEntriesInAclW(1, entry, oldAcl, newAclSlot)
+    if (mergeResult !== abi.ERROR_SUCCESS) {
+      if (descriptor !== null) api.localFree(descriptor) // frees the ACL block too
+      throwWin32(api, 'SetEntriesInAclW', mergeResult, `${label}(${path})`)
+    }
+    newAcl = decodePtr(newAclSlot)
+  } finally {
+    freeNative(newAclSlot)
   }
-  const newAcl = decodePtr(newAclSlot)
   if (newAcl === null) {
     if (descriptor !== null) api.localFree(descriptor)
     throwWin32(api, 'SetEntriesInAclW', api.getLastError(), `${label}(${path}): null new ACL`)

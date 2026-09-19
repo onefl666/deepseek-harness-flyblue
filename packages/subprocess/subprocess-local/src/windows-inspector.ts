@@ -281,8 +281,12 @@ function snapshotWindowsProcesses(bindings: Win32Bindings): ProcessEntry[] {
      the guard mirrors POSIX's unreadable-proc tolerance and isInvalidHandle is unit-tested. */
   if (isInvalidHandle(snapshot)) return []
   const entries: ProcessEntry[] = []
+  // koffi.alloc is a bare calloc with no finalizer, so this row buffer is live
+  // until it is explicitly freed. Every path out of the loop below — a
+  // Process32NextW failure, a decode failure, or the normal end — runs the
+  // one finally that frees it and closes the snapshot handle.
+  const entry = allocNative(PROCESSENTRY32W, 1)
   try {
-    const entry = allocNative(PROCESSENTRY32W, 1)
     koffi.encode(entry, 'uint32', PROCESSENTRY32W.size)
     let ok = bindings.process32FirstW(snapshot, entry)
     while (ok !== 0) {
@@ -294,6 +298,7 @@ function snapshotWindowsProcesses(bindings: Win32Bindings): ProcessEntry[] {
       ok = bindings.process32NextW(snapshot, entry)
     }
   } finally {
+    koffi.free(entry)
     bindings.closeHandle(snapshot)
   }
   return entries
@@ -304,11 +309,14 @@ function windowsProcessState(bindings: Win32Bindings, pid: number): WindowsProce
   const { FILETIME } = win32Structs()
   const handle = bindings.openProcess(PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE, 0, pid)
   if (isInvalidHandle(handle)) return undefined
+  // Four koffi.alloc slots (32 bytes) per liveness question, on the terminal
+  // teardown hot path. They are freed by the same finally that closes the
+  // process handle, so no early return can strand them.
+  const creation = allocNative(FILETIME, 1)
+  const exit = allocNative(FILETIME, 1)
+  const kernel = allocNative(FILETIME, 1)
+  const user = allocNative(FILETIME, 1)
   try {
-    const creation = allocNative(FILETIME, 1)
-    const exit = allocNative(FILETIME, 1)
-    const kernel = allocNative(FILETIME, 1)
-    const user = allocNative(FILETIME, 1)
     /* v8 ignore next -- a GetProcessTimes failure after a successful open races process exit and
        cannot be staged deterministically; the absent-process path is covered and the caller
        treats undefined as a detector miss. */
@@ -323,6 +331,10 @@ function windowsProcessState(bindings: Win32Bindings, pid: number): WindowsProce
       active: wait === WAIT_TIMEOUT,
     }
   } finally {
+    koffi.free(creation)
+    koffi.free(exit)
+    koffi.free(kernel)
+    koffi.free(user)
     bindings.closeHandle(handle)
   }
 }

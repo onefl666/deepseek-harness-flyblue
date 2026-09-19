@@ -45,7 +45,7 @@ import { resolve } from 'node:path'
 import { Win32Error } from '@deepseek-ai/dsh-win32-process'
 
 import { grantWrite, revokeWrite } from './acl.ts'
-import { allocPtrSlot, decodePtr, isNullPtr, throwLastError, win32 } from './ffi.ts'
+import { allocPtrSlot, decodePtr, freeNative, isNullPtr, throwLastError, win32 } from './ffi.ts'
 import type { NativePtr, Win32Bindings } from './ffi.ts'
 import { assertPrivateTempDisjoint } from './path-boundary.ts'
 import { drainPipe, spawnSandboxed, spawnSandboxedInherited, waitForExit } from './spawn.ts'
@@ -129,6 +129,40 @@ export interface AclSandboxChild {
   wait(): Promise<AclSandboxChildResult>
 }
 
+/**
+ * Handle ownership of one spawned child, shared by its `wait()` and
+ * {@link AclSandbox.dispose}. The first of the two to run releases the
+ * handles; the other is a no-op, so neither an abandoned child nor a failed
+ * wait can strand a kernel handle.
+ */
+class ChildHandleLatch {
+  private pending = true
+
+  constructor(
+    private readonly closeHandles: () => void,
+    private readonly owner: Set<ChildHandleLatch>,
+  ) {
+    owner.add(this)
+  }
+
+  /** Close the handles this child still owns, once. */
+  close(): void {
+    this.settle(true)
+  }
+
+  /** Stop tracking: the wait path already closed every handle this child owns. */
+  forget(): void {
+    this.settle(false)
+  }
+
+  private settle(close: boolean): void {
+    if (!this.pending) return
+    this.pending = false
+    this.owner.delete(this)
+    if (close) this.closeHandles()
+  }
+}
+
 /** Free one optional SID while retaining a failure for best-effort sibling cleanup. */
 function freeSidBestEffort(
   api: Win32Bindings,
@@ -173,6 +207,8 @@ export class AclSandbox {
   /** The well-known/logon SID allocations init() makes; freed by dispose() alongside the write SIDs. */
   private sidAllocations: NativePtr[] = []
   private grantedPaths: Array<{ path: string; sidPtr: NativePtr }> = []
+  /** Handle ownership of every spawned child that has not released it yet. */
+  private readonly liveChildren = new Set<ChildHandleLatch>()
 
   constructor(options: AclSandboxOptions) {
     this.mode = options.mode
@@ -225,12 +261,16 @@ export class AclSandbox {
     try {
       const parseSid = (sid: string): NativePtr => {
         const sidSlot = allocPtrSlot()
-        if (api.convertStringSidToSidW(sid, sidSlot) === 0) {
-          throwLastError(api, 'ConvertStringSidToSidW', sid)
+        try {
+          if (api.convertStringSidToSidW(sid, sidSlot) === 0) {
+            throwLastError(api, 'ConvertStringSidToSidW', sid)
+          }
+          const parsedSid = decodePtr(sidSlot)
+          if (parsedSid === null) throw new Win32Error('ConvertStringSidToSidW', api.getLastError(), sid)
+          return parsedSid
+        } finally {
+          freeNative(sidSlot)
         }
-        const parsedSid = decodePtr(sidSlot)
-        if (parsedSid === null) throw new Win32Error('ConvertStringSidToSidW', api.getLastError(), sid)
-        return parsedSid
       }
       this.writeSidPtr = this.writeSid === undefined ? undefined : parseSid(this.writeSid)
       this.tempWriteSidPtr = this.tempWriteSid === undefined ? undefined : parseSid(this.tempWriteSid)
@@ -354,14 +394,24 @@ export class AclSandbox {
 
     if (options.stdio === 'inherit') {
       const native = spawnSandboxedInherited(api, token, { command: options.command, args, cwd })
+      // The Job handle is the kill-on-close owner of the child, so it must
+      // close on EVERY path — a failed wait included. Closing it before the
+      // child exits would kill the child, which is why dispose() is documented
+      // as running only after every child settled.
+      const latch = new ChildHandleLatch(() => {
+        if (api.closeHandle(native.job) === 0) throwLastError(api, 'CloseHandle', 'kill-on-close job')
+      }, this.liveChildren)
       let exitCodePromise: Promise<number> | undefined
       return {
         pid: native.pid,
         wait: async () => {
-          exitCodePromise ??= Promise.resolve(waitForExit(api, native.process))
-          const exitCode = await exitCodePromise
-          if (api.closeHandle(native.job) === 0) throwLastError(api, 'CloseHandle', 'kill-on-close job')
-          return { stdout: Buffer.alloc(0), stderr: Buffer.alloc(0), exitCode }
+          try {
+            exitCodePromise ??= Promise.resolve(waitForExit(api, native.process))
+            const exitCode = await exitCodePromise
+            return { stdout: Buffer.alloc(0), stderr: Buffer.alloc(0), exitCode }
+          } finally {
+            latch.close()
+          }
         },
       }
     }
@@ -369,6 +419,16 @@ export class AclSandbox {
     const native = spawnSandboxed(api, token, { command: options.command, args, cwd })
     const stdout = drainPipe(api, native.stdoutRead)
     const stderr = drainPipe(api, native.stderrRead)
+    // Both drains start eagerly and reject on a pipe failure. `wait()` is the
+    // consumer of that rejection; the handlers below keep a child nobody waits
+    // on from reporting it as an unhandled rejection at process level.
+    void stdout.catch(() => undefined)
+    void stderr.catch(() => undefined)
+    // waitForProcessExit closes the process handle on every path it is entered,
+    // so this latch only covers a child whose wait() never got that far.
+    const latch = new ChildHandleLatch(() => {
+      if (api.closeHandle(native.process) === 0) throwLastError(api, 'CloseHandle', 'child process handle')
+    }, this.liveChildren)
     // waitForExit is deliberately NOT started here: WaitForSingleObject blocks
     // the thread and would starve the drains while the child is still running
     // (pipe-buffer deadlock). The drains resolve only after the child closed
@@ -379,8 +439,12 @@ export class AclSandbox {
       wait: async () => {
         const stdoutBuffer = await stdout
         const stderrBuffer = await stderr
-        exitCodePromise ??= Promise.resolve(waitForExit(api, native.process))
-        return { stdout: stdoutBuffer, stderr: stderrBuffer, exitCode: await exitCodePromise }
+        try {
+          exitCodePromise ??= Promise.resolve(waitForExit(api, native.process))
+          return { stdout: stdoutBuffer, stderr: stderrBuffer, exitCode: await exitCodePromise }
+        } finally {
+          latch.forget()
+        }
       },
     }
   }
@@ -389,11 +453,24 @@ export class AclSandbox {
    * Revoke the revocable (temp) grants, free the SID, close the token; the
    * standing workspace ACEs stay (the reuse cache). Reports every cleanup
    * failure.
+   *
+   * Also releases the handles of any child whose `wait()` never ran: a caller
+   * that spawned a child and abandoned it would otherwise strand a process
+   * handle, and — for the inherit shape — a live Job handle that keeps
+   * KILL_ON_JOB_CLOSE from firing. Call dispose() only after every child that
+   * is still wanted has exited; releasing a running child's Job handle kills it.
    */
   dispose(): void {
     const api = this.api
     if (api === undefined) return
     const failures: unknown[] = []
+    for (const child of [...this.liveChildren]) {
+      try {
+        child.close()
+      } catch (error) {
+        failures.push(error)
+      }
+    }
     if (this.manageDacls) {
       for (const grant of this.grantedPaths) {
         try {

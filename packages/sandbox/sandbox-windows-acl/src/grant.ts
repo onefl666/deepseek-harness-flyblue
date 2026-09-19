@@ -12,7 +12,7 @@
  */
 
 import { grantWrite, revokeWrite } from './acl.ts'
-import { allocPtrSlot, decodePtr, isNullPtr, throwLastError, win32Sync } from './ffi.ts'
+import { allocPtrSlot, decodePtr, freeNative, isNullPtr, throwLastError, win32Sync } from './ffi.ts'
 import type { NativePtr, Win32Bindings } from './ffi.ts'
 
 /**
@@ -49,12 +49,16 @@ export class AclWriteGrant {
   static create(writeSid: string, api?: Win32Bindings): AclWriteGrant {
     const bindings = api ?? win32Sync()
     const sidSlot = allocPtrSlot()
-    if (bindings.convertStringSidToSidW(writeSid, sidSlot) === 0) {
-      throwLastError(bindings, 'ConvertStringSidToSidW', writeSid)
+    try {
+      if (bindings.convertStringSidToSidW(writeSid, sidSlot) === 0) {
+        throwLastError(bindings, 'ConvertStringSidToSidW', writeSid)
+      }
+      const sidPtr = decodePtr(sidSlot)
+      if (sidPtr === null) throwLastError(bindings, 'ConvertStringSidToSidW', `null SID for ${writeSid}`)
+      return new AclWriteGrant(bindings, sidPtr, writeSid)
+    } finally {
+      freeNative(sidSlot)
     }
-    const sidPtr = decodePtr(sidSlot)
-    if (sidPtr === null) throwLastError(bindings, 'ConvertStringSidToSidW', `null SID for ${writeSid}`)
-    return new AclWriteGrant(bindings, sidPtr, writeSid)
   }
 
   /**

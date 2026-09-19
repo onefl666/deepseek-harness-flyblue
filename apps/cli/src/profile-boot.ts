@@ -32,7 +32,7 @@ import {
   watchUserPatches,
   type Profile,
 } from '@deepseek-ai/dsh-app-boot'
-import { resolveDshHome } from '@deepseek-ai/dsh-home-paths'
+import { resolveDshHome, dshHomePath } from '@deepseek-ai/dsh-home-paths'
 import { installProxyFromEnvironment } from '@deepseek-ai/dsh-http-proxy'
 import { seedWindowsShellEnvironment } from '@deepseek-ai/dsh-windows-shell'
 import { DSH_LAUNCH_ENVIRONMENT_KEY, type LaunchEnvironmentSnapshot } from '@deepseek-ai/dsh-launch-environment'
@@ -275,12 +275,37 @@ function suppressShutdownError(ctx: Context, signal: AbortSignal, error: unknown
 }
 
 /**
+ * Collect Node's diagnostic report on fatal errors under `<DSH_HOME>/crash-reports`.
+ *
+ * A host process that dies from a Windows fail-fast (0xC0000409) or a V8
+ * OOM abort writes no stderr and, without a registered handler, no Windows
+ * Error Reporting entry either — the launcher only sees the exit code. The
+ * report JSON carries the JavaScript stack, the loaded shared libraries, and
+ * the heap summary that name the failing thread.
+ *
+ * A directory that cannot be created disables the facility and reports why:
+ * crash reporting is a diagnostic aid, never a boot prerequisite.
+ */
+function installCrashReports(): void {
+  const directory = dshHomePath('crash-reports')
+  try {
+    mkdirSync(directory, { recursive: true })
+  } catch (error: unknown) {
+    process.stderr.write(`${NAME}: crash reports disabled, cannot create ${directory}: ${String(error)}\n`)
+    return
+  }
+  process.report.directory = directory
+  process.report.reportOnFatalError = true
+}
+
+/**
  * Boot one profile invocation end to end and leave process lifetime to the
  * mounted plugins (or to a one-shot runner the composition mounts).
  * @param options - environment snapshot, profile name, overlays, and the booted app's own arguments.
  * @returns the settled root context and the shutdown controller.
  */
 export async function runProfile(options: RunProfileOptions): Promise<{ ctx: Context; shutdown: ProcessShutdown }> {
+  installCrashReports()
   // Before the first plugin mounts and before anything can issue a request: Node's fetch ignores the
   // proxy environment on its own, so every profile would otherwise connect directly. Resolving from
   // the launcher's snapshot — not `process.env` — is what lets a proxy declared in a `.env` layer

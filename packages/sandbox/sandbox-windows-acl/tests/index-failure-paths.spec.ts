@@ -399,6 +399,64 @@ describe('AclSandbox spawn', () => {
   })
 })
 
+describe('AclSandbox child handle ownership', () => {
+  /** A workspace-write sandbox with no temp grants, ready to spawn. */
+  async function sandboxReady(sid: string): Promise<AclSandbox> {
+    const sandbox = new AclSandbox({ writableDirs: [scratch()], tempDir: null, writeSid: sid, mode: 'workspace-write' })
+    await sandbox.init()
+    return sandbox
+  }
+
+  it('dispose releases the Job of an inherit child that was never waited on', async () => {
+    const { closeHandle, createJobObjectW } = state.stubs as HappyStubs
+    const sandbox = await sandboxReady('S-1-4-9000-16')
+    sandbox.spawn({ command: 'probe.exe', stdio: 'inherit' })
+    const jobHandle = createJobObjectW.mock.results.at(-1)?.value as NativePtr
+
+    closeHandle.mockClear()
+    sandbox.dispose()
+    // The abandoned child's Job — whose open handle would otherwise keep
+    // KILL_ON_JOB_CLOSE from ever firing — then the restricted token.
+    const closed: unknown[] = closeHandle.mock.calls.map((call: unknown[]) => call[0])
+    expect(closed).toEqual([jobHandle, expect.anything()])
+  })
+
+  it('dispose releases the process handle of a piped child that was never waited on', async () => {
+    const { closeHandle } = state.stubs as HappyStubs
+    const sandbox = await sandboxReady('S-1-4-9000-17')
+    sandbox.spawn({ command: 'probe.exe' })
+
+    closeHandle.mockClear()
+    sandbox.dispose()
+    // The abandoned child's process handle, then the restricted token.
+    expect(closeHandle).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not release a child whose wait already settled', async () => {
+    const { closeHandle } = state.stubs as HappyStubs
+    const sandbox = await sandboxReady('S-1-4-9000-18')
+    const child = sandbox.spawn({ command: 'probe.exe', stdio: 'inherit' })
+    await child.wait()
+
+    closeHandle.mockClear()
+    sandbox.dispose()
+    // Only the restricted token: the wait already closed the Job.
+    expect(closeHandle).toHaveBeenCalledTimes(1)
+  })
+
+  it('still reports a pipe failure through wait instead of swallowing it', async () => {
+    const { api } = state.stubs as HappyStubs
+    // ERROR_ACCESS_DENIED is not the drains' clean EOF, so the eager drain
+    // rejects. wait() is that rejection's consumer.
+    ;(api.getLastError as MockFn).mockReturnValue(5)
+    const sandbox = await sandboxReady('S-1-4-9000-19')
+    const child = sandbox.spawn({ command: 'probe.exe' })
+
+    await expect(child.wait()).rejects.toMatchObject({ api: 'PeekNamedPipe' })
+    sandbox.dispose()
+  })
+})
+
 describe('AclSandbox dispose', () => {
   it('is a no-op before init', () => {
     const workspace = scratch()

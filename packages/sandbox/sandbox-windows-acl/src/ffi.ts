@@ -137,6 +137,20 @@ export function allocBytes(length: number): NativePtr {
 }
 
 /**
+ * Release one block obtained from {@link allocBytes}, {@link allocOverlapped},
+ * or an out-parameter slot allocator (`allocPtrSlot` / `allocUint32`).
+ *
+ * koffi.alloc is a bare calloc with no finalizer, so an unreleased block stays
+ * in the owning process for its whole lifetime. Every allocation is paired with
+ * exactly one call here on every path out of the scope that made it — the
+ * `finally` that closes the Win32 handle the block fed is the usual home.
+ * @param ptr - the allocation to release.
+ */
+export function freeNative(ptr: NativePtr): void {
+  koffi.free(ptr)
+}
+
+/**
  * Allocate one zeroed x64 OVERLAPPED record.
  * @returns allocated pointer.
  * @remarks Koffi 3.1.1 crashes when LockFileEx or UnlockFileEx receives NULL;

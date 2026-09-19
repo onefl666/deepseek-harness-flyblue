@@ -1,5 +1,5 @@
 import { spawnSync as nodeSpawnSync } from 'node:child_process'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, type Mock } from 'vitest'
 import {
   createWindowsProcessInspector,
   isInvalidHandle,
@@ -16,6 +16,22 @@ import type {
 vi.mock('node:child_process', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:child_process')>()
   return { ...actual, spawnSync: vi.fn(actual.spawnSync) }
+})
+
+// koffi.alloc is a bare calloc with no finalizer, so a missed koffi.free is a
+// permanent native leak in the host process. The probe below counts the two
+// calls; every other koffi member resolves through the real module object.
+vi.mock('koffi', async (importOriginal) => {
+  const actual = await importOriginal<{ default: typeof import('koffi') }>()
+  const real = actual.default
+  const alloc = (...args: Parameters<typeof real.alloc>): unknown => real.alloc(...args) as unknown
+  const free = (...args: Parameters<typeof real.free>): void => { real.free(...args) }
+  return {
+    default: Object.assign(Object.create(real) as typeof real, {
+      alloc: vi.fn(alloc),
+      free: vi.fn(free),
+    }),
+  }
 })
 
 function fakeInternals() {
@@ -195,5 +211,25 @@ win32('WindowsProcessInspector over the real koffi bindings', () => {
     expect(() => { inspector.signalGroup(0x7FFFFFFF, 'SIGTERM') }).not.toThrow()
     expect(() => { inspector.signalGroup(0, 'SIGKILL') }).not.toThrow()
     expect(() => { inspector.signalProcess({ pid: 0x7FFFFFFF, started: 'absent' }, 'SIGKILL') }).not.toThrow()
+  })
+
+  it('frees every native allocation one tree question makes', async () => {
+    const koffi = (await import('koffi')).default as unknown as {
+      alloc: Mock
+      free: Mock
+    }
+    const inspector = createWindowsProcessInspector()
+    koffi.alloc.mockClear()
+    koffi.free.mockClear()
+
+    const tree = inspector.snapshot().tree(process.pid)
+    expect(tree.length).toBeGreaterThan(0)
+    // One PROCESSENTRY32W row for the enumeration, four FILETIME slots per
+    // member identity probe; the terminal teardown poll runs this every 25 ms.
+    expect(koffi.alloc).toHaveBeenCalledTimes(1 + tree.length * 4)
+    expect(koffi.free).toHaveBeenCalledTimes(koffi.alloc.mock.calls.length)
+    for (const [pointer] of koffi.free.mock.calls) {
+      expect(koffi.alloc.mock.results.some(result => result.value === pointer)).toBe(true)
+    }
   })
 })
