@@ -117,7 +117,7 @@
   disabled: true
 
 - id: plan-mode
-  name: '@deepseek-ai/dsh-plan-mode'
+  name: '@deepseek-ai/dsh-plan-handoff'
   disabled: true
 
 - id: system-prompt
