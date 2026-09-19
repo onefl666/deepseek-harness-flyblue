@@ -1569,8 +1569,8 @@ Source: [`packages/lsp/lsp-stdio/src/index.ts:82`](../packages/lsp/lsp-stdio/src
 Requires: `tools`
 
 ```ts config-catalog
-/** Configuration for one stdio or Streamable HTTP MCP server. */
-export type Config = StdioConfig | StreamableHttpConfig
+/** Configuration for one MCP server over stdio, Streamable HTTP, or SSE. */
+export type Config = StdioConfig | StreamableHttpConfig | SseConfig
 
 /** Config for connecting to an MCP server via a spawned child process over stdio. */
 export interface StdioConfig {
@@ -1596,9 +1596,17 @@ export interface StdioConfig {
   failOnStartupError: boolean
   /** Automatic reconnect policy after a lost connection; omission uses the defaults. */
   reconnect?: ReconnectConfig
+  /**
+   * Oldest MCP protocol version this instance accepts, as `YYYY-MM-DD`. The
+   * SDK always offers its own latest version and lets the server answer with
+   * any version it supports; a server answer older than this floor fails the
+   * connection instead of silently degrading. Omission accepts every version
+   * the SDK supports.
+   */
+  minProtocolVersion?: string
 }
 
-/** Config for connecting to an MCP server over Streamable HTTP (SSE). */
+/** Config for connecting to an MCP server over Streamable HTTP. */
 export interface StreamableHttpConfig {
   /** Selects Streamable HTTP transport. */
   transport: 'streamable-http'
@@ -1618,6 +1626,32 @@ export interface StreamableHttpConfig {
   failOnStartupError: boolean
   /** Automatic reconnect policy after a lost connection; omission uses the defaults. */
   reconnect?: ReconnectConfig
+  /** Oldest acceptable MCP protocol version (`YYYY-MM-DD`); see {@link StdioConfig.minProtocolVersion}. */
+  minProtocolVersion?: string
+}
+
+/** Config for connecting to an MCP server over the legacy HTTP+SSE transport. */
+export interface SseConfig {
+  /** Selects the legacy SSE transport. */
+  transport: 'sse'
+  /**
+   * Stable local namespace for this server's model-facing tool names
+   * (`mcp__<serverName>__<rawName>`). Must match `[A-Za-z0-9_-]{1,32}` and be
+   * unique across live mcp-client instances.
+   */
+  serverName: string
+  /** SSE endpoint URL. */
+  url: string
+  /** Additional headers attached to MCP requests. */
+  headers: Record<string, string>
+  /** Per-tool-call timeout in milliseconds. */
+  toolCallTimeoutMs: number
+  /** Fail plugin activation when the initial connection or tool synchronization fails. */
+  failOnStartupError: boolean
+  /** Automatic reconnect policy after a lost connection; omission uses the defaults. */
+  reconnect?: ReconnectConfig
+  /** Oldest acceptable MCP protocol version (`YYYY-MM-DD`); see {@link StdioConfig.minProtocolVersion}. */
+  minProtocolVersion?: string
 }
 
 /** Automatic reconnect policy for one MCP server connection. */
@@ -1633,7 +1667,25 @@ export interface ReconnectConfig {
 }
 ```
 
-Source: [`packages/mcp/mcp-client/src/index.ts:98`](../packages/mcp/mcp-client/src/index.ts)
+Source: [`packages/mcp/mcp-client/src/index.ts:133`](../packages/mcp/mcp-client/src/index.ts)
+
+<a id="deepseek-aidsh-mcp-manager"></a>
+
+## `@deepseek-ai/dsh-mcp-manager`
+
+Requires: `tools`
+
+```ts config-catalog
+/** Manager configuration. */
+export interface Config {
+  /** DeepSeek Harness config root; defaults to `$DSH_HOME` or `~/.dsh`. */
+  readonly dshHome?: string
+  /** Registry document name inside the harness home and each project `.dsh`. */
+  readonly registryFileName?: string
+}
+```
+
+Source: [`packages/mcp/mcp-manager/src/index.ts:52`](../packages/mcp/mcp-manager/src/index.ts)
 
 <a id="deepseek-aidsh-message-feedback"></a>
 
@@ -2275,6 +2327,32 @@ export interface Config {
 ```
 
 Source: [`packages/skill/skill-filesystem/src/index.ts:49`](../packages/skill/skill-filesystem/src/index.ts)
+
+<a id="deepseek-aidsh-skill-manager"></a>
+
+## `@deepseek-ai/dsh-skill-manager`
+
+```ts config-catalog
+/** Manager configuration. */
+export interface Config {
+  /** DeepSeek Harness config root; defaults to `$DSH_HOME` or `~/.dsh`. */
+  readonly dshHome?: string
+  /** Shared agent config root; defaults to `$DSH_AGENTS_HOME` or `~/.agents`. */
+  readonly agentsHome?: string
+  /** Directory inside each skill root that holds the disabled skills. */
+  readonly disabledDirName?: string
+  /** Bundled read-only skill root; omission registers none. */
+  readonly bundledSkillDir?: string
+  /** Largest skill document or copied skill directory, in bytes. */
+  readonly maxSkillBytes?: number
+  /** Wall-clock limit for one repository clone, in milliseconds. */
+  readonly installTimeoutMs?: number
+  /** Executable used for repository installs. */
+  readonly gitExecutable?: string
+}
+```
+
+Source: [`packages/skill/skill-manager/src/index.ts:35`](../packages/skill/skill-manager/src/index.ts)
 
 <a id="deepseek-aidsh-spill-local"></a>
 

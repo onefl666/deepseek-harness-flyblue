@@ -573,6 +573,31 @@ Types: [ScopeKey](scope.md)
 
 Source: [`packages/core/tools/src/index.ts`](../../packages/core/tools/src/index.ts)
 
+<a id="mcp-events"></a>
+
+### `mcp/*` events
+
+<a id="mcpstatus--emit"></a>
+
+#### `mcp/status` — emit
+
+One MCP server connection changed state. Emitted by every `mcp-client` instance on connect, on a lost generation, when the reconnect budget is exhausted, when the initial attempt fails and reconnection is disabled, and on disposal. Management surfaces subscribe to keep a status view current; listener failures are contained by the emitter.
+
+```ts cordis-catalog
+/**
+ * One MCP server connection changed state. Emitted by every `mcp-client`
+ * instance on connect, on a lost generation, when the reconnect budget is
+ * exhausted, when the initial attempt fails and reconnection is disabled,
+ * and on disposal. Management surfaces subscribe to keep a status view
+ * current; listener failures are contained by the emitter.
+ * @param report - server namespace, the state entered, and any failure detail.
+ * @mode emit
+ */
+'mcp/status'(report: McpStatusReport): void
+```
+
+Source: [`packages/mcp/mcp-client/src/types.ts`](../../packages/mcp/mcp-client/src/types.ts)
+
 <a id="tools-events"></a>
 
 ### `tools/*` events

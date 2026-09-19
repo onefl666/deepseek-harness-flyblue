@@ -3534,6 +3534,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'options', description: 'the full request. A LOOP-built request carries the process-local {@link markAgentLoopRequest} identity and arrives deep-frozen (mutation throws): its content is a pure function of the session log (the reconstructability Agent Note), so listeners read it, never rewrite it. Hand-built calls do not carry that marker; their messages already obey the immutable creation contract.' }],
   },
   {
+    name: 'mcp/status',
+    mode: 'emit',
+    signature: '\'mcp/status\'(report: McpStatusReport): void',
+    summary: 'One MCP server connection changed state.',
+    description: 'One MCP server connection changed state. Emitted by every `mcp-client` instance on connect, on a lost generation, when the reconnect budget is exhausted, when the initial attempt fails and reconnection is disabled, and on disposal. Management surfaces subscribe to keep a status view current; listener failures are contained by the emitter.',
+    parameters: [{ name: 'report', description: 'server namespace, the state entered, and any failure detail.' }],
+  },
+  {
     name: 'session-telemetry/record',
     mode: 'waterfall',
     signature: '\'session-telemetry/record\'(record: SessionTelemetryRecord, next: () => SessionTelemetryRecord): SessionTelemetryRecord',
@@ -4832,6 +4840,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ManualCompactAgentContext',
     declaration: 'export interface ManualCompactAgentContext extends CompactionAgentContext {\n    runMaintenance<T>(task: (signal: AbortSignal) => Promise<T>): Promise<T>;\n}',
+  },
+  {
+    name: 'McpConnectionStatus',
+    declaration: 'export type McpConnectionStatus = \'connected\' | \'reconnecting\' | \'failed\' | \'stopped\';',
+  },
+  {
+    name: 'McpStatusReport',
+    declaration: 'export interface McpStatusReport {\n    readonly serverName: string;\n    readonly status: McpConnectionStatus;\n    readonly error?: string;\n}',
   },
   {
     name: 'Message',
