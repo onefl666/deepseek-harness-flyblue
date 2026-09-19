@@ -24,10 +24,12 @@
 }
 
 .headerMeta {
+  /* The controls keep their natural width; the heading column absorbs narrow
+     widths, so the refresh label can never wrap one character per line. */
   display: flex;
+  flex: none;
   align-items: center;
   gap: 8px;
-  min-width: 0;
 }
 
 .spin {

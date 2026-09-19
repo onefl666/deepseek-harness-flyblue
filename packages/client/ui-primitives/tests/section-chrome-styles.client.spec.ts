@@ -16,6 +16,11 @@ describe('SectionChrome.module.css', () => {
     expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.spin \{ animation: none; \}/)
   })
 
+  it('keeps the trailing meta cluster at its natural width', () => {
+    const rule = /\.headerMeta\s*\{([^}]*)\}/.exec(css)?.[1] ?? ''
+    expect(rule).toMatch(/flex:\s*none|flex-shrink:\s*0/)
+  })
+
   it('tints the failure strip from the error state token', () => {
     expect(css).toContain('border: 1px solid var(--dsw-alias-state-error-primary);')
     expect(css).toContain('color: var(--dsw-alias-state-error-primary);')

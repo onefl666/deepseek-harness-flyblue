@@ -26,6 +26,11 @@ describe('git graph styles', () => {
     expect(css).not.toMatch(/var\(--dsw-[a-z0-9-]+\s*,/)
   })
 
+  it('keeps the header meta cluster at its natural width', () => {
+    const rule = /\.headerMeta\s*\{([^}]*)\}/.exec(css)?.[1] ?? ''
+    expect(rule).toMatch(/flex:\s*none|flex-shrink:\s*0/)
+  })
+
   it('guards every animation behind reduced-motion', () => {
     const animations = [...css.matchAll(/@keyframes\s+([a-z0-9-]+)/g)].map(match => match[1])
     expect(animations.length).toBeGreaterThan(0)
