@@ -47,3 +47,4 @@ msys 运行时必须在 `main()` 之前打开/创建其以 SID 命名的共享�
 - POSIX 宿主与 `sdk-minimal` 独立树不受影响；`gitbash-sandbox` 带测试发布但不挂载；覆盖率门禁在装有 Git for Windows 的 Windows 宿主上对孪生包全额执行。
 - 无 Git Bash 的 Windows 宿主上 `pnpm dsh --profile headless` 会在插件加载期带着指明 `gitBashPath` 的可操作报错失败——设计上的 fail-loud。
 - 未新增录制会话快照：`SessionEventMap`、agent-loop、工具面文本均无变化（`tool-bash` 描述不变，win32 花名册变化由 `windows-shell.spec.ts` 钉住）；本机无 `DEEPSEEK_API_KEY` 无法录制，若日后有 key 可补录 `gitbash` 场景。
+- 录制会话语料在该栈上无法复现已提交的 fixture：`bash` 只在执行器能够约束时才公布 `sandbox_permissions` 与 `justification`，而 `permission-presets` 在此拒绝 `workspace-write` 预设表，于是被钉住的工具 schema 与预设都发生分歧。[win32 技术栈上的录制会话语料](../bug-fix/2026-09-19-win32-snapshot-corpus-launch.zh.md) 拥有该边界以及启动路径上所修复的内容。

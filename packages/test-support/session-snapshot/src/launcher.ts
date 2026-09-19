@@ -376,10 +376,13 @@ function barePackageName(specifier: string): string | undefined {
 }
 
 /** Find a bare package's directory from the authored patch's module-resolution anchor. */
-function packageDirFromPatch(source: string, packageName: string): string | undefined {
-  for (const searchPath of createRequire(pathToFileURL(source)).resolve.paths(packageName) ?? []) {
-    const candidate = join(searchPath, packageName)
-    if (existsSync(join(candidate, 'package.json'))) return realpathSync(candidate)
+function packageDirFromPatch(source: string, packageName: string, anchors: readonly string[]): string | undefined {
+  const resolvers = [source, ...anchors]
+  for (const resolver of resolvers) {
+    for (const searchPath of createRequire(pathToFileURL(resolver)).resolve.paths(packageName) ?? []) {
+      const candidate = join(searchPath, packageName)
+      if (existsSync(join(candidate, 'package.json'))) return realpathSync(candidate)
+    }
   }
   return undefined
 }
@@ -389,8 +392,8 @@ function packageDirFromPatch(source: string, packageName: string): string | unde
  * profile fallback. This mirrors `dsh plugin` while retaining the bare entry
  * name and package provenance used by request metadata.
  */
-function linkProfilePackage(source: string, cwd: string, packageName: string): void {
-  const packageDir = packageDirFromPatch(source, packageName)
+function linkProfilePackage(source: string, cwd: string, packageName: string, anchors: readonly string[]): void {
+  const packageDir = packageDirFromPatch(source, packageName, anchors)
   // The package may instead belong to the dsh installation; profile boot heals those links.
   if (packageDir === undefined) return
   const link = join(cwd, '.dsh', 'profiles', 'node_modules', packageName)
@@ -411,16 +414,27 @@ function linkProfilePackage(source: string, cwd: string, packageName: string): v
  * @param cwd - isolated process cwd whose profile fallback receives package links.
  * @param targetDir - existing directory that owns the materialized patch.
  * @param index - stable patch ordinal used in the output filename.
+ * @param anchors - package.json paths whose dependencies the patch may name even
+ * though the patch's own tree cannot resolve them; a `lib`-mode launch reaches
+ * plugins through the profile fallback rather than the workspace `paths` map, so
+ * a corpus provider declared only as a devDependency of the launched application
+ * needs the link this makes.
  * @returns absolute materialized patch path.
  */
-export function materializeProfilePatch(source: string, cwd: string, targetDir: string, index: number): string {
+export function materializeProfilePatch(
+  source: string,
+  cwd: string,
+  targetDir: string,
+  index: number,
+  anchors: readonly string[] = [],
+): string {
   const parsed = yaml.load(readFileSync(source, 'utf8'), { schema: entryListSchema })
   if (!Array.isArray(parsed)) throw new Error(`snapshot profile patch must be a top-level array: ${source}`)
   const patches = parsed as PatchOptions[]
   const baseDir = dirname(source)
   const resolveName = (value: string): string => {
     const packageName = barePackageName(value)
-    if (packageName !== undefined) linkProfilePackage(source, cwd, packageName)
+    if (packageName !== undefined) linkProfilePackage(source, cwd, packageName, anchors)
     return value.startsWith('./') || value.startsWith('../')
       ? pathToFileURL(resolve(baseDir, value)).href
       : value

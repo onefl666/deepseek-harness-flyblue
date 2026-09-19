@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-12-gitbash-windows-shell-stack.md
-2026-09-12-gitbash-windows-shell-stack.md: 00238dc7ad7591e2ac24c1dc42c3266c44e94796
-2026-09-12-gitbash-windows-shell-stack.zh.md: 2cd33f9ac1ac22a162a049653413a4a72b532313
+2026-09-12-gitbash-windows-shell-stack.md: 10064f994b979467cc7eb20b9e2f275468e9a237
+2026-09-12-gitbash-windows-shell-stack.zh.md: d759ba32ffa8ba3686b29d9bf0663510ac83a5a3
