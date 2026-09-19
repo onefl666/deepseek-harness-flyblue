@@ -40,6 +40,12 @@
   name: '@deepseek-ai/dsh-pwsh-sandbox'
   disabled: true
 
+# The inserted `bash-local` below owns the `shell` service. This distribution's
+# win32 default mounts a Git Bash executor that extends it, and two live
+# executors cannot both provide `shell`, so the profile's row stands down here.
+- id: gitbash-local
+  disabled: true
+
 - id: fs-sandbox
   name: '@deepseek-ai/dsh-fs-sandbox'
   disabled: true

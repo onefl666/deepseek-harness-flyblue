@@ -24,6 +24,23 @@
   config:
     policy: !!js "(process.env.DSH_PERMISSION_MODE ?? (process.env.DSH_SNAPSHOT === undefined ? 'workspace-write' : 'danger-full-access')) === 'danger-full-access' ? 'never' : 'ask'"
 
+# The two rows above pin one sandbox/approval pair, which the preset service
+# folds into the session's first preset event. This distribution mounts a
+# different preset table on win32, because the Git Bash executor cannot confine
+# and the service refuses presets it cannot enforce; that table's default
+# advertises approval, so a session created there records `unconfined-ask`
+# instead of the pinned pair. Narrowing the table to the one reachable preset
+# keeps the recorded event identical on every platform.
+- id: permission-unconfined
+  config:
+    presets:
+      danger-full-access:
+        sandbox: danger-full-access
+        approval: never
+        name: danger-full-access
+        description: Full file access without approval prompts.
+    defaultPreset: danger-full-access
+
 - id: session-persistence-jsonl
   name: '@deepseek-ai/dsh-session-persistence-jsonl'
   config:
