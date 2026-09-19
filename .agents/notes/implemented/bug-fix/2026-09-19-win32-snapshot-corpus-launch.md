@@ -44,6 +44,10 @@ The replay pattern accepts either separator (`[\\/]`), which is the identity for
 
 The shared headless composition (`snapshots/session/text-turn/cordis.yml`) narrows the win32 preset table to the one preset its pinned sandbox/approval pair selects. That row is inert on every other platform, where it is `disabled` by the base composition.
 
+The corpora stand down on a host that cannot mount the confined composition: `recordedCorpusReplayable` is false on win32, each lane skips its scenarios on it, and `DSH_SNAPSHOT_ALLOW_UNSUPPORTED=1` runs them anyway. The ACP suite receives it as a caller-owned probe (`replayable`) beside `hasPwsh`, because that factory also registers the machinery its own unit spec drives in-process.
+
+Three facts say the lane was never a Windows lane: the fork's Windows gates omit it (`ciWindowsObservationalGates` — "Linux owns required lint and snapshots; Windows omits those duplicates"), the upstream snapshot tier documents its required run on macOS and Linux, and `dsh-gitbash-sandbox` ships unmounted because no shipped win32 runner confines Git Bash. A win32 host running the corpus therefore reads platform divergence as failure, which is what the default now prevents.
+
 ## Alternatives considered
 
 **Report the child's stderr on every JSON-RPC error.** The client is a product surface for SDK consumers; a plugin-tree failure is a runtime fault the caller sees as a failed handshake, and the retained tail exists for transport death. The harness-side fixes above remove the need: with the tree loading, `initialize` succeeds and no such error is raised.
@@ -56,6 +60,10 @@ The shared headless composition (`snapshots/session/text-turn/cordis.yml`) narro
 
 **Synthesize `SIGTERM` when the harness itself terminates a win32 command.** It would make the model-visible result match the POSIX marker, but the subprocess outcome reports the platform's own facts, and a fabricated signal would tell the model the process died from something that does not exist on that host. This note records the difference instead.
 
+**Put the host predicate inside `defineAcpSnapshotSuite`.** Tried first, and it skipped the machinery that `suite.spec.ts` drives in process — 8 failures, because those specs assert the suite's own write-back against tests that then never ran. The probe belongs to the caller that knows its host, which is also how `hasPwsh` is threaded.
+
+**Mark each diverging scenario `platform: posix`.** It is the per-scenario mechanism the lane already honors, but it means editing some seventy fixture manifests to record a host policy, and it would drop the scenarios that do pass on win32 — 15 headless and 9 ACP — whose failures are how the launch defects in this note were found. The corpus stands down as a unit instead, and the override keeps those runs available.
+
 ## Consequences
 
 The SDK corpus now boots on win32: `initialize` returns `serverInfo`, and the 18 cases fail only where their recorded composition diverges from this distribution's win32 stack.
@@ -64,7 +72,7 @@ That divergence is not closed and is the honest boundary of this change. 67 head
 
 Two further differences run through the headless failures and are not defects of the launch path. A command the harness terminates reports `[killed by signal: SIGTERM]` on POSIX and the exit code Node observes on win32, where termination is `TerminateProcess` and carries no signal; the subprocess outcome contract reports what the platform gives it. And the fixtures still pin the retired `dsh-plan-mode` text for `exit_plan_mode`, while the composition mounts `dsh-plan-handoff`, whose description and `execution` parameter differ.
 
-Reproducing the committed fixtures on win32 therefore requires recordings made on win32, which would diverge from the POSIX recordings the Linux lanes compare. Whether this distribution skips the recorded corpora on win32 or keeps them red is open; until it is decided, the lane's win32 failures are platform divergence, not a regression.
+Reproducing the committed fixtures on win32 would require recordings made on win32, which would diverge from the POSIX recordings the Linux lanes compare. The corpora therefore stand down there by default: `pnpm run test:snapshot` on win32 keeps the corpus-integrity assertions and reports the scenarios as skipped, and `DSH_SNAPSHOT_ALLOW_UNSUPPORTED=1` runs them for anyone diagnosing the divergence this note records. POSIX and macOS hosts see `recordedCorpusReplayable` true and behave exactly as before.
 
 ## Testing
 
@@ -73,5 +81,7 @@ Reproducing the committed fixtures on win32 therefore requires recordings made o
 `snapshots/session/headless.snapshot.ts` went from 75 to 73 failures with the narrowed win32 preset table, and 15 cases pass; the same counts hold after the normalizer change, so the escaped cwd spelling and the separator collapse alter no case that already passed.
 
 The four later fixes were verified case by case: `pwsh-tool-turn`, `read-image-attachment-path`, and `subagent-acp-diagnostic` each stopped failing at launch or at the replay pattern and now fail on the composition differences above, and the tokenized path left the `ptc-workspace-context` request text.
+
+`pnpm run test:snapshot` reports 23 passed and 110 skipped on win32, and `DSH_SNAPSHOT_ALLOW_UNSUPPORTED=1` runs the whole corpus again — 96 failures across the three lanes (73 headless, 18 SDK, 5 ACP), the divergence this note records and nothing else. `pnpm run test packages/test-support/session-snapshot` passes 343 tests with the probe in the suite options, which the factory-internal predicate would have broken.
 
 `pnpm run verify-cordis-config` passes over all 145 config files, and `pnpm run typecheck` passes.

@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 import {
   defineAcpSnapshotSuite,
   parseSnapshotManifest,
+  recordedCorpusReplayable,
   type Scenario,
   type SnapshotSuiteOptions,
 } from '@deepseek-ai/dsh-session-snapshot'
@@ -88,4 +89,5 @@ defineAcpSnapshotSuite({
   snapshotsDir: corpusDir,
   scenarios,
   mode: snapshotMode(process.env.DSH_SNAPSHOT),
+  replayable: recordedCorpusReplayable,
 })

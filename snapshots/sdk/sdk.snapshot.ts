@@ -29,6 +29,7 @@ import {
   normalizedToolSchemas,
   parseSnapshotManifest,
   parseToolSchemasSnapshot,
+  recordedCorpusReplayable,
   redactSessionSnapshotIds,
   refreshFixtureReplacements,
   restorePinnedToolSchemas,
@@ -790,8 +791,8 @@ async function verifyHeaders(
 
 describe('TypeScript SDK snapshots over the jsonrpc runtime', () => {
   for (const scenario of sdkScenarios) {
-    const scenarioTest = recording
-      && (scenario.manifest.recording === 'authored' || scenario.manifest.sessionFormat !== undefined)
+    const scenarioTest = !recordedCorpusReplayable
+      || recording && (scenario.manifest.recording === 'authored' || scenario.manifest.sessionFormat !== undefined)
       ? it.skip
       : it
     scenarioTest(`${mode}s ${scenario.name} through dsh --profile sdk`, async () => {

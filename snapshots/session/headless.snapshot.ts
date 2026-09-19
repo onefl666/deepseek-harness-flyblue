@@ -28,6 +28,7 @@ import {
   normalizedToolSchemas,
   parseSnapshotManifest,
   parseToolSchemasSnapshot,
+  recordedCorpusReplayable,
   redactSessionSnapshotIds,
   refreshFixtureReplacements,
   restorePinnedToolSchemas,
@@ -871,7 +872,8 @@ describe('headless recorded-session snapshots', () => {
   })
 
   for (const scenario of scenarios) {
-    const skipped = scenario.manifest.platform === 'posix' && process.platform === 'win32'
+    const skipped = !recordedCorpusReplayable
+      || scenario.manifest.platform === 'posix' && process.platform === 'win32'
       || scenario.manifest.platform === 'pwsh' && !hasPwsh
       || mode === 'record' && scenario.manifest.recording === 'authored'
       || mode === 'record' && scenario.manifest.sessionFormat !== undefined

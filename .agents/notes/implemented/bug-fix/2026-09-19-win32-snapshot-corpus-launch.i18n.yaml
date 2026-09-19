@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-19-win32-snapshot-corpus-launch.md
-2026-09-19-win32-snapshot-corpus-launch.md: 568c70dade9e5238037a55e5bfea441b87ece3b8
-2026-09-19-win32-snapshot-corpus-launch.zh.md: d9d1aaf3c09ea7340278a0c8493844fa09312330
+2026-09-19-win32-snapshot-corpus-launch.md: c48d63b3108486df1bd0268c3b08dc180efe3d14
+2026-09-19-win32-snapshot-corpus-launch.zh.md: 701bd9589731c6d683e7f9844d8aa11d733c06d9

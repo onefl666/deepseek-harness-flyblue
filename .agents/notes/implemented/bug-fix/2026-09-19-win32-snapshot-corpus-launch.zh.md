@@ -44,6 +44,10 @@ mock server 参数是一个 file URL，当其后跟随盘符时去掉开头的�
 
 共享的 headless 组合（`snapshots/session/text-turn/cordis.yml`）将其 win32 预设表收窄为它所钉住的 sandbox/approval 组合所选中的那一个预设。该行在其他所有平台上都是惰性的，基础组合在那里把它置为 `disabled`。
 
+在无法挂载受限组合的宿主上，语料整体让位：`recordedCorpusReplayable` 在 win32 上为假，各泳道据此跳过其场景，而 `DSH_SNAPSHOT_ALLOW_UNSUPPORTED=1` 仍可照常运行。ACP 套件以调用方自有的探针（`replayable`）接收它，与 `hasPwsh` 并列，因为该工厂同时注册着它自己的单元 spec 在进程内驱动的机制。
+
+三个事实表明这条泳道从来不是 Windows 泳道：本 fork 的 Windows 门禁不含它（`ciWindowsObservationalGates`——"Linux owns required lint and snapshots; Windows omits those duplicates"）、上游快照层文档写明其必需运行平台是 macOS 与 Linux、而 `dsh-gitbash-sandbox` 带测试但不挂载，因为本发行版没有任何 win32 runner 能约束 Git Bash。因此在 win32 上跑该语料会把平台分歧读成失败——这正是默认行为现在所避免的。
+
 ## Alternatives considered
 
 **在每次 JSON-RPC 错误时报告子进程 stderr。** 该客户端是面向 SDK 使用者的产品接口；插件树失败是调用方以握手失败形式看到的运行时故障，而保留的尾部信息是为传输中断准备的。上述 harness 侧修复消除了这一需要：树加载成功后 `initialize` 即成功，不再抛出该错误。
@@ -56,6 +60,10 @@ mock server 参数是一个 file URL，当其后跟随盘符时去掉开头的�
 
 **在 harness 自行终止 win32 命令时合成 `SIGTERM`。** 这能让模型可见的结果与 POSIX 标记一致，但子进程结果报告的是平台自身的事实，而伪造的信号会告诉模型该进程死于该宿主上并不存在的东西。本笔记改为记录这处差异。
 
+**把宿主判据放进 `defineAcpSnapshotSuite` 内部。** 最初就是这么做的，结果它跳过了 `suite.spec.ts` 在进程内驱动的机制——8 个失败，因为那些 spec 断言的是套件自身的写回，而对应的测试此后根本没跑。该探针属于知道自身宿主情况的调用方，这也正是 `hasPwsh` 的传递方式。
+
+**给每个分歧场景标注 `platform: posix`。** 这是泳道本已支持的逐场景机制，但为一条宿主策略改动约七十个 fixture 清单，还会连带丢掉在 win32 上确实通过的那些场景——headless 15 个、ACP 9 个——而本笔记里的启动缺陷正是从它们的失败中找出来的。改为整体让位，并用显式覆盖保留这些运行能力。
+
 ## Consequences
 
 SDK 语料现在能在 win32 上启动：`initialize` 返回 `serverInfo`，18 个用例只在各自录制的组合与本发行版 win32 技术栈发生分歧之处失败。
@@ -64,7 +72,7 @@ SDK 语料现在能在 win32 上启动：`initialize` 返回 `serverInfo`，18 �
 
 另有两处差异贯穿 headless 的失败，且都不是启动路径的缺陷。harness 终止的命令在 POSIX 上报告 `[killed by signal: SIGTERM]`，在 win32 上报告 Node 观察到的退出码——那里终止即 `TerminateProcess`，不携带信号；子进程结果契约报告的是平台所给出的事实。此外 fixture 仍钉住已退役的 `dsh-plan-mode` 的 `exit_plan_mode` 文本，而组合挂载的是 `dsh-plan-handoff`，其描述与 `execution` 参数都不同。
 
-因此在 win32 上复现已提交的 fixture，需要一份在 win32 上录制的 fixture，而那会与 Linux 泳道所比较的 POSIX 录制产生分歧。本发行版是应在 win32 上跳过录制语料，还是保留其为红，尚未决定；在决定之前，该泳道在 win32 上的失败属于平台分歧，而非回归。
+在 win32 上复现已提交的 fixture 需要一份在 win32 上录制的 fixture，而那会与 Linux 泳道所比较的 POSIX 录制产生分歧。因此语料在该平台默认让位：win32 上的 `pnpm run test:snapshot` 保留语料完整性断言并把场景报告为跳过，而 `DSH_SNAPSHOT_ALLOW_UNSUPPORTED=1` 仍会运行它们，供需要诊断本笔记所记录分歧的人使用。POSIX 与 macOS 宿主看到 `recordedCorpusReplayable` 为真，行为与之前完全一致。
 
 ## Testing
 
@@ -73,5 +81,7 @@ SDK 语料现在能在 win32 上启动：`initialize` 返回 `serverInfo`，18 �
 采用收窄后的 win32 预设表后，`snapshots/session/headless.snapshot.ts` 从 75 个失败降到 73 个，并有 15 个用例通过；归一化器改动之后计数不变，因此转义后的 cwd 写法与分隔符合并没有改动任何原本通过的用例。
 
 后四项修复逐例验证：`pwsh-tool-turn`、`read-image-attachment-path`、`subagent-acp-diagnostic` 都不再在启动或重放模式处失败，转而以上述组合差异失败；被 token 化的路径也已从 `ptc-workspace-context` 的请求文本中消失。
+
+win32 上 `pnpm run test:snapshot` 报告 23 passed 与 110 skipped，而 `DSH_SNAPSHOT_ALLOW_UNSUPPORTED=1` 会重新运行整个语料——三个泳道共 96 个失败（headless 73、SDK 18、ACP 5），即本笔记所记录的分歧，别无其他。带上套件选项中的探针后，`pnpm run test packages/test-support/session-snapshot` 通过 343 个测试；而将判据放进工厂内部会破坏它们。
 
 `pnpm run verify-cordis-config` 通过全部 145 个配置文件，`pnpm run typecheck` 通过。

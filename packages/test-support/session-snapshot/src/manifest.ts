@@ -38,6 +38,25 @@ export interface SnapshotReplayManifest {
 /** Host requirements for a scenario's process-level controller. */
 export type SnapshotPlatform = 'posix' | 'pwsh'
 
+/**
+ * Whether this host can replay the recorded corpora.
+ *
+ * Every scenario pins the confined POSIX composition. `bash` advertises
+ * `sandbox_permissions` and `justification` only while the mounted executor
+ * confines, and `permission-presets` refuses to mount a `workspace-write` table
+ * on one that cannot enforce it, so a host whose default stack is unconfined
+ * cannot reproduce a committed fixture. This distribution's win32 default is
+ * the unconfined Git Bash executor and no shipped win32 runner confines it, so
+ * the corpora stand down there rather than reporting divergence as failure. CI
+ * states the same split: the Windows gates omit the snapshot lane.
+ *
+ * `DSH_SNAPSHOT_ALLOW_UNSUPPORTED=1` runs them on such a host anyway. The
+ * failures are then platform divergence rather than regressions, and reading
+ * them case by case is how the win32 launch defects were found.
+ */
+export const recordedCorpusReplayable = process.platform !== 'win32'
+  || process.env.DSH_SNAPSHOT_ALLOW_UNSUPPORTED === '1'
+
 /** Deployment permission preset selected before the scenario starts. */
 export type SnapshotPermission = 'read-only' | 'workspace-write' | 'danger-full-access'
 

@@ -279,6 +279,13 @@ export interface SnapshotSuiteOptions {
    * caller owns; `pwshOnly` scenarios skip when this is not true).
    */
   hasPwsh?: boolean
+  /**
+   * Whether this host can replay the corpus at all (the probe the caller owns,
+   * like {@link hasPwsh}). `false` skips every scenario; absent means the
+   * caller asserted nothing and the scenarios run, which is what an in-process
+   * suite spec wants.
+   */
+  replayable?: boolean
 }
 
 /** One scenario's generated claim on a shared snapshot file. */
@@ -1272,8 +1279,9 @@ export function defineAcpSnapshotSuite(options: SnapshotSuiteOptions): void {
     for (const scenario of scenarios) {
       // In RECORD mode, only re-run the `recorded` (live-API) scenarios; the `authored` ones
       // (sidecar-driven errors/cancel) are never re-recorded. `posixOnly` scenarios skip on Windows;
-      // `pwshOnly` scenarios skip when the caller's `hasPwsh` probe is false.
-      it.skipIf(scenarioSkipped(scenario, RECORDING, process.platform, options.hasPwsh))(`snapshot: ${scenario.name} matches the expected outputs`, async ({ expect }) => {
+      // `pwshOnly` scenarios skip when the caller's `hasPwsh` probe is false, and a host that cannot
+      // mount the confined composition skips the corpus through the caller's `replayable` probe.
+      it.skipIf(options.replayable === false || scenarioSkipped(scenario, RECORDING, process.platform, options.hasPwsh))(`snapshot: ${scenario.name} matches the expected outputs`, async ({ expect }) => {
         const dir = join(snapshotsDir, scenario.name)
         const manifestPath = join(dir, 'snapshot.yml')
         const manifest = parseSnapshotManifest(await readFile(manifestPath, 'utf8'), manifestPath)

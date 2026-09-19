@@ -55,6 +55,7 @@ export {
 } from './normalize.ts'
 export {
   parseSnapshotManifest,
+  recordedCorpusReplayable,
   writesCurrentSessionFixtures,
   type SnapshotHeaderManifest,
   type SnapshotInputAttachment,
