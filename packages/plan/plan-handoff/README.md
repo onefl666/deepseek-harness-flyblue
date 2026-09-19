@@ -35,12 +35,14 @@ An approved review also appends `plan/approved` `{ execution, title }`. A clear 
 
 `exit_plan_mode` stays registered in both states. In plan mode it requires a markdown plan starting with a `#` heading and asks through `ctx.userQuestions` with four options:
 
-- `Approve and execute` — conclude the current turn, then after the source agent is idle, create a sibling session (same cwd, model, and preset), attach it to the same workspace, log `plan/handoff`, and steer the full plan into the child.
+- `Approve and execute` — conclude the current turn, then after the source agent is idle, create a sibling session (same cwd, model, and preset), attach it to the same workspace, title it `【执行计划】<planning session title>`, log `plan/handoff`, and steer the full plan into the child.
 - `Approve and compact context` — conclude the current turn, then `compactNow` on this session, then steer the full plan. The Chat view shows `Compacting context…` from the standalone `compaction/start` until the checkpoint lands; only then does the plugin steer. Compaction is resolved through `AgentPresets.serviceFor(agent, 'compaction')` (the shipped isolated preset realm) or host `ctx.compaction`. Cancellation skips the steer. Failure or a missing engine falls back to keep.
-- `Approve and keep context` — steer the full plan into this session.
+- `Approve and keep context` — conclude the current turn, then steer the full plan into this session as the next turn.
 - `Refine plan` — stay in plan mode; feedback returns as a failed call.
 
-A TUI or other host without `ctx.agents.create` treats clear as compact-then-steer.
+Every approval concludes the current turn before the handoff runs, so the plugin's steer is the only input that starts execution and one approval runs the plan exactly once.
+
+A TUI or other host without `ctx.agents.create` treats clear as compact-then-steer. A clear whose child was created but whose handoff then failed detaches and disposes that child rather than executing the plan in the source session.
 
 The Web client selects the child when it sees a live `plan/handoff` on the current session, or when that child later appears in the session list. Historical replay does not switch.
 
@@ -111,6 +113,7 @@ Mode transitions do not change the tool catalog. Compact replaces a surface pref
 ## Known Limitations and Deferred Work
 
 - **Clear needs a session factory** — without `ctx.agents` the path falls back to compact-then-steer, which is the TUI/headless case.
+- **Execution session title needs `ctx.sessionTitle`** — without that service the child keeps its default derived title; the handoff still steers the plan.
 - **Compact needs a reachable engine** — without `AgentPresets.serviceFor(agent, 'compaction')` or host `ctx.compaction` the path keeps context.
 - **No plan files** — the approved markdown lives on the tool argument and is copied into the execution prompt; there is no `local://` artifact.
 - **Soft guidance only** — a model that ignores the section can still mutate; configure sandbox and approval independently.

@@ -18,7 +18,6 @@ export const zh = {
   'plan.approve.execute': '清空并执行',
   'plan.approve.compact': '压缩后执行',
   'plan.approve.keep': '保留上下文',
-  'plan.decline': '拒绝',
   'plan.refine': '继续规划',
   'plan.discuss': '去聊天里说',
 } satisfies Record<string, string>
@@ -44,7 +43,6 @@ export const en = {
   'plan.approve.execute': 'Execute',
   'plan.approve.compact': 'Compact and execute',
   'plan.approve.keep': 'Keep context',
-  'plan.decline': 'Refuse',
   'plan.refine': 'Refine plan',
   'plan.discuss': 'Chat about it',
 } satisfies Record<QuestionKey, string>

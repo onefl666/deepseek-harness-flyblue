@@ -6,13 +6,17 @@
 
 import { randomUUID } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
-import type { Agent } from '@deepseek-ai/dsh-agent'
+import type { Agent, AgentHandle } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-agent-presets'
 import type { ManualCompactionError, ManualCompactionErrorCode } from '@deepseek-ai/dsh-compaction'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
+// Type-only: resolves ctx.sessionTitle for the optional title child.
+import type {} from '@deepseek-ai/dsh-session-title'
+// Type-only: resolves ctx.workspaceRegistry and the Workspace entity type.
+import type { Workspace } from '@deepseek-ai/dsh-workspace'
 import type { PlanExecution } from './types.ts'
-import { approvedPlanPrompt } from './prompts.ts'
+import { EXECUTION_SESSION_TITLE_PREFIX, approvedPlanPrompt } from './prompts.ts'
 
 /**
  * The session's compaction engine: the preset isolate first, then the host
@@ -120,10 +124,17 @@ export async function compactThenExecute(
 /**
  * Create a sibling session that inherits cwd, model, and preset, then steer.
  *
+ * The child is created, attached to the source's workspace, titled, recorded by
+ * `plan/handoff`, and only then steered. A failure after creation detaches and
+ * disposes the child instead of falling back to the source session, which would
+ * execute the plan twice; the source-session fallback is reserved for a child
+ * that was never created.
+ *
  * @param host - the plan-handoff service context (not the source agent scope).
  * @param source - idle planning agent.
  * @param plan - approved markdown; the child's first model-visible input.
- * @param title - first heading, used only for logging.
+ * @param title - the approved plan's first heading; a fallback base for the
+ *   execution session title when the source session carries none.
  * @returns cleared, or fallback compact/keep when create is unavailable.
  */
 export async function clearThenExecute(
@@ -141,8 +152,9 @@ export async function clearThenExecute(
   const presets = host.get('agentPresets')
   const presetId = presets?.composedPreset(source.ctx)
   const childId = SessionId(`session-${randomUUID()}`)
+  let handle: AgentHandle
   try {
-    const handle = await agents.create({
+    handle = await agents.create({
       sessionId: childId,
       meta: {
         ...source.session.header.cwd === undefined ? {} : { cwd: source.session.header.cwd },
@@ -158,20 +170,72 @@ export async function clearThenExecute(
           },
         },
     })
-    const cwd = source.session.header.cwd
-    const workspaces = host.get('workspaceRegistry')
-    if (workspaces !== undefined && cwd !== undefined) {
-      const workspace = await workspaces.resolveByPath(cwd)
-      if (workspace !== undefined) await workspace.attachSession(childId)
-    }
-    source.session.append('plan/handoff', { childSessionId: childId, mode: 'clear' })
-    void title
-    steerApprovedPlan(handle.agent, plan, false)
-    return { kind: 'cleared', childSessionId: childId }
   } catch (error: unknown) {
+    // Nothing was created, so the source session is still the only place the
+    // approved plan can run.
     host.logger.warn('dsh-plan-handoff: failed to create execution session; falling back: %o', error)
     await compactThenExecute(host, source, plan, new AbortController().signal)
     return { kind: 'cleared-fallback' }
+  }
+  const cwd = source.session.header.cwd
+  const workspaces = host.get('workspaceRegistry')
+  let workspace: Workspace | undefined
+  let attached = false
+  try {
+    if (workspaces !== undefined && cwd !== undefined) {
+      workspace = await workspaces.resolveByPath(cwd)
+      if (workspace !== undefined) {
+        await workspace.attachSession(childId)
+        attached = true
+      }
+    }
+    applyExecutionTitle(host, source, handle.agent, title)
+    source.session.append('plan/handoff', { childSessionId: childId, mode: 'clear' })
+    steerApprovedPlan(handle.agent, plan, false)
+    return { kind: 'cleared', childSessionId: childId }
+  } catch (error: unknown) {
+    host.logger.warn('dsh-plan-handoff: execution session failed after creation; discarding it: %o', error)
+    if (attached && workspace !== undefined) {
+      try {
+        await workspace.detachSession(childId)
+      } catch (rollbackError: unknown) {
+        host.logger.warn('dsh-plan-handoff: workspace detach rollback failed: %o', rollbackError)
+      }
+    }
+    try {
+      await handle.dispose()
+    } catch (rollbackError: unknown) {
+      host.logger.warn('dsh-plan-handoff: execution session disposal failed: %o', rollbackError)
+    }
+    throw error
+  }
+}
+
+/**
+ * Name the execution session after its planning session.
+ *
+ * The base is the source session's folded title, so the child reads as
+ * `【执行计划】<planning title>`; a `session/title` already carrying the prefix
+ * is left unchanged. A missing title service, or one that rejects the rename,
+ * leaves the child at its default derived title rather than failing the
+ * handoff.
+ *
+ * @param host - the plan-handoff service context.
+ * @param source - idle planning agent whose title names the child.
+ * @param child - the created execution agent.
+ * @param title - the plan's first heading, used when the source has no title.
+ */
+function applyExecutionTitle(host: Context, source: Agent, child: Agent, title: string): void {
+  const titles = host.get('sessionTitle')
+  if (titles === undefined) return
+  const base = titles.get(source.session)?.title ?? title
+  const composed = base.startsWith(EXECUTION_SESSION_TITLE_PREFIX)
+    ? base
+    : `${EXECUTION_SESSION_TITLE_PREFIX}${base}`
+  try {
+    titles.rename(child.session, composed)
+  } catch (error: unknown) {
+    host.logger.warn('dsh-plan-handoff: failed to title the execution session: %o', error)
   }
 }
 

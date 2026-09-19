@@ -40,5 +40,7 @@
   - button "Chat about it":
     - img
     - text: Chat about it
-  - button "Refuse"
-  - button "Approve"
+  - button "Refine plan"
+  - button "Execute"
+  - button "Compact and execute"
+  - button "Keep context"

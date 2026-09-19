@@ -3,14 +3,20 @@ import { Context } from '@deepseek-ai/cordis'
 import LlmRuntime, { createUserMessage, type GenerateOptions, type Message, type StreamChunk  } from '@deepseek-ai/dsh-llm'
 import SessionStore, { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
+import SessionTitleService from '@deepseek-ai/dsh-session-title'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime, { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
 import AgentRegistry, { type Agent } from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
-import PlanModeController, { foldPlanMode } from '@deepseek-ai/dsh-plan-handoff'
+import UserQuestionService from '@deepseek-ai/dsh-user-questions'
+import PlanModeController, {
+  APPROVE_KEEP, EXIT_PLAN_MODE, EXECUTION_SESSION_TITLE_PREFIX, foldPlanMode,
+} from '@deepseek-ai/dsh-plan-handoff'
+import { clearThenExecute } from '../src/handoff.ts'
 import { MockAdapter, textResponse, toolCallResponse } from '../../../core/agent-loop/tests/mock-adapter.ts'
 
 const PLAN_CONFIG = { section: 'Test plan mode instructions.' }
+const TITLE_CONFIG = { fallbackMaxWords: 8, fallbackMaxBytes: 80, maxTitleBytes: 200 }
 
 /**
  * Full-loop integration: a scripted mock model drives the REAL plan-mode plugin
@@ -20,7 +26,7 @@ const PLAN_CONFIG = { section: 'Test plan mode instructions.' }
  * Only the model is mocked; the loop, the session log, and the plugin are
  * real.
  */
-async function harness(adapter: MockAdapter): Promise<Context> {
+async function harness(adapter: MockAdapter, options: { titles?: boolean } = {}): Promise<Context> {
   const ctx = new Context()
   await ctx.plugin(LlmRuntime)
   await ctx.plugin(SessionStore)
@@ -30,6 +36,8 @@ async function harness(adapter: MockAdapter): Promise<Context> {
   await ctx.plugin(AgentRegistry)
   await ctx.plugin(AgentLoop, { agents: [] })
   await ctx.plugin(PlanModeController, PLAN_CONFIG)
+  await ctx.plugin(UserQuestionService)
+  if (options.titles === true) await ctx.plugin(SessionTitleService, TITLE_CONFIG)
   ctx.llm.registerAdapter(['mock'], adapter)
   for (const name of ['read', 'write']) {
     ctx.tools.register(defineContentToolFixture({
@@ -42,13 +50,27 @@ async function harness(adapter: MockAdapter): Promise<Context> {
   return ctx
 }
 
-function waitForIdle(ctx: Context, agent: Agent): Promise<void> {
+/** Answer the plan review with one fixed option. */
+function approveWith(ctx: Context, selected: string): void {
+  ctx.on('user-questions/request', () => Promise.resolve({
+    answers: [{ id: 'plan-review', selected: [selected] }],
+  }))
+}
+
+/**
+ * Resolve after `count` idle transitions of one agent. One subscription covers
+ * every transition, so a turn that starts and settles inside the gap between
+ * two waits cannot be missed.
+ */
+function waitForIdle(ctx: Context, agent: Agent, count = 1): Promise<void> {
   return new Promise((resolve) => {
+    let seen = 0
     const dispose = ctx.on('agent/status', ({ agent: subject, status }) => {
-      if (subject === agent && status === 'idle') {
-        dispose()
-        resolve()
-      }
+      if (subject !== agent || status !== 'idle') return
+      seen += 1
+      if (seen < count) return
+      dispose()
+      resolve()
     })
   })
 }
@@ -215,5 +237,55 @@ describe('plan mode through the agent loop', () => {
     expect(notice?.type === 'user/message' && notice.data.content).toEqual([
       { type: 'text', text: 'The user switched this session to plan mode.' },
     ])
+  })
+
+  it('one approval executes the plan exactly once, in the turn the plugin steers', async () => {
+    const approved = '# Approved plan\n\nDo the work.'
+    const adapter = new MockAdapter([
+      toolCallResponse('exit-1', EXIT_PLAN_MODE, { plan: approved }),
+      textResponse('Executing the approved plan.'),
+    ])
+    const ctx = await harness(adapter)
+    approveWith(ctx, APPROVE_KEEP)
+    const agent = await ctx.agentLoop.create(SessionId('it-plan-handoff-keep'), { provider: 'mock', model: 'mock' })
+    ctx.planMode.set(agent, true)
+
+    // Turn 1 is the planning turn; turn 2 is the execution turn the handoff
+    // steers. Any in-turn execution would show a third request.
+    const settled = waitForIdle(ctx, agent, 2)
+    agent.followup(createUserMessage({ content: [{ type: 'text', text: 'plan the work' }], source: { kind: 'user' } }))
+    await settled
+
+    expect(adapter.requests).toHaveLength(2)
+    const log = agent.session.snapshotEvents()
+    const steers = log.filter(event => event.type === 'user/message'
+      && event.data.source.kind === 'plugin'
+      && event.data.source.plugin === 'plan-handoff')
+    expect(steers).toHaveLength(1)
+    const firstTurnEnd = findEvent(log, 'turn/end')
+    expect(firstTurnEnd.seq).toBeLessThan(steers[0]?.seq ?? 0)
+    expect(foldPlanMode(log)).toBe(false)
+    const execution = adapter.requests[1]?.messages.at(-1)
+    expect(execution?.role).toBe('user')
+    expect(textOf(execution as Message)).toContain(approved)
+    expect(textOf(execution as Message)).toContain('History is usable')
+  })
+
+  it('clear titles the execution session after the planning session', async () => {
+    const adapter = new MockAdapter([textResponse('Executing in a fresh session.')])
+    const ctx = await harness(adapter, { titles: true })
+    const source = await ctx.agentLoop.create(SessionId('it-plan-handoff-clear'), { provider: 'mock', model: 'mock' })
+    ctx.sessionTitle.rename(source.session, 'Plan the migration')
+
+    const outcome = await clearThenExecute(ctx, source, '# Approved plan\n\nDo the work.', 'Approved plan')
+
+    expect(outcome.kind).toBe('cleared')
+    const handoff = findEvent(source.session.snapshotEvents(), 'plan/handoff')
+    const child = ctx.sessions.get(handoff.data.childSessionId)
+    expect(child).toBeDefined()
+    const titles = child?.snapshotEvents().filter(event => event.type === 'session/title') ?? []
+    expect(titles).toHaveLength(1)
+    expect(titles[0]?.data.title).toBe(`${EXECUTION_SESSION_TITLE_PREFIX}Plan the migration`)
+    expect(titles[0]?.data.source).toEqual({ kind: 'user' })
   })
 })

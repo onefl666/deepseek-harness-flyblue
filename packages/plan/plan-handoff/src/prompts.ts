@@ -21,6 +21,14 @@ export const REFINE_PLAN = 'Refine plan'
 export const APPROVE_LABELS = [APPROVE_EXECUTE, APPROVE_COMPACT, APPROVE_KEEP] as const
 
 /**
+ * Leading marker of an execution session's title, so a user reading the
+ * session list can tell which planning session produced it. Applied once: a
+ * base title that already carries it is left alone. Not deployment-owned — it
+ * is host copy of the same class as {@link APPROVE_LABELS}.
+ */
+export const EXECUTION_SESSION_TITLE_PREFIX = '【执行计划】'
+
+/**
  * Build the model-visible execution prompt after approval.
  *
  * @param input.plan - the approved markdown, required on compact/clear because
@@ -57,7 +65,8 @@ export function approvedResultText(execution: 'clear' | 'compact' | 'keep'): str
     case 'compact':
       return 'Plan approved — this session will compact the planning discussion, then execute the plan.'
     case 'keep':
-      return 'Plan approved — plan mode exited; carry out the plan starting with your next step.'
+      return 'Plan approved — plan mode exited; this session keeps the planning history '
+        + 'and runs the approved plan as the next turn.'
     default: {
       const exhausted: never = execution
       return exhausted

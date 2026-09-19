@@ -37,12 +37,14 @@ kind: "package-reference"
 
 `exit_plan_mode` 在两种状态下都保持注册。在 plan mode 中，它要求以 `#` 标题开头的 markdown 计划，并通过 `ctx.userQuestions` 提供四个选项：
 
-- `Approve and execute` — 结束当前轮次，源 agent 空闲后创建兄弟会话（相同 cwd、模型与 preset），挂到同一 workspace，记录 `plan/handoff`，并把完整计划 steer 进子会话。
+- `Approve and execute` — 结束当前轮次，源 agent 空闲后创建兄弟会话（相同 cwd、模型与 preset），挂到同一 workspace，标题设为 `【执行计划】<计划会话标题>`，记录 `plan/handoff`，并把完整计划 steer 进子会话。
 - `Approve and compact context` — 结束当前轮次，对本会话 `compactNow`，再 steer 完整计划。Chat 视图从独立 `compaction/start` 起显示「正在压缩…」，检查点落地后插件才 steer。压缩服务通过 `AgentPresets.serviceFor(agent, 'compaction')`（已交付 preset 的 isolate realm）或宿主 `ctx.compaction` 解析。取消则不 steer。失败或找不到引擎则回退为保留上下文。
-- `Approve and keep context` — 把完整计划 steer 进本会话。
+- `Approve and keep context` — 结束当前轮次，再把完整计划作为下一轮 steer 进本会话。
 - `Refine plan` — 留在 plan mode；反馈作为失败调用返回。
 
-没有 `ctx.agents.create` 的 TUI 或其他宿主会把清空当作压缩后再执行。
+三种批准都先结束当前轮次，再由交接执行；插件的 steer 是启动执行的唯一输入，因此一次批准只执行一遍计划。
+
+没有 `ctx.agents.create` 的 TUI 或其他宿主会把清空当作压缩后再执行。子会话已创建但交接随后失败时，会先 detach 并释放该子会话，而不是在源会话里执行计划。
 
 Web 客户端在当前会话上看到实时 `plan/handoff` 时选中子会话；若子会话稍后才进入列表，也会在出现时选中。历史回放不会切换。
 
@@ -114,6 +116,7 @@ through exit_plan_mode.
 ## Known Limitations and Deferred Work
 
 - **清空需要会话工厂** — 没有 `ctx.agents` 时回退为压缩后执行，这是 TUI/headless 路径。
+- **执行子会话标题需要 `ctx.sessionTitle`** — 没有该服务时子会话保留默认派生的标题；交接仍会 steer 计划。
 - **压缩需要能解析到引擎** — 没有 `AgentPresets.serviceFor(agent, 'compaction')` 或宿主 `ctx.compaction` 时回退为保留上下文。
 - **不落盘计划文件** — 已批准的 markdown 留在工具参数中，并复制进执行提示；没有 `local://` 产物。
 - **仅软性指引** — 忽略该段落的模型仍可改动工作区；沙箱与审批需单独配置。

@@ -1733,7 +1733,7 @@ export interface PlanModeConfig {
 }
 ```
 
-Source: [`packages/plan/plan-handoff/src/index.ts:75`](../packages/plan/plan-handoff/src/index.ts)
+Source: [`packages/plan/plan-handoff/src/index.ts:77`](../packages/plan/plan-handoff/src/index.ts)
 
 <a id="deepseek-aidsh-plugin-package-inventory-deepseek"></a>
 

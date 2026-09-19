@@ -17,8 +17,10 @@
  * or leaving plan mode changes only the prompt section, not the request tool
  * catalog.
  *
- * After an approved review the plugin waits for the source agent to go idle,
- * then keeps context, compacts, or opens a sibling session.
+ * After an approved review the turn ends and the plugin waits for the source
+ * agent to go idle, then keeps context, compacts, or opens a sibling execution
+ * session named after the planning session. The plugin's steer is the only
+ * thing that starts execution, so one approval runs the plan once.
  *
  * Agent Note:
  * - .agents/notes/implemented/feature/2026-08-19-plan-handoff.md
@@ -55,8 +57,8 @@ import type {} from '@deepseek-ai/dsh-workspace'
 // aggregate programs consuming the declarations still receive the merges.
 export type * from './types.ts'
 export {
-  APPROVE_COMPACT, APPROVE_EXECUTE, APPROVE_KEEP, APPROVE_LABELS, REFINE_PLAN,
-  approvedPlanPrompt, approvedResultText,
+  APPROVE_COMPACT, APPROVE_EXECUTE, APPROVE_KEEP, APPROVE_LABELS, EXECUTION_SESSION_TITLE_PREFIX,
+  REFINE_PLAN, approvedPlanPrompt, approvedResultText,
 } from './prompts.ts'
 
 declare module '@deepseek-ai/cordis' {
@@ -439,10 +441,10 @@ export class PlanModeController extends Service {
         }
         this.pendingIntents.set(agent.session, { active: false, narrate: false })
         this.pendingHandoffs.set(agent.session, { execution, plan: args.plan, title })
-        // Compact and clear need the source idle before they can run. Ending
-        // this turn prevents a same-turn model step from executing against the
-        // uncompacted planning transcript.
-        if (execution === 'compact' || execution === 'clear') exec.concludeTurn()
+        // Every approval ends this turn: the handoff steer is the only owner of
+        // execution. Without this, keep would execute in-turn from the tool
+        // result and again from the steer after the turn settles.
+        exec.concludeTurn()
         if (agent.status === 'idle') {
           const pending = this.pendingHandoffs.get(agent.session)
           if (pending !== undefined) {

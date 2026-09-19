@@ -859,7 +859,8 @@ describe('exit_plan_mode', () => {
     expect(result.isError).toBe(false)
     if (result.isError) throw new Error('expected approved plan result')
     expect(result.value).toEqual({ approved: true, execution: 'keep' })
-    expect(result.content).toEqual([{ type: 'text', text: 'Plan approved — plan mode exited; carry out the plan starting with your next step.' }])
+    expect(result.content).toEqual([{ type: 'text', text: 'Plan approved — plan mode exited; this session keeps the planning history and runs the approved plan as the next turn.' }])
+    expect(result.concludesTurn).toBe(true)
     // Boundary-applied, not a direct append: the fold stays plan until the
     // step's end, so the plan policy covers any remaining call of the SAME batch.
     expect(foldPlanMode(agent.session.snapshotEvents())).toBe(true)

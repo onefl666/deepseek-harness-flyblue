@@ -10,6 +10,9 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
+- navigation "Turn navigation":
+  - button "Jump to turn 1"
+  - button "Jump to turn 2"
 - img
 - text: plan Plan mode on. Use /plan off to leave.
 - button "System prompt":
@@ -19,13 +22,42 @@
 - text: "Plan a small change: add a --greeting flag to a CLI. Do not read or write any files. Call exit_plan_mode with a short plan of at most five bullet points. Once the plan is approved, reply with the single word DONE and stop. {{clock}}"
 - button "Copy":
   - img
-- button "1 tool call · 1 message":
-  - text: 1 tool call · 1 message
+- button "Context injection @deepseek-ai/dsh-system-prompt":
   - img
+  - img
+  - text: Context injection @deepseek-ai/dsh-system-prompt
+- 'button "Think The user wants me to plan a small change to add a `--greeting` flag to a CLI. They explicitly told me not to read or write any files, and to call exit_plan_mode with a short plan. Let me do that directly."':
+  - img
+  - img
+  - text: "Think The user wants me to plan a small change to add a `--greeting` flag to a CLI. They explicitly told me not to read or write any files, and to call exit_plan_mode with a short plan. Let me do that directly."
+- paragraph:
+  - text: Since the user has explicitly asked me not to read or write any files and to go straight to planning, I'll proceed with
+  - code: exit_plan_mode
+  - text: .
+- button "Copy":
+  - img
+- button "Good response":
+  - img
+- button "Bad response":
+  - img
+- button "Branch into a new conversation" [disabled]:
+  - img
+- text: Available only on the last message of a completed turn
+- button "Ran for {{duration}}":
+  - img
+  - text: Ran for {{duration}}
+- text: {{clock}}
+- 'button "Tool call exit_plan_mode · # Add `--greeting` flag to CLI"':
+  - img
+  - img
+  - text: "Tool call exit_plan_mode · # Add `--greeting` flag to CLI"
 - button "System prompt":
   - img
   - img
   - text: System prompt
+- button "Thought for a while":
+  - text: Thought for a while
+  - img
 - paragraph: DONE
 - button "Copy":
   - img
@@ -42,15 +74,13 @@
 - textbox "Message or run a task, / commands, @ files or sessions"
 - button "Add files or run commands":
   - img
-- 'button "Access mode, current: Workspace Write"': Workspace Write
-- button "Select model, current DeepSeek-V4-Flash":
-  - text: DeepSeek-V4-Flash
-  - img
+- 'button "Access mode, current: Unconfined Ask"': Unconfined Ask
+- button "Select model, current DeepSeek-V4-Flash": DeepSeek-V4-Flash
 - button "4% of context used"
 - button "Send message" [disabled]
-- button "1 turns 2 steps · {{throughput}} tok/s":
+- button "2 turns 2 steps · {{throughput}} tok/s":
   - img
-  - text: 1 turns 2 steps{{throughput}} tok/s
+  - text: 2 turns 2 steps{{throughput}} tok/s
 - button "10.6K tok · Cache hit 51%":
   - img
   - text: 10.6K tokCache hit 51%

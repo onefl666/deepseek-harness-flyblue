@@ -100,17 +100,33 @@ describe('web e2e: plan review takeover round trip', () => {
       await compareOrRefreshGolden(SIDEBAR_EXPECTED, sidebar, MODE)
     }
 
-    await card.getByRole('button', { name: 'Approve' }).click()
+    await card.getByRole('button', { name: 'Keep context' }).click()
     // Park the pointer: the card unmounts and the ContextMeter ring lands
     // under the click position, whose 200ms hover delay would arm a tooltip
     // into the aria captures below.
     await page.mouse.move(0, 0)
 
     const sessionId = await settled
+    // The approval ends the planning turn; `dsh-plan-handoff` then steers the
+    // execution turn into this same session. Waiting for that turn's end keeps
+    // both the recording and the goldens on a settled execution transcript —
+    // a mid-stream capture is the jitter this wait removes.
+    await expect.poll(
+      () => sessionEvents.filter(event => event.type === 'turn/end').length,
+      { timeout: MODE === 'record' ? 180_000 : 30_000 },
+    ).toBe(2)
     if (MODE === 'record') {
       await recordFixture(scaffold, sessionId, FIXTURE)
       return
     }
+    // One approval runs the plan once: the plugin's steer is the only input
+    // that starts the execution turn, so there is exactly one plan-handoff
+    // message and exactly one turn beyond the planning turn.
+    const steers = sessionEvents.filter(event => event.type === 'user/message'
+      && event.data.source.kind === 'plugin'
+      && event.data.source.plugin === 'plan-handoff')
+    expect(steers).toHaveLength(1)
+    expect(sessionEvents.filter(event => event.type === 'turn/start')).toHaveLength(2)
     // World state: the approval reached the tool, and plan mode is left behind.
     const results = sessionEvents.filter(e => e.type === 'tool/result')
     expect(JSON.stringify(results.at(-1))).toContain('Plan approved')
