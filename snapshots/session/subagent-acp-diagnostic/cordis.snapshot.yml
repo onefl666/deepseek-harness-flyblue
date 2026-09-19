@@ -22,7 +22,10 @@
         providerName: acp-diagnostic
         command: !!js process.execPath
         args:
-          - !!js "decodeURIComponent(new URL('../../../packages/subagent/subagent-acp/tests/mock-acp-server.ts', 'file://' + process.env.DSH_SNAPSHOT_FILE).pathname)"
+          # `URL.pathname` spells a win32 path as `/D:/...`, which Node then
+          # resolves against the current drive (`C:\D:\...`); the leading slash
+          # belongs to the URL, not to the path.
+          - !!js "decodeURIComponent(new URL('../../../packages/subagent/subagent-acp/tests/mock-acp-server.ts', 'file://' + process.env.DSH_SNAPSHOT_FILE.replace(/^[/]?/, '/')).pathname).replace(/^[/](?=[A-Za-z]:)/, '')"
         permission: reject
         env:
           MOCK_PERMISSION: '1'

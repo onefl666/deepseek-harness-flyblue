@@ -12,6 +12,12 @@
   name: '@deepseek-ai/dsh-bash-sandbox'
   disabled: true
 
+# This distribution's win32 base mounts a Git Bash executor unless the
+# environment selects the pwsh stack; this composition selects it here, and two
+# live executors cannot both provide `shell`.
+- id: gitbash-local
+  disabled: true
+
 - id: pwsh-sandbox
   name: '@deepseek-ai/dsh-pwsh-sandbox'
   disabled: false

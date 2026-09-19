@@ -18,13 +18,29 @@ Status: implemented
 
 `snapshots/sdk/persistent-tools/cordis.yml` 插入 `bash-local`，而本发行版的 win32 基础组合挂载了 `gitbash-local`，其执行器继承 `LocalBashExecutor`。两者都构造 `shell` 服务，于是插件树以 `service "shell" has been registered at <LocalBashExecutor>` 失败。该场景自己的禁用清单本已让它所替换的 profile 行退出（`bash-sandbox`、`pwsh-sandbox`、`permission`）；本发行版新增的那一行晚于它。
 
+SDK 语料走到断言、headless 泳道逐例读过之后，又暴露出四个缺陷。
+
+`snapshots/session/pwsh-tool-turn` 通过挂载 `pwsh-sandbox` 选择受限 pwsh 栈，而本发行版 win32 基础组合在环境未选择该栈时挂载 Git Bash 执行器，于是同一处双提供者冲突以 `service "shell" has been registered at <GitBashExecutor>` 让插件树失败。
+
+`snapshots/session/subagent-acp-diagnostic` 用 `decodeURIComponent(new URL(relative, 'file://' + process.env.DSH_SNAPSHOT_FILE).pathname)` 构造其 mock server 参数。URL pathname 把 win32 路径写成 `/D:/...`，而 Node 会把开头的斜杠解析为当前盘符，于是子进程以 `Cannot find module 'C:\D:\deepseek-harness-flyblue\...'` 死亡——与 LSP 启动器改用 `fileURLToPath` 之前所携带的是同一个缺陷。
+
+`snapshots/session/read-image-attachment-path` 钉住的 `fromRequest` 模式在 `red.png` 之前是一个 `/`，只有 POSIX 请求文本才满足；重放提供者报 `matched nothing in the request`，场景以非零码退出。
+
+共享归一化器中的 `cwdSpellings` 只保存字面 cwd 写法，因此出现在内嵌 JSON 文档里的 cwd（其每个分隔符都带 JSON 自身的转义）从未被 token 化，生成机器的临时路径就留在了被比较的请求文本中。
+
 ## Decision
 
 fixture 水合时以 JSON 写法写入注入的路径（`JSON.stringify(cwd).slice(1, -1)`）：对 POSIX 路径而言这是恒等变换，对 win32 则把 JSON 字符串所需的分隔符翻倍。`{{cwd}}` 被插入到已解析的值而非 JSON 文本时（`materializeInput`）仍使用原始写法。
 
 `materializeProfilePatch` 接受解析锚点，`snapshots/sdk/sdk.snapshot.ts` 传入它所启动的应用清单（`apps/cli/package.json`）。补丁中的裸包先经补丁查找、再经锚点查找，随后照旧链接进启动 profile，因此 `lib` 模式启动可以解析仅声明为应用 devDependency 的语料提供者。
 
-场景让本发行版的执行器行退出：`snapshots/sdk/persistent-tools/cordis.yml` 在它所替换的其他行旁边禁用 `gitbash-local`，因为它插入的 `bash-local` 拥有该服务。
+场景让本发行版的执行器行退出：`snapshots/sdk/persistent-tools/cordis.yml` 在它所替换的其他行旁边禁用 `gitbash-local`，因为它插入的 `bash-local` 拥有该服务。`snapshots/session/pwsh-tool-turn` 在其两个补丁中都这样做，因为它挂载的是受限 pwsh 执行器，而本发行版的 Git Bash 行会被基础组合在每次未选择 pwsh 栈的 win32 启动中挂载。
+
+mock server 参数是一个 file URL，当其后跟随盘符时去掉开头的斜杠；其基址取自 fixture 路径并归一化开头的分隔符，于是一个表达式在 win32 上给出 `D:/.../mock-acp-server.ts`，在 POSIX 上给出 `/.../mock-acp-server.ts`。
+
+重放模式接受任一种分隔符（`[\\/]`），对它所匹配的 POSIX 请求而言这是恒等变换。
+
+`cwdSpellings` 还会返回每个写法转义后的形式，而规范化路径重写会合并转义写法留下的连续分隔符。二者对没有分隔符可转义的 POSIX cwd 都是恒等变换。
 
 共享的 headless 组合（`snapshots/session/text-turn/cordis.yml`）将其 win32 预设表收窄为它所钉住的 sandbox/approval 组合所选中的那一个预设。该行在其他所有平台上都是惰性的，基础组合在那里把它置为 `disabled`。
 
@@ -38,11 +54,15 @@ fixture 水合时以 JSON 写法写入注入的路径（`JSON.stringify(cwd).sli
 
 **改为在 tokenize 阶段转义 `{{cwd}}`。** 已提交的 fixture 是与 POSIX 泳道共享的归一化不动点，而不合法之处并非该 token，而是被替换进去的值。
 
+**在 harness 自行终止 win32 命令时合成 `SIGTERM`。** 这能让模型可见的结果与 POSIX 标记一致，但子进程结果报告的是平台自身的事实，而伪造的信号会告诉模型该进程死于该宿主上并不存在的东西。本笔记改为记录这处差异。
+
 ## Consequences
 
 SDK 语料现在能在 win32 上启动：`initialize` 返回 `serverInfo`，18 个用例只在各自录制的组合与本发行版 win32 技术栈发生分歧之处失败。
 
 该分歧并未闭合，这也是本次改动的诚实边界。67 个 headless 用例钉住带 `sandbox_permissions` 与 `justification` 的 `bash` 工具 schema，而该工具只在所挂载的执行器能够约束时才公布它们；win32 默认执行的正是刻意不受约束的 Git Bash 执行器。18 个 SDK 用例钉住 `workspace-write` 的 sandbox 模式与预设，而 `permission-presets` 拒绝在无法强制该模式的执行器上挂载它——这正是本发行版提供 `permission-unconfined` 的原因。二者都无法靠配置钉住，因为它们都源自执行器的约束能力。
+
+另有两处差异贯穿 headless 的失败，且都不是启动路径的缺陷。harness 终止的命令在 POSIX 上报告 `[killed by signal: SIGTERM]`，在 win32 上报告 Node 观察到的退出码——那里终止即 `TerminateProcess`，不携带信号；子进程结果契约报告的是平台所给出的事实。此外 fixture 仍钉住已退役的 `dsh-plan-mode` 的 `exit_plan_mode` 文本，而组合挂载的是 `dsh-plan-handoff`，其描述与 `execution` 参数都不同。
 
 因此在 win32 上复现已提交的 fixture，需要一份在 win32 上录制的 fixture，而那会与 Linux 泳道所比较的 POSIX 录制产生分歧。本发行版是应在 win32 上跳过录制语料，还是保留其为红，尚未决定；在决定之前，该泳道在 win32 上的失败属于平台分歧，而非回归。
 
@@ -50,6 +70,8 @@ SDK 语料现在能在 win32 上启动：`initialize` 返回 `serverInfo`，18 �
 
 `DSH_EXAMPLE_MODE=lib pnpm run test:snapshot snapshots/sdk/sdk.snapshot.ts` 从 18 个启动失败变为 18 个组合不一致，每一个报告的都是会话日志或请求头差异，而不再是 `cannot create effect on inactive context`。直接启动场景子进程（`--profile sdk`，配上物化后的补丁，并在 stdin 写入一帧 `initialize`）返回 `serverInfo`，而此前它返回该错误，并在 stderr 上留下 `llm-replay` 导入失败。
 
-采用收窄后的 win32 预设表后，`snapshots/session/headless.snapshot.ts` 从 75 个失败降到 73 个，并有 15 个用例通过。其余 67 个共享同一特征：缺失的升级 schema。
+采用收窄后的 win32 预设表后，`snapshots/session/headless.snapshot.ts` 从 75 个失败降到 73 个，并有 15 个用例通过；归一化器改动之后计数不变，因此转义后的 cwd 写法与分隔符合并没有改动任何原本通过的用例。
+
+后四项修复逐例验证：`pwsh-tool-turn`、`read-image-attachment-path`、`subagent-acp-diagnostic` 都不再在启动或重放模式处失败，转而以上述组合差异失败；被 token 化的路径也已从 `ptc-workspace-context` 的请求文本中消失。
 
 `pnpm run verify-cordis-config` 通过全部 145 个配置文件，`pnpm run typecheck` 通过。
