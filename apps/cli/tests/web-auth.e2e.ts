@@ -196,8 +196,14 @@ describe('dsh web authentication through the real CLI', () => {
       expect(secondUrl.searchParams.get('token')).not.toBe(firstUrl.searchParams.get('token'))
       expect((await describeSettings(port, secondUrl.host, cookie)).status).toBe(200)
 
-      const credentialMode = (await stat(join(dshHome, '.credentials.yaml'))).mode & 0o777
-      expect(credentialMode).toBe(0o600)
+      const credentials = await stat(join(dshHome, '.credentials.yaml'))
+      // NTFS reports synthesized POSIX permission bits, so only the POSIX hosts
+      // can assert the 0600 mode; Windows asserts the regular-file fact.
+      if (process.platform === 'win32') {
+        expect(credentials.isFile()).toBe(true)
+      } else {
+        expect(credentials.mode & 0o777).toBe(0o600)
+      }
     } catch (error) {
       const evidence = [first?.output(), second?.output()].filter(value => value !== undefined).join('\n')
       throw new Error(`${error instanceof Error ? error.message : String(error)}\n${redact(evidence)}`, { cause: error })

@@ -9,19 +9,22 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { mkdtemp, mkdir, rm, writeFile, realpath } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { Context } from '@deepseek-ai/cordis'
 import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
 import LocalFileSystem from '@deepseek-ai/dsh-fs-local'
 import Lsp, { type LspQueryRequest, type LspQueryResult } from '@deepseek-ai/dsh-lsp'
 import * as LspLocal from '@deepseek-ai/dsh-lsp-stdio'
 
-// The server binary is a dev dependency of this package; resolve its pnpm-hoisted .bin path.
-const serverBin = join(
-  new URL('..', import.meta.url).pathname,
-  'node_modules',
-  '.bin',
-  'typescript-language-server',
-)
+// The server is a dev dependency of this package. Launching its CLI module
+// through this Node keeps the spawn portable: the pnpm `.bin` entry is a shell
+// script, and on Windows only the `.CMD`/`.ps1` shims exist there, which
+// CreateProcess cannot execute directly. `fileURLToPath` (not URL.pathname)
+// resolves `import.meta.url`, whose pathname keeps a `\D:\...` spelling on
+// Windows.
+const packageDir = fileURLToPath(new URL('..', import.meta.url))
+const serverBin = process.execPath
+const serverArgs = [join(packageDir, 'node_modules', 'typescript-language-server', 'lib', 'cli.mjs'), '--stdio']
 
 let root: string
 let ws: string
@@ -60,7 +63,7 @@ beforeAll(async () => {
     servers: {
       typescript: {
         command: serverBin,
-        args: ['--stdio'],
+        args: serverArgs,
         extensionToLanguage: { '.ts': 'typescript', '.tsx': 'typescriptreact' },
       },
     },
