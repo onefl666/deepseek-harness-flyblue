@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-本包在 Web GUI 中渲染 plan 模式状态徽章：当宿主计算的投影有效目标为 plan 模式时，composer 显示一个 warn 色「Plan ×」按钮，可关闭 plan 模式；否则该座位保持为空。plan 模式本身——`/plan` 命令、已提交的 `plan/mode` 状态、投影单元与 policy 段——归 `dsh-plan-handoff` 所有；本包只渲染投影并发送用户同样可以手敲的内容。模型经稳定的 `exit_plan_mode` 工具退出 plan 模式；其 plan 评审走已组合的 Web question 通道。
+本包渲染 plan 模式状态徽章：当宿主计算的投影有效目标为 plan 模式时，composer 显示一个 warn 色「Plan ×」按钮，可关闭 plan 模式；否则该座位保持为空。plan 模式本身——`/plan` 命令、已提交的 `plan/mode` 状态、投影单元与 policy 段——归 `dsh-plan-handoff` 所有；本包只渲染投影并发送用户同样可以手敲的内容。模型经稳定的 `exit_plan_mode` 工具退出 plan 模式；其 plan 评审走已组合的 Web question 通道。本包还会选中「清空并执行」交接打开的执行会话。
 
 ## 目录
 
@@ -35,6 +35,12 @@ kind: "package-reference"
 
 准入失败（`matched: false`、业务错误、传输故障）以内联错误呈现，徽章保持显示直至投影确认退出。
 
+### 跟随清空交接
+
+「清空并执行」会在全新的兄弟会话里执行已批准的计划：`dsh-plan-handoff` 创建该会话、在计划会话上记录 `plan/handoff`，并把计划 steer 进子会话。本包监听屏幕上那条会话的该事件，并在会话列表出现执行会话的那一刻选中它，因此事件与子会话进入列表的先后顺序无关。日志里本就含有交接时页面永不移动——只有屏幕上会话的实时事件才提交这次导航——而事件之后用户切走也不会取消待执行的选中。
+
+尚未开始轮次的执行会话是空会话，因此它的侧栏行在其被 steer 的轮次落地前显示为临时的「New Session」条目。
+
 -----
 
 <a id="understand-the-implementation"></a>
@@ -44,6 +50,8 @@ kind: "package-reference"
 <summary>实现细节——点击展开</summary>
 
 徽章占据 conversation 声明的 `conversation.input.plan` 单实例座位；node 半部是空 apply（roster 行）。读取经 standard-kit 的 `useProjection` 走通用投影对：有效目标是 `pending ? !active : active`——折叠的宿主值而非客户端乐观态，因此到达的帧无论哪个方向都会纠正徽章。座位注入面携带一个动词 `exitPlanMode`，经 `ctx.remote.commands.execute` 执行 `/plan off`，并把准入失败映射为一行内联错误。placeholder 与提示文案位于 ui-conversation 的 `conversation` locale 命名空间，与已认领 `/plan` 命令的提示逐字共用。无障碍描述是「Plan mode on, press to turn off」。
+
+跟随走同一个 apply：`followPlanHandoff(ctx.sessions)` 订阅当前会话的 `binding().eventSource`，记下实时 `plan/handoff` append 点名的子会话 id，并在承载该行的列表通知上打开它——由 `list.ids` 把关 `open`，因为服务对未知 id 会抛错。选择变化时重绑订阅，因此不在屏幕上的会话记录的交接会被忽略，而已经记下的子会话会跨越之后的切换、直到它进入列表。
 
 </details>
 

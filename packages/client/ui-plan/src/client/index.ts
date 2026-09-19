@@ -1,13 +1,14 @@
 /**
  * Plan control plugin, browser half: occupies the composer's named
- * `conversation.input.plan` seat with an active-state status chip. Plan mode
- * is entered through the command source; while the projection's effective
- * target is plan mode the chip renders and executes /plan off through
- * `command.execute`, otherwise the seat stays empty. Reads ride the generic
- * projection pair through the standard-kit `useProjection`; zero client-side
- * plan state.
+ * `conversation.input.plan` seat with an active-state status chip, and follows
+ * the execution session a clear plan handoff opens. Plan mode is entered
+ * through the command source; while the projection's effective target is plan
+ * mode the chip renders and executes /plan off through `command.execute`,
+ * otherwise the seat stays empty. Reads ride the generic projection pair
+ * through the standard-kit `useProjection`; zero client-side plan state.
  */
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
+import type {} from '@deepseek-ai/dsh-api-session-controller/client'
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 // Type-only: pulls the ui-conversation SlotMap merge (the input.plan seat).
@@ -19,6 +20,7 @@ import type {} from '@deepseek-ai/dsh-plan-handoff/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import { PlanChip } from './PlanModeControl.tsx'
+import { followPlanHandoff } from './handoff-navigation.ts'
 import { en, zh, type PlanKey } from './locales.ts'
 
 export type { PlanKey } from './locales.ts'
@@ -42,15 +44,17 @@ export interface PlanChipInjected {
   exitPlanMode: () => Promise<string | null>
 }
 
-/** Required services: the seat's slot registry, commands Remote, and locale registry. */
-export const inject = ['slots', 'remote', 'remote.commands', 'locale']
+/** Required services: the seat's slot registry, Sessions navigation, commands Remote, and locale registry. */
+export const inject = ['slots', 'sessions', 'remote', 'remote.commands', 'locale']
 
 /**
- * Client plugin body: register the plan chip over the command channel.
+ * Client plugin body: register the plan chip over the command channel and
+ * follow the execution session a clear plan handoff opens.
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-plan: dictionaries')
+  ctx.effect(() => followPlanHandoff(ctx.sessions), 'ui-plan: follow the clear plan handoff')
 
   ctx.slots.inject('conversation.input.plan', () => ctx.slots.register({
     name: 'conversation.input.plan',

@@ -44,7 +44,7 @@ Every approval concludes the current turn before the handoff runs, so the plugin
 
 A TUI or other host without `ctx.agents.create` treats clear as compact-then-steer. A clear whose child was created but whose handoff then failed detaches and disposes that child rather than executing the plan in the source session.
 
-The Web client selects the child when it sees a live `plan/handoff` on the current session, or when that child later appears in the session list. Historical replay does not switch.
+`@deepseek-ai/dsh-client-ui-plan` selects the child when it sees a live `plan/handoff` on the session on screen, or when that child later appears in the session list; a user navigating away after the event does not cancel the pending selection, and historical replay does not switch.
 
 ## Configuration
 

@@ -5,6 +5,11 @@
   height: 100%;
   min-width: 0;
   background: var(--dsw-alias-bg-base);
+  /* Session switch: selecting another Session remounts this column, so a mount
+     fade is the whole motion — same 150ms curve as the sidebar row's own
+     entrance (Rows.module.css), so both surfaces of one switch fade together.
+     A switch mid-fade remounts and restarts it; reduced motion drops it. */
+  animation: conversation-enter 150ms var(--ds-ease-in-out);
 
   /* Shared width axis for the whole column: one content width W
      (--dsh-chat-content-width) for the transcript, the dock cards
@@ -32,6 +37,14 @@
   --dsh-composer-card-max-width: calc(var(--dsh-chat-content-width) + 32px);
   --dsh-composer-side-clearance: 16px;
   --dsh-composer-dock-inset: 8px;
+}
+
+@keyframes conversation-enter {
+  from { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root { animation: none; }
 }
 
 /* 76px with its rule: the height of the Sidebar's tab strip and header row

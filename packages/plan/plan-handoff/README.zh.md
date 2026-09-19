@@ -46,7 +46,7 @@ kind: "package-reference"
 
 没有 `ctx.agents.create` 的 TUI 或其他宿主会把清空当作压缩后再执行。子会话已创建但交接随后失败时，会先 detach 并释放该子会话，而不是在源会话里执行计划。
 
-Web 客户端在当前会话上看到实时 `plan/handoff` 时选中子会话；若子会话稍后才进入列表，也会在出现时选中。历史回放不会切换。
+`@deepseek-ai/dsh-client-ui-plan` 在屏幕上那条会话看到实时 `plan/handoff` 时选中子会话；若子会话稍后才进入列表，也会在出现时选中；事件之后用户切走不会取消这次待执行的选中，历史回放不会切换。
 
 <a id="configuration"></a>
 ## 配置

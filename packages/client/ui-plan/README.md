@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-This package renders the plan-mode status chip in the Web GUI: when the host-computed projection's effective target is plan mode, the composer shows a warn-colored "Plan ×" button that turns plan mode off; otherwise the seat stays empty. Plan mode itself — the `/plan` command, the committed `plan/mode` state, the projection unit, and the policy section — belongs to `dsh-plan-handoff`; this package only renders the projection and sends what a user could equally type. The model exits plan mode through the stable `exit_plan_mode` tool; its plan review uses the composed Web question channel.
+This package renders the plan-mode status chip: when the host-computed projection's effective target is plan mode, the composer shows a warn-colored "Plan ×" button that turns plan mode off; otherwise the seat stays empty. Plan mode itself — the `/plan` command, the committed `plan/mode` state, the projection unit, and the policy section — belongs to `dsh-plan-handoff`; this package only renders the projection and sends what a user could equally type. The model exits plan mode through the stable `exit_plan_mode` tool; its plan review uses the composed Web question channel. It also selects the execution session a clear plan handoff opens.
 
 ## Table of Contents
 
@@ -35,6 +35,12 @@ While the effective target is plan mode, the seat renders the warn-colored "Plan
 
 Admission failures (`matched: false`, business errors, transport faults) surface as an inline error and the chip stays until the projection confirms the exit.
 
+### Following a clear plan handoff
+
+`Approve and execute` runs the approved plan in a fresh sibling session: `dsh-plan-handoff` creates it, logs `plan/handoff` on the planning session, and steers the plan into the child. This package watches the Session on screen for that event and selects the execution session as soon as the Session list carries it, so the ordering of the event against the child's list arrival does not matter. A log that already contains a handoff never moves the page — only a live event on the Session on screen commits the navigation — and the user navigating away after the event does not cancel the pending selection.
+
+An execution session that has not started its turn yet is blank, so its sidebar row reads as the provisional New Session entry until the steered turn lands.
+
 -----
 
 <a id="understand-the-implementation"></a>
@@ -44,6 +50,8 @@ Admission failures (`matched: false`, business errors, transport faults) surface
 <summary>Implementation internals — click to expand</summary>
 
 The chip occupies the conversation-declared `conversation.input.plan` single seat; the node half is an empty apply (the roster row). Reads ride the generic projection pair through the standard-kit `useProjection`: the effective target is `pending ? !active : active` — a folded host value, not client optimism, so an arriving frame corrects the chip either way. The seat's injected face carries one verb, `exitPlanMode`, which executes `/plan off` through `ctx.remote.commands.execute` and maps admission failures to an inline error line. The placeholder and hint text live in ui-conversation's `conversation` locale namespace and are shared verbatim with the claimed `/plan` command hint. The accessible description is "Plan mode on, press to turn off".
+
+The follow rides the same apply: `followPlanHandoff(ctx.sessions)` subscribes to the selected Session's `binding().eventSource`, commits the child id a live `plan/handoff` append names, and opens it on the list notification that carries the row — `list.ids` gates the `open`, because the service throws for an unknown id. Changing the selection rebinds the subscription, so a handoff logged on a Session that is not on screen is ignored, while an already-committed child survives a later switch until it lands in the list.
 
 </details>
 
