@@ -39,6 +39,7 @@ kind: "package-library"
 | `Button` | 可点击操作；`variant` 选择 `primary`、`ghost`、`outline` 或 `toolbar`。 |
 | `Switch` | 36×20 的双态开关。`label` 必填，控件不可能在没有名称的情况下发布。 |
 | `Input` | 单行文本输入，用于搜索框与行内表单。 |
+| `SearchField` | 搜索控件：前置图标、必填的 `label` 与 `clearLabel`，以及常驻的清除按钮。 |
 | `Menu` | 由条目、分隔线与分组标题构成的下拉菜单，支持嵌套子菜单。 |
 | `Pill` | 可选中的胶囊按钮，用于视图切换与筛选器；接受 `active` 与 `onClick`。 |
 | `Tag` | 只读胶囊徽章；`tone` 选择八种配色之一。 |
