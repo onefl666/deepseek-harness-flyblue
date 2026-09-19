@@ -130,6 +130,20 @@ interface ResolvedWatchConfig {
   followSymlinks: boolean
 }
 
+/**
+ * The project root this provider scans for one working directory: the nearest
+ * ancestor holding `.git`, or `cwd` itself when no ancestor does. Exported so a
+ * surface that writes project-scoped skills resolves the same directory
+ * discovery reads; probing goes through `ctx.fs` when one is mounted.
+ *
+ * @param ctx - Context that may carry the `fs` service.
+ * @param cwd - Working directory to resolve from.
+ * @returns Absolute project root directory.
+ */
+export async function resolveProjectRoot(ctx: Context, cwd: string): Promise<string> {
+  return await findProjectRoot(resolve(cwd), optionalFileSystem(ctx))
+}
+
 /** Register the local filesystem skill provider on `ctx.skills`. */
 export function apply(ctx: Context, config: Config = {}): void {
   let provider!: FileSystemSkillProvider
@@ -245,7 +259,7 @@ export class FileSystemSkillProvider implements SkillProvider {
   private async roots(cwd: string | undefined): Promise<SkillRoot[]> {
     const roots: SkillRoot[] = []
     if (this.includeDefaultRoots && cwd !== undefined) {
-      const projectRoot = await findProjectRoot(resolve(cwd), optionalFileSystem(this.ctx))
+      const projectRoot = await resolveProjectRoot(this.ctx, cwd)
       roots.push(
         { path: join(projectRoot, '.dsh/skills'), source: 'project-dsh', rank: PROJECT_DSH_RANK, projectRoot },
         { path: join(projectRoot, '.agents/skills'), source: 'project-agents', rank: PROJECT_AGENTS_RANK, projectRoot },

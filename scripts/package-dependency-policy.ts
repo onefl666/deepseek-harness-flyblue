@@ -7,6 +7,8 @@ const CLIENT_FACE_INCLUDE: readonly string[] = []
 const CLIENT_FACE_EXCLUDE: readonly string[] = [
   '@deepseek-ai/dsh-api-session-controller',
   '@deepseek-ai/dsh-api-workspace-controller',
+  '@deepseek-ai/dsh-mcp-manager',
+  '@deepseek-ai/dsh-skill-manager',
 ]
 
 /** Host-only packages whose peer relays are deliberately flattened. */
