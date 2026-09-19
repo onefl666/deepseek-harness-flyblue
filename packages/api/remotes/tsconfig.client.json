@@ -63,6 +63,9 @@
       "path": "../../subagent/subagent"
     },
     {
+      "path": "../../mcp/mcp-client"
+    },
+    {
       "path": "../../interaction/user-approval"
     },
     {

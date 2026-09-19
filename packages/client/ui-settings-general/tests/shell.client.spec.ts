@@ -42,7 +42,7 @@ const CHILD_NAMES = Object.keys(CHILD_SPECS) as Array<keyof typeof CHILD_SPECS>
  */
 const PRODUCT_SECTIONS: readonly string[] = [
   'general', 'models', 'plugins', 'agent-presets',
-  'codegraph', 'usage-stats', 'task-board', 'git-graph', 'workspace-inspector', 'ssh',
+  'codegraph', 'skills', 'mcp', 'usage-stats', 'task-board', 'git-graph', 'workspace-inspector', 'ssh',
 ]
 /** Onboarding steps the web-app roster registers, in coordinator order; both come from ui-settings-models. */
 const PRODUCT_ONBOARDING: readonly { id: string; order: number }[] = [

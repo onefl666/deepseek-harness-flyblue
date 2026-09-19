@@ -42,6 +42,9 @@
       "path": "../../settings/settings"
     },
     {
+      "path": "../../mcp/mcp-client"
+    },
+    {
       "path": "../../core/scope"
     },
     {

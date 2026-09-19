@@ -130,6 +130,19 @@
     - id: session-controller
       name: '@deepseek-ai/dsh-api-session-controller'
 
+    # Skill management over Typert Remote: the host half owns skill
+    # directories across the user and project roots, the browser half is the
+    # 「技能」settings section. Enablement is a rename inside the root, so the
+    # filesystem skill provider's own watcher publishes every change.
+    - id: skill-manager
+      name: '@deepseek-ai/dsh-skill-manager'
+
+    # MCP server management: the host half owns the per-scope server registry
+    # and mounts one `dsh-mcp-client` instance per enabled record, the browser
+    # half is the「MCP 服务器」settings section.
+    - id: mcp-manager
+      name: '@deepseek-ai/dsh-mcp-manager'
+
     # Workspace file service: bounded read, directory listing, and the
     # agent-write change feed inside the session workspace root.
     - id: workspace-files
