@@ -112,7 +112,13 @@ function cwdSpellings(ctx: NormalizeContext): string[] {
   const macAliases = spellings
     .filter(spelling => spelling.startsWith('/') && !spelling.startsWith('/private/'))
     .map(spelling => `/private${spelling}`)
-  return [...new Set([...spellings, ...macAliases])]
+  // A win32 cwd also reaches the log inside an embedded JSON document, where
+  // every separator carries JSON's own escape. That spelling is the one a
+  // string-valued payload holds, and leaving it untokenized would leak the
+  // generating machine's temp path into every such request. A POSIX cwd has no
+  // separator to escape, so this alias collapses onto the plain spelling.
+  const jsonAliases = [...spellings, ...macAliases].map(spelling => spelling.replaceAll('\\', '\\\\'))
+  return [...new Set([...spellings, ...macAliases, ...jsonAliases])]
     .sort((left, right) => right.length - left.length)
 }
 
@@ -177,7 +183,9 @@ function scrubString(
   if (cwdPathMode === 'canonical') {
     // Restrict separator conversion to paths rooted at the cwd token. A global
     // backslash rewrite would corrupt regexes, commands, and model-authored text.
-    out = out.replace(CWD_ROOTED_PATH_RE, path => path.replaceAll('\\', '/'))
+    // An escaped spelling converts to doubled separators, so the run collapses
+    // back to the single-separator form every platform shares.
+    out = out.replace(CWD_ROOTED_PATH_RE, path => path.replaceAll('\\', '/').replace(/[/]{2,}/g, '/'))
     out = canonicalizeEmbeddedPaths(out)
   }
   out = out.replace(LOCAL_SPILL_PATH_RE, (_match, name: string) => `{{spillLocator:${name}}}`)
