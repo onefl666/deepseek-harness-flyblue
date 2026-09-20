@@ -1,0 +1,35 @@
+/* Scope picker trigger: the toolbar control naming which scope the section
+   reads. Geometry matches the sibling search field and create button. */
+.scope {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  max-width: 220px;
+  padding: 0 8px;
+  border: 0.5px solid var(--dsw-alias-border-l4);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-1);
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-primary);
+  cursor: pointer;
+  transition: background-color 120ms var(--ds-ease-in-out);
+}
+
+.scope:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.scopeIcon {
+  display: inline-flex;
+  flex: none;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.scopeText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

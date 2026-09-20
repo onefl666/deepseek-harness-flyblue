@@ -29,6 +29,7 @@ test-support 组为仓库测试提供确定且无须密钥的真实产品测试�
 | [`client-runtime`](client-runtime/README.zh.md) | 为浏览器功能测试提供 jsdom slot 测试台 |
 | [`remote-mock`](remote-mock/README.zh.md) | 为整体客户端测试提供端点具名的 Typert Remote mock 与它们安装的 Connection 载体面 |
 | [`loader-smoke`](loader-smoke/README.zh.md) | 启动由 Loader 组合的应用并驱动 fixture（测试前置数据）轮次以执行冒烟测试 |
+| [`e2b-composition`](e2b-composition/README.zh.md) | 在同一个远程 E2B 沙箱中启动 FS、Bash、PTY 与 LSP 的 one-world 组合 fixture |
 | [`llm-mock-server`](llm-mock-server/README.zh.md) | 为恢复测试提供可通过脚本控制的 OpenAI 兼容故障服务器 |
 | [`llm-replay`](llm-replay/README.zh.md) | 为无密钥测试与演示回放已记录的模型流 |
 

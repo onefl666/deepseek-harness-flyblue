@@ -18,9 +18,9 @@ import type {
   ClientConnectionRpc, ConnectionRpcResult,
 } from '../src/rpc.ts'
 import type { DirectoryListing } from '@deepseek-ai/dsh-host-directory-picker/types'
-import type {
-  ModelCatalog, ModelSelection, SessionAssistantStreamFrame,
-} from '@deepseek-ai/dsh-api-session-controller/types'
+import type { LlmAttemptId } from '@deepseek-ai/dsh-llm/brand'
+import type { SessionSeqCursor } from '@deepseek-ai/dsh-session/types'
+import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 
 const sid = (id: string): SessionId => id as SessionId
 type WorkspaceId = string & { readonly __fixtureWorkspaceId: 'WorkspaceId' }
@@ -42,6 +42,76 @@ interface FixtureHistoryEntry {
   readonly type: 'event'
   readonly event: SessionEvent
 }
+
+interface ModelSelection {
+  readonly provider: string
+  readonly model: string
+  readonly reasoningEffort?: string
+}
+
+interface ModelCatalogModel {
+  readonly id: string
+  readonly name: string
+  readonly description?: string
+  readonly reasoning?: {
+    readonly efforts: readonly {
+      readonly id: string
+      readonly name: string
+      readonly description?: string
+    }[]
+    readonly defaultEffort?: string
+  }
+}
+
+interface ModelProviderGroup {
+  readonly id: string
+  readonly name: string
+  readonly models: readonly ModelCatalogModel[]
+}
+
+interface ModelCatalogFailure {
+  readonly id: string
+  readonly name: string
+  readonly message: string
+}
+
+interface ModelCatalog {
+  readonly default: ModelSelection
+  readonly routableProviders: readonly string[]
+  readonly groups: readonly ModelProviderGroup[]
+  readonly failures: readonly ModelCatalogFailure[]
+}
+
+type SessionAssistantStreamFrame =
+  | {
+    readonly type: 'start'
+    readonly attemptId: LlmAttemptId
+    readonly revision: number
+    readonly startedAfterSeq: SessionSeqCursor
+    readonly turn: number
+    readonly step: number
+  }
+  | {
+    readonly type: 'chunk'
+    readonly attemptId: LlmAttemptId
+    readonly revision: number
+    readonly index: number
+    readonly time: number
+    readonly chunk: JsonValue
+  }
+  | {
+    readonly type: 'end'
+    readonly attemptId: LlmAttemptId
+    readonly revision: number
+    readonly index: number
+    readonly outcome:
+      | {
+        readonly kind: 'committed'
+        readonly eventType: 'assistant/message' | 'assistant/attempt'
+        readonly seq: number
+      }
+      | { readonly kind: 'abandoned' }
+  }
 
 type FixtureHistoryRecord = FixtureHistoryEntry
 

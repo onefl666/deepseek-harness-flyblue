@@ -11,8 +11,11 @@
  * history outside the direct-parent continuation path.
  */
 // Type-only: the carrier types, the forwarded Host-event face and the ctx.remote merge.
+import type { SessionId } from '@deepseek-ai/dsh-api-remotes/client'
 import type { ModelSelection } from '@deepseek-ai/dsh-api-session-controller/types'
 import type {} from '@deepseek-ai/dsh-api-session-controller/client'
+// Type-only: pulls the plan-review card's SlotMap merge for the seat below.
+import type {} from '@deepseek-ai/dsh-client-ui-user-questions/client'
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type { CommandUiContract, SelectOption } from '@deepseek-ai/dsh-client-ui-commands/client'
 // Type-only: pulls the ui-conversation SlotMap merge (the input.model seat).
@@ -25,14 +28,15 @@ import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import { IconDataOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ModelDirectoryState } from './directory.ts'
 import { ModelDirectoryResolver } from './service.ts'
-import type { ModelSelectInjected } from './slots.ts'
+import type { ModelExecutionSelectInjected, ModelSelectInjected } from './slots.ts'
+import { ModelExecutionSelect } from './ModelExecutionSelect.tsx'
 import { ModelSelect } from './ModelSelect.tsx'
 import { en, zh, type ModelKey } from './locales.ts'
 
 export { ModelDirectory } from './directory.ts'
 export type { ModelDirectoryState } from './directory.ts'
 export { ModelDirectoryResolver } from './service.ts'
-export type { ModelSelectInjected } from './slots.ts'
+export type { ModelExecutionSelectInjected, ModelSelectInjected } from './slots.ts'
 export type { ModelKey } from './locales.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -170,27 +174,48 @@ export function apply(ctx: ClientContext): void {
     }), 'ui-model-selection: /model contribution')
   })
 
-  // Entry 2: the composer's named model seat over the SAME directory.
+  // Entries 2 and 3: the composer's named model seat and the plan-review
+  // card's staged control, over the SAME per-session directory — so the two
+  // show one state. They differ in one verb: the seat commits a pick to the
+  // session, the card stages it for the approval.
   ctx.inject(['slots', 'modelDirectories'], (scope: ClientContext) => {
     const models = scope.modelDirectories
     const sessions = scope.sessions
+    const facts = (sessionId: SessionId) => {
+      const directory = models.directoryFor(sessionId)
+      const available = sessions.subagentAddress(sessionId) === undefined
+      return {
+        available,
+        directory,
+        load: () => {
+          if (available) directory.load().catch(() => { /* surfaced on the store */ })
+        },
+      }
+    }
+
     scope.slots.inject('conversation.input.model', () => scope.slots.register({
       name: 'conversation.input.model',
       locale: NS,
       inject: (sessionId): ModelSelectInjected => {
-        const directory = models.directoryFor(sessionId)
-        const available = sessions.subagentAddress(sessionId) === undefined
+        const { available, directory, load } = facts(sessionId)
         return {
           available,
           directory: directory.store,
-          load: () => {
-            if (available) directory.load().catch(() => { /* surfaced on the store */ })
-          },
+          load,
           select: (selection: ModelSelection) => available
             ? directory.select(selection).then(() => true, () => false)
             : Promise.resolve(false),
         }
       },
     }, ModelSelect))
+
+    scope.slots.inject('question.planReview.model', () => scope.slots.register({
+      name: 'question.planReview.model',
+      locale: NS,
+      inject: (sessionId): ModelExecutionSelectInjected => {
+        const { available, directory, load } = facts(sessionId)
+        return { available, directory: directory.store, load }
+      },
+    }, ModelExecutionSelect))
   })
 }

@@ -29,7 +29,7 @@ interface PlanModeConfig {
 
 ## 退出工具与 `/plan` 命令
 
-[`exit_plan_mode`](../tool-catalog.zh.md#deepseek-aidsh-plan-handoff) 在计划模式未激活时仍保持注册，因此进入或离开计划模式只改变提示词段落，绝不改变请求的工具目录；在计划模式之外执行会失败。在计划模式中，它要求一份以 `#` 标题开头的完整 markdown 计划，并通过[用户交互 seam](user-questions.zh.md) 呈交评审。审阅提供三个离开标签——在新会话执行、压缩本会话后执行、或保留上下文执行——以及继续规划。批准路径返回 `{ approved: true, execution }`，并记录静默待生效退出和 `plan/approved`；源 agent 空闲后插件会 steer 计划，或打开兄弟会话并记录 `plan/handoff`。继续规划是携带用户反馈的失败调用。评审期间交互通道缺失或服务重载同样使调用失败，而不是静默离开计划模式。
+[`exit_plan_mode`](../tool-catalog.zh.md#deepseek-aidsh-plan-handoff) 在计划模式未激活时仍保持注册，因此进入或离开计划模式只改变提示词段落，绝不改变请求的工具目录；在计划模式之外执行会失败。在计划模式中，它要求一份以 `#` 标题开头的完整 markdown 计划，并通过[用户交互 seam](user-questions.zh.md) 呈交评审。审阅提供三个离开标签——在新会话执行、压缩本会话后执行、或保留上下文执行——以及继续规划，并声明有能力的 UI 在该决定之外收集的执行设置：被批准的计划应使用的 provider、模型与推理等级，以及新建执行会话所组装的 Agent 预设。批准路径返回 `{ approved: true, execution }`，并记录静默待生效退出和 `plan/approved`；源 agent 空闲后插件会 steer 计划，或打开兄弟会话并记录 `plan/handoff`。被评审选中的路由到达执行它的会话：keep 与 compact 由客户端在答复之前经会话自己的模型选择提交；clear 则由同样的取值成为子会话的 agent options。只有从零创建的会话才能采用一份组装，因此预设只作用于新建会话这条路径。继续规划是携带用户反馈的失败调用。评审期间交互通道缺失或服务重载同样使调用失败，而不是静默离开计划模式。
 
 当 [`ctx.commands`](commands.zh.md) 被组合时，插件注册 `/plan [off|message]`：单独的 `/plan` 选择计划模式；任何其他消息先选择计划模式，再通过 `agent.steer()` 提交该文本，使其在计划指引下成为下一步骤的普通已记录用户消息；确切参数 `off` 选择未激活，这还会在待生效条目被追加并对请求可见之前将其取消。`/plan` 接受图片与文件附件：裸 `/plan` 或非 `off` 消息会把它们按选择顺序置于文本块之前，合成同一条用户消息；带附件的 `/plan off` 返回错误且不改变模式，因此派发它的编辑器会保留原附件。
 

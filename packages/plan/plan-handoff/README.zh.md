@@ -42,6 +42,8 @@ kind: "package-reference"
 - `Approve and keep context` — 结束当前轮次，再把完整计划作为下一轮 steer 进本会话。
 - `Refine plan` — 留在 plan mode；反馈作为失败调用返回。
 
+评审还会在 intent 上声明 `settings` —— `provider`、`model`、`reasoningEffort` 与 `agentPreset` —— 即「有能力的 UI 在决定之外收集、并在 `AskUserQuestionAnswerItem.settings` 中返回」的取值。每一项都可选，答复里没有的项就让执行沿用本来会继承的值。被评审选中的路由在清空路径上成为新会话的 agent options；保留上下文与压缩两条路径无需 Host 处理，因为客户端在答复之前已通过 `session.selectModel` 把同一份选择提交给本会话。Agent 预设只作用于清空路径，因为只有从零创建的会话才能采用一份组装；未知或损坏的预设会带着告警回退到规划会话自己的组装，而不是拒绝一次批准。
+
 三种批准都先结束当前轮次，再由交接执行；插件的 steer 是启动执行的唯一输入，因此一次批准只执行一遍计划。
 
 没有 `ctx.agents.create` 的 TUI 或其他宿主会把清空当作压缩后再执行。子会话已创建但交接随后失败时，会先 detach 并释放该子会话，而不是在源会话里执行计划。

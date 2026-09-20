@@ -22,7 +22,8 @@ import {
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { AgentPresetSeatState } from './seat-store.ts'
 import { presetDisplayText } from './locales.ts'
-import css from './AgentPresetSeat.module.css'
+import { presetMenuItems } from './preset-menu.tsx'
+import css from './AgentPresetChip.module.css'
 
 /** Registration-side business face for the hero chip. */
 export interface AgentPresetSeatInjected {
@@ -159,20 +160,7 @@ export function AgentPresetSeat({ load, select, introduced, useAgentPresetSeat, 
       <Menu
         open={open}
         onClose={() => { setOpen(false) }}
-        items={state.options.map((option) => {
-          const text = presetDisplayText(option, t)
-          return {
-            id: option.id,
-            // Name and description together: the id alone never says what a
-            // preset does, which is why the roster carries display copy.
-            label: (
-              <span className={css.item}>
-                <span className={css.itemName}>{text.name}</span>
-                <span className={css.itemDesc}>{text.description ?? t('noDescription')}</span>
-              </span>
-            ),
-          }
-        })}
+        items={presetMenuItems(state.options, t)}
         selectedId={state.current}
         onSelect={(id) => {
           setOpen(false)

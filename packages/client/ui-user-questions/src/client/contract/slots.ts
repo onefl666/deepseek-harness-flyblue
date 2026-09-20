@@ -1,5 +1,8 @@
 /** Question composer props and one pending Remote waterfall response. */
-import type { PropsLocale, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
+import type { ModelSelection } from '@deepseek-ai/dsh-api-remotes/client'
+import type {
+  InjectFace, PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore,
+} from '@deepseek-ai/dsh-client-ui-slots'
 // The client module declares the conversation.composer SlotMap entry required by PropsRuntime.
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type {
@@ -11,6 +14,25 @@ declare module '@deepseek-ai/dsh-client-ui-session/client' {
   interface SessionPendingInteractionMap {
     /** Pending question or plan-review request. */
     question: PendingQuestion
+  }
+}
+
+declare module '@deepseek-ai/dsh-client-ui-slots' {
+  interface SlotMap {
+    /**
+     * Model and thinking intensity the approved plan should execute on,
+     * rendered inside the plan-review card. It stages a choice rather than
+     * writing one, because the card is a decision: what the review settles on
+     * is committed by the approval, and a refined plan leaves the session's
+     * own selection alone.
+     */
+    'question.planReview.model': { kind: 'single'; scope: 'session'; owner: PlanReviewModelOwnerProps }
+    /**
+     * Agent preset the fresh execution session composes, rendered inside the
+     * card's fresh-session step. Only a session created from scratch can adopt
+     * a composition, so this control exists where that session is decided.
+     */
+    'question.planReview.agentPreset': { kind: 'single'; scope: 'session'; owner: PlanReviewPresetOwnerProps }
   }
 }
 
@@ -54,6 +76,39 @@ export interface PlanReview {
   approves: QuestionOption[]
   /** The option that stays in plan mode; absent when the asker offered none. */
   refine?: QuestionOption
+  /**
+   * Setting names the asker declared it will read beside the decision. The
+   * card renders a control per name it knows and answers only the ones it
+   * rendered, so an asker that declares nothing gets the decision alone.
+   */
+  settings: readonly string[]
+}
+
+/**
+ * The card's model and thinking-intensity control, as the card drives it: the
+ * staged selection, and the verb that stages one.
+ */
+export interface PlanReviewModelOwnerProps {
+  /**
+   * The selection an approval would commit, or null while the review would
+   * keep the session's own — which is what the control renders until the user
+   * chooses, so an untouched card reports nothing to commit.
+   */
+  value: ModelSelection | null
+  /** Stage one complete selection for the execution. */
+  onChange: (selection: ModelSelection) => void
+  /** Whether a submission in flight has frozen the control. */
+  locked: boolean
+}
+
+/** The card's agent-preset control, as the card drives it. */
+export interface PlanReviewPresetOwnerProps {
+  /** The staged preset id, or null while the review would keep the planning session's. */
+  value: string | null
+  /** Stage one preset id for the fresh execution session. */
+  onChange: (id: string) => void
+  /** Whether a submission in flight has frozen the control. */
+  locked: boolean
 }
 
 /**
@@ -80,6 +135,10 @@ export function planReviewOf(questions: readonly QuestionItem[]): PlanReview | u
   if (question.multiSelect === true) return undefined
   const named = intent.approve
   if (!Array.isArray(named) || named.length === 0) return undefined
+  // A declared setting name the card does not know is simply not rendered:
+  // the asker reads only names it declared, so an unanswered unknown name
+  // leaves its default in force rather than blocking the decision.
+  const settings = Array.isArray(intent.settings) ? intent.settings : []
   const options = question.options ?? []
   const byLabel = new Map(options.map(option => [option.label, option]))
   const approves: QuestionOption[] = []
@@ -95,6 +154,7 @@ export function planReviewOf(questions: readonly QuestionItem[]): PlanReview | u
     question: question.question,
     plan: question.detail,
     approves,
+    settings,
     ...(extras[0] === undefined ? {} : { refine: extras[0] }),
   }
 }
@@ -223,6 +283,24 @@ export type QuestionWait = PendingQuestion
  */
 export type QuestionComposerProps =
   PropsRuntime<'conversation.composer'>
+  & PropsRenderSlots<'question.planReview.model' | 'question.planReview.agentPreset'>
   & PropsStore<ReturnType<typeof createQuestionDraftStore>>
+  & InjectFace<QuestionComposerInjected>
   & { matched: QuestionWait }
   & PropsLocale<'question'>
+
+/** Registration-side business face of the question composer entry. */
+export interface QuestionComposerInjected {
+  /**
+   * Commit one reviewed model selection to this session, the way the
+   * composer's model seat does.
+   *
+   * The plan-review card holds which model and effort the review settled on,
+   * but reaching the Host with it is the model domain's call, not the card's:
+   * this is that call, bound to the session the entry is rendered for.
+   *
+   * @param selection - provider, provider-owned model id, and optional adapter-owned effort.
+   * @returns whether the Host accepted the selection.
+   */
+  commitModel: (selection: ModelSelection) => Promise<boolean>
+}

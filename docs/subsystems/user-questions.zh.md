@@ -22,15 +22,17 @@ interface AskUserQuestionOption {
 
 ## 呈现意图
 
-`AskUserQuestionIntent` 可选地声明一种已知的决策类型。它按 `kind` 打标签，因此可以增加新的意图；不认识某个标签的 UI 渲染通用选项列表。意图只改变呈现方式——遵循它的 UI 回答的仍是通用 UI 会发送的那些选项标签，因此调用方两种情况下读到的回答字段相同。`approve` 指名每一个肯定选项，而不依赖选项顺序。`ask()` 会拒绝两种无法由类型系统表达的情况：`approve` 条目未指向该问题自身的任何选项，以及为没有 `detail` 的问题指定意图。
+`AskUserQuestionIntent` 可选地声明一种已知的决策类型。它按 `kind` 打标签，因此可以增加新的意图；不认识某个标签的 UI 渲染通用选项列表。遵循某个意图的 UI 回答的仍是通用 UI 会发送的那些选项标签，因此调用方两种情况下读到的回答字段相同。`approve` 指名每一个肯定选项，而不依赖选项顺序；`settings` 指名该意图在决定之外收集的取值——回答只携带提问方声明过的名字，因此对它们一无所知的 UI 仍能敲定这项决定。`ask()` 会拒绝三种无法由类型系统表达的情况：`approve` 条目未指向该问题自身的任何选项、为没有 `detail` 的问题指定意图，以及空白或重复的设置名。
 
 ```ts type-equiv
 /**
  * A caller-declared presentation intent: the question IS this kind of
  * decision, so a UI that recognises the tag may present it as such instead of as a
  * generic option list. Tagged so further intents can be added; a UI that does
- * not know a tag renders the generic flow, and the answer encoding is identical
- * either way — an intent changes presentation only, never the protocol.
+ * not know a tag renders the generic flow, and the request encoding is
+ * identical either way. An intent changes presentation, and — through
+ * {@link AskUserQuestionIntent.settings} — may ask for values beside the
+ * decision; an intent that declares none leaves the answer encoding alone.
  */
 type AskUserQuestionIntent = {
   /** A plan submitted for review: `detail` is the plan markdown `ask()` requires, and the decision approves or declines it. */
@@ -42,6 +44,14 @@ type AskUserQuestionIntent = {
    * its own question is rejected at `ask()`.
    */
   approve: string[]
+  /**
+   * Setting names this review collects beside the decision, so a UI renders a
+   * control per name it knows and answers the ones it rendered. The asker
+   * reads only names it declared, which is what lets it add a setting without
+   * a UI that knows nothing about it silently answering the decision alone.
+   * Omit to ask for the decision by itself.
+   */
+  settings?: readonly string[]
 }
 ```
 
@@ -80,7 +90,7 @@ interface AskUserQuestionRequest extends AskUserQuestionRequestEvent {}
 
 ## 回答
 
-提供方为每个问题 id 返回一个回答项。`selected` 包含选中的选项标签，`custom` 在用户输入自由文本时携带「其他」回答。对于单选题，`custom` 会覆盖选中的选项，且 `selected` 为空。对于多选题，`custom` 可以补充 `selected` 中的标签。UI 也可以使用 `selected` 为空且不含 `custom` 的回答项，在其余问题均已完成的批次中保留被跳过的问题。
+提供方为每个问题 id 返回一个回答项。`selected` 包含选中的选项标签，`custom` 在用户输入自由文本时携带「其他」回答。对于单选题，`custom` 会覆盖选中的选项，且 `selected` 为空。对于多选题，`custom` 可以补充 `selected` 中的标签。UI 也可以使用 `selected` 为空且不含 `custom` 的回答项，在其余问题均已完成的批次中保留被跳过的问题。`settings` 携带呈现意图在决定之外收集的取值，按该意图声明的名字索引；通用流程不发送它。
 
 ```ts type-equiv
 /** Answer to one question. */
@@ -91,6 +101,12 @@ interface AskUserQuestionAnswerItem {
   selected: string[]
   /** Optional free-text "Other" answer. */
   custom?: string
+  /**
+   * Values a presentation intent collected beside the decision, keyed by the
+   * names that intent declared. A generic request sends none, and an asker
+   * reads only the names it declared.
+   */
+  settings?: Readonly<Record<string, string>>
 }
 ```
 

@@ -15,8 +15,10 @@ export interface AskUserQuestionOption {
  * A caller-declared presentation intent: the question IS this kind of
  * decision, so a UI that recognises the tag may present it as such instead of as a
  * generic option list. Tagged so further intents can be added; a UI that does
- * not know a tag renders the generic flow, and the answer encoding is identical
- * either way — an intent changes presentation only, never the protocol.
+ * not know a tag renders the generic flow, and the request encoding is
+ * identical either way. An intent changes presentation, and — through
+ * {@link AskUserQuestionIntent.settings} — may ask for values beside the
+ * decision; an intent that declares none leaves the answer encoding alone.
  */
 export type AskUserQuestionIntent = {
   /** A plan submitted for review: `detail` is the plan markdown `ask()` requires, and the decision approves or declines it. */
@@ -28,6 +30,14 @@ export type AskUserQuestionIntent = {
    * its own question is rejected at `ask()`.
    */
   approve: string[]
+  /**
+   * Setting names this review collects beside the decision, so a UI renders a
+   * control per name it knows and answers the ones it rendered. The asker
+   * reads only names it declared, which is what lets it add a setting without
+   * a UI that knows nothing about it silently answering the decision alone.
+   * Omit to ask for the decision by itself.
+   */
+  settings?: readonly string[]
 }
 
 /** One question in a user-questions request. */
@@ -56,6 +66,12 @@ export interface AskUserQuestionAnswerItem {
   selected: string[]
   /** Optional free-text "Other" answer. */
   custom?: string
+  /**
+   * Values a presentation intent collected beside the decision, keyed by the
+   * names that intent declared. A generic request sends none, and an asker
+   * reads only the names it declared.
+   */
+  settings?: Readonly<Record<string, string>>
 }
 
 /** The human's answer. */

@@ -6,16 +6,16 @@
 
 import { randomUUID } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
-import type { Agent, AgentHandle } from '@deepseek-ai/dsh-agent'
+import type { Agent, AgentHandle, AgentOptions } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-agent-presets'
 import type { ManualCompactionError, ManualCompactionErrorCode } from '@deepseek-ai/dsh-compaction'
-import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import { createUserMessage, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
 // Type-only: resolves ctx.sessionTitle for the optional title child.
 import type {} from '@deepseek-ai/dsh-session-title'
 // Type-only: resolves ctx.workspaceRegistry and the Workspace entity type.
 import type { Workspace } from '@deepseek-ai/dsh-workspace'
-import type { PlanExecution } from './types.ts'
+import type { PlanExecution, PlanExecutionSelection } from './types.ts'
 import { EXECUTION_SESSION_TITLE_PREFIX, approvedPlanPrompt } from './prompts.ts'
 
 /**
@@ -36,6 +36,8 @@ export interface PendingHandoff {
   execution: PlanExecution
   plan: string
   title: string
+  /** What the review chose for the fresh execution session; the clear path alone reads it. */
+  selection: PlanExecutionSelection
 }
 
 /** Result of one idle handoff attempt. */
@@ -122,6 +124,64 @@ export async function compactThenExecute(
 }
 
 /**
+ * The preset the fresh execution session composes: the reviewer's choice while
+ * the roster still supplies a mountable one, otherwise the planning session's
+ * own.
+ *
+ * A review outlives the file it chose — presets are edited and deleted outside
+ * this session, and the roster read that offered the choice is older than the
+ * approval that used it. Executing the approved plan under the composition its
+ * planning history was produced on is the only repair available here: the
+ * alternative, refusing the handoff, strands an approval the user already gave.
+ *
+ * @param host - the plan-handoff service context.
+ * @param source - idle planning agent.
+ * @param chosen - the preset the review selected, or undefined when it left the choice alone.
+ * @returns the preset id to compose, or undefined when this deployment has no roster or the agent joined none.
+ */
+async function executionPreset(
+  host: Context,
+  source: Agent,
+  chosen: string | undefined,
+): Promise<string | undefined> {
+  const presets = host.get('agentPresets')
+  const inherited = presets?.composedPreset(source.ctx)
+  if (chosen === undefined || presets === undefined || chosen === inherited) return inherited
+  try {
+    const preset = await presets.resolve(chosen)
+    if (preset.broken !== undefined) throw new Error(preset.broken)
+    return preset.id
+  } catch (error: unknown) {
+    host.logger.warn(
+      'dsh-plan-handoff: the reviewed agent preset %o is unavailable; executing under %o: %o',
+      chosen, inherited, error)
+    return inherited
+  }
+}
+
+/**
+ * Agent options for the fresh execution session: the planning session's own,
+ * overridden by the route the review chose.
+ *
+ * A route needs both halves to mean anything, so a half-answered provider or
+ * model leaves the inherited pair alone rather than composing a route no
+ * adapter serves. An absent effort keeps the model's own default.
+ *
+ * @param selection - the route the review collected.
+ * @returns the override to merge over the planning agent's options.
+ */
+function executionRoute(selection: PlanExecutionSelection): AgentOptions {
+  if (selection.provider === undefined || selection.model === undefined) return {}
+  return {
+    provider: selection.provider,
+    model: selection.model,
+    ...selection.reasoningEffort === undefined || selection.reasoningEffort === ''
+      ? {}
+      : { reasoningEffort: ReasoningEffortId(selection.reasoningEffort) },
+  }
+}
+
+/**
  * Create a sibling session that inherits cwd, model, and preset, then steer.
  *
  * The child is created, attached to the source's workspace, titled, recorded by
@@ -135,6 +195,8 @@ export async function compactThenExecute(
  * @param plan - approved markdown; the child's first model-visible input.
  * @param title - the approved plan's first heading; a fallback base for the
  *   execution session title when the source session carries none.
+ * @param selection - what the review chose for the execution session; every
+ *   absent field keeps the value the child would have inherited anyway.
  * @returns cleared, or fallback compact/keep when create is unavailable.
  */
 export async function clearThenExecute(
@@ -142,6 +204,7 @@ export async function clearThenExecute(
   source: Agent,
   plan: string,
   title: string,
+  selection: PlanExecutionSelection = {},
 ): Promise<Extract<HandoffOutcome, { kind: 'cleared' | 'cleared-fallback' }>> {
   const agents = host.get('agents')
   if (agents === undefined) {
@@ -150,7 +213,7 @@ export async function clearThenExecute(
   }
 
   const presets = host.get('agentPresets')
-  const presetId = presets?.composedPreset(source.ctx)
+  const presetId = await executionPreset(host, source, selection.agentPreset)
   const childId = SessionId(`session-${randomUUID()}`)
   let handle: AgentHandle
   try {
@@ -161,7 +224,7 @@ export async function clearThenExecute(
         parentSession: source.id,
         ...presetId === undefined ? {} : { agentPreset: presetId },
       },
-      agentOptions: { ...source.options },
+      agentOptions: { ...source.options, ...executionRoute(selection) },
       ...presets === undefined || presetId === undefined
         ? {}
         : {
@@ -259,7 +322,7 @@ export async function runHandoff(
     case 'compact':
       return compactThenExecute(host, agent, pending.plan, new AbortController().signal)
     case 'clear':
-      return clearThenExecute(host, agent, pending.plan, pending.title)
+      return clearThenExecute(host, agent, pending.plan, pending.title, pending.selection)
     default: {
       const exhausted: never = pending.execution
       return exhausted

@@ -3,6 +3,15 @@
   min-width: 0;
 }
 
+/* The plan-review card's row label. The card's settings row supplies the flex
+   line; this only names the pair of values the trigger shows. */
+.rowLabel {
+  flex: none;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  line-height: 20px;
+}
+
 /* Figma 313:14108 ToggleButton: 13/20 medium secondary label, 4px gap,
    12px caption chevron; 28px chip height matches the sibling Plan /
    Read-only selects in the same tool row. */

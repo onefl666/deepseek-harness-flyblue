@@ -5,6 +5,8 @@
  * @module @deepseek-ai/dsh-plan-handoff/prompts
  */
 
+import type { PlanExecutionSelection } from './types.ts'
+
 /** Review option that approves and starts a fresh sibling session. */
 export const APPROVE_EXECUTE = 'Approve and execute'
 
@@ -19,6 +21,18 @@ export const REFINE_PLAN = 'Refine plan'
 
 /** Labels that leave plan mode, in overlay order. */
 export const APPROVE_LABELS = [APPROVE_EXECUTE, APPROVE_COMPACT, APPROVE_KEEP] as const
+
+/**
+ * Setting names the review declares on its presentation intent: values a
+ * capable UI collects beside the decision, all of them describing the fresh
+ * execution session the clear path opens. The route names are read together —
+ * a UI that offers a model offers its provider, id, and effort as one choice —
+ * and every name is absent when the reviewer left that choice alone, which
+ * keeps the execution session on what the planning session inherited.
+ */
+export const PLAN_REVIEW_SETTINGS = [
+  'provider', 'model', 'reasoningEffort', 'agentPreset',
+] as const satisfies readonly (keyof PlanExecutionSelection)[]
 
 /**
  * Leading marker of an execution session's title, so a user reading the

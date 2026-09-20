@@ -22,9 +22,13 @@ import type {} from '@deepseek-ai/dsh-api-remotes/client'
 // Type-only: pulls the settings shell's SlotMap merge (the 'settings.section' entry).
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+// Type-only: pulls the plan-review card's SlotMap merge (the execution-preset seat).
+import type {} from '@deepseek-ai/dsh-client-ui-user-questions/client'
 // Type-only: pulls the Workspace UI navigation service merge (ctx.uiWorkspace).
 import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import { AgentPresetChoice } from './AgentPresetChoice.tsx'
+import type { AgentPresetChoiceInjected } from './AgentPresetChoice.tsx'
 import { AgentPresetLabel } from './AgentPresetLabel.tsx'
 import type { AgentPresetLabelInjected } from './AgentPresetLabel.tsx'
 import { AgentPresetSeat } from './AgentPresetSeat.tsx'
@@ -43,6 +47,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
   }
 }
 
+export type { AgentPresetChoiceInjected, AgentPresetChoiceProps } from './AgentPresetChoice.tsx'
 export type { AgentPresetLabelInjected, AgentPresetLabelProps } from './AgentPresetLabel.tsx'
 export type { AgentPresetSeatInjected, AgentPresetSeatProps } from './AgentPresetSeat.tsx'
 export type { AgentPresetSectionInjected, AgentPresetSectionProps } from './AgentPresetSection.tsx'
@@ -73,6 +78,10 @@ export function apply(ctx: ClientContext): void {
   })
 
   ctx.effect(() => ctx.locale.register('settings.agentPreset', { zh, en }), 'ui-agent-preset: settings row dictionaries')
+
+  // One stable roster reader: a fresh closure per render would re-enter the
+  // effect in AgentPresetChoice that reads through it.
+  const loadRoster = (): Promise<void> => controller.load()
 
   ctx.effect(() => {
     // The roster is a live directory and the default is a settings field, so
@@ -168,6 +177,18 @@ export function apply(ctx: ClientContext): void {
         locale: 'settings.agentPreset',
         inject: labelInjected,
       }, AgentPresetLabel)
+      // The plan-review card's execution choice: the same roster over a
+      // staged value, into a seat that package declares. Injecting waits for
+      // that declaration, so a deployment without the card composes this
+      // plugin without it.
+      const choice = scope.slots.inject('question.planReview.agentPreset', () => scope.slots.register({
+        name: 'question.planReview.agentPreset',
+        locale: 'settings.agentPreset',
+        inject: (): AgentPresetChoiceInjected => ({
+          hooks: { agentPresets: controller.store },
+          load: loadRoster,
+        }),
+      }, AgentPresetChoice))
       return () => {
         stop()
         settingsMoved()
@@ -176,6 +197,7 @@ export function apply(ctx: ClientContext): void {
         activeSeat = undefined
         chip()
         label()
+        choice()
       }
     }, 'ui-agent-preset: new-session chip and header label')
   })

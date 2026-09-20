@@ -78,6 +78,7 @@ const PACKAGE_LIBRARIES: Readonly<Record<string, string>> = {
   'packages/test-support/client-runtime': 'Browser-side test infrastructure.',
   'packages/test-support/llm-mock-server': 'Test server library; substitutes provider wire behavior.',
   'packages/test-support/loader-smoke': 'Test harness library; mounts nothing into a product composition.',
+  'packages/test-support/e2b-composition': 'One-world E2B composition fixture; owns test dependency edges and mounts no product surface.',
   'packages/test-support/remote-mock': 'Browser-side test infrastructure; mounts nothing into a product composition.',
   'packages/typert/generator': 'Build-time generator run outside any agent runtime.',
   'packages/typert/protocol': 'Compiler-independent protocol declarations.',

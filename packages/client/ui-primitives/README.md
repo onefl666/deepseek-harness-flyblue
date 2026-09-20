@@ -47,6 +47,9 @@ Check this table before writing a control in a feature package. A plugin cannot 
 | `ConnectionIndicator` | Inline connection-recovery control across outage, retry, and recovered states. |
 | `DisclosureRow` | 24px compact disclosure that lays title and content side by side. |
 | `SectionChrome` | Settings-section top matter: heading, one-line description, caller `meta` nodes before the standard refresh control, and the failure strip with retry while an error is present. |
+| `SectionToolbar` | Settings-section toolbar row: the scope picker, the search field, and the section's trailing controls, over one `ScopeChoice` and one search draft. `sectionToolbarLabels` reads its copy from the section's own dictionary. |
+| `SectionState` | Settings-section body switch: the first-load skeleton, the failure line, or the loaded children. |
+| `ScopePicker` | Toolbar control choosing whether a section reads the user scope or one workspace, over the workspace list its caller supplies. |
 | `Modal` | Centered dialog over a page mask. |
 | `RiskConfirmation` | Sensitive action gated behind an explicit checkbox. |
 | `OnboardingSurface` | First-run stage that holds the application root inert. |
@@ -78,7 +81,7 @@ The catalog above lists what each export is for; this section covers the behavio
 
 ### Localizing copy
 
-The atoms cannot read the application locale, so every piece of user-facing copy arrives through required label props. `HoverCard`, `TerminalBlock`, `JsonTree`, `CodeBlock`, `MarkdownText`, `JsonBlock`, `ConnectionIndicator`, `Modal`, `SectionChrome`, `DiffBlock`, `ReadBlock`, `SearchBlock`, and `WebBlock` accept complete localized labels. The package owns no language fallback; omission fails typechecking, and each feature maps its typed `t` seat into the primitive's label interface.
+`SectionToolbar`, `ScopePicker`, `SectionState`, and the `useRemoteList`/`useScopeChoice` hooks serve the settings sections that read a manager's listing over the wire; they hold no Cordis or protocol dependency of their own. The atoms cannot read the application locale, so every piece of user-facing copy arrives through required label props. `HoverCard`, `TerminalBlock`, `JsonTree`, `CodeBlock`, `MarkdownText`, `JsonBlock`, `ConnectionIndicator`, `Modal`, `SectionChrome`, `DiffBlock`, `ReadBlock`, `SearchBlock`, and `WebBlock` accept complete localized labels. The package owns no language fallback; omission fails typechecking, and each feature maps its typed `t` seat into the primitive's label interface.
 
 -----
 

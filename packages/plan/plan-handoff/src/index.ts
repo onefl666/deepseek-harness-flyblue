@@ -42,10 +42,10 @@ import { UserQuestionError } from '@deepseek-ai/dsh-user-questions'
 import type { CommandDefinitionId } from '@deepseek-ai/dsh-commands'
 // Type-only: resolves ctx.sessionProjections for the optional unit child.
 import type {} from '@deepseek-ai/dsh-session-projection'
-import type { PlanExecution, PlanProjection } from './types.ts'
+import type { PlanExecution, PlanExecutionSelection, PlanProjection } from './types.ts'
 import {
-  APPROVE_COMPACT, APPROVE_EXECUTE, APPROVE_KEEP, APPROVE_LABELS, REFINE_PLAN,
-  approvedResultText,
+  APPROVE_COMPACT, APPROVE_EXECUTE, APPROVE_KEEP, APPROVE_LABELS, PLAN_REVIEW_SETTINGS,
+  REFINE_PLAN, approvedResultText,
 } from './prompts.ts'
 import { runHandoff, type PendingHandoff } from './handoff.ts'
 import type {} from '@deepseek-ai/dsh-compaction'
@@ -58,7 +58,7 @@ import type {} from '@deepseek-ai/dsh-workspace'
 export type * from './types.ts'
 export {
   APPROVE_COMPACT, APPROVE_EXECUTE, APPROVE_KEEP, APPROVE_LABELS, EXECUTION_SESSION_TITLE_PREFIX,
-  REFINE_PLAN, approvedPlanPrompt, approvedResultText,
+  PLAN_REVIEW_SETTINGS, REFINE_PLAN, approvedPlanPrompt, approvedResultText,
 } from './prompts.ts'
 
 declare module '@deepseek-ai/cordis' {
@@ -101,6 +101,45 @@ function executionOf(label: string): PlanExecution | undefined {
     default:
       return undefined
   }
+}
+
+/**
+ * One declared setting's value from a review answer: the collected string, or
+ * `undefined` when the answer carried none.
+ *
+ * The answer is a wire value, so a blank string is a UI that offered a control
+ * the reviewer left empty — not a provider, model, effort, or preset id. Read
+ * as absent so the inherited value stays in force.
+ *
+ * @param settings - the answer's collected settings, keyed by declared name.
+ * @param name - one name this review declared.
+ * @returns the value to honour, or undefined when there is none.
+ */
+function collected(settings: Readonly<Record<string, string>>, name: string): string | undefined {
+  const value = settings[name]
+  return value === undefined || value.trim() === '' ? undefined : value
+}
+
+/**
+ * Read a review answer's collected settings as the execution selection.
+ *
+ * Only the names this review declared are read, so a UI that answers more than
+ * this asker asked for cannot steer the execution session with values the
+ * review never showed the user.
+ *
+ * @param settings - the answer's collected settings, or undefined when it carried none.
+ * @returns exactly the settings that were both declared and answered.
+ */
+function executionSelection(
+  settings: Readonly<Record<string, string>> | undefined,
+): PlanExecutionSelection {
+  if (settings === undefined) return {}
+  const selection: PlanExecutionSelection = {}
+  for (const name of PLAN_REVIEW_SETTINGS) {
+    const value = collected(settings, name)
+    if (value !== undefined) selection[name] = value
+  }
+  return selection
 }
 
 /** The plan's first markdown heading (any level), or `undefined` when it has none. */
@@ -400,7 +439,11 @@ export class PlanModeController extends Service {
               { label: APPROVE_KEEP, description: 'Leave plan mode and execute here with the planning history.' },
               { label: REFINE_PLAN, description: 'Stay in plan mode; feedback goes back to the model.' },
             ],
-            intent: { kind: 'plan-review', approve: [...APPROVE_LABELS] },
+            intent: {
+              kind: 'plan-review',
+              approve: [...APPROVE_LABELS],
+              settings: [...PLAN_REVIEW_SETTINGS],
+            },
           }],
           agent,
           signal: exec.signal,
@@ -440,7 +483,9 @@ export class PlanModeController extends Service {
           ctx.logger.warn('dsh-plan-handoff: failed to append plan/approved: %o', error)
         }
         this.pendingIntents.set(agent.session, { active: false, narrate: false })
-        this.pendingHandoffs.set(agent.session, { execution, plan: args.plan, title })
+        this.pendingHandoffs.set(agent.session, {
+          execution, plan: args.plan, title, selection: executionSelection(item?.settings),
+        })
         // Every approval ends this turn: the handoff steer is the only owner of
         // execution. Without this, keep would execute in-turn from the tool
         // result and again from the steer after the turn settles.

@@ -314,6 +314,7 @@
     { "path": "./packages/typert/generator" },
     { "path": "./packages/test-support/session-snapshot" },
     { "path": "./packages/test-support/loader-smoke" },
+    { "path": "./packages/test-support/e2b-composition" },
     { "path": "./packages/test-support/llm-mock-server" },
     { "path": "./packages/experimental/webworker-packer" },
     { "path": "./packages/experimental/inspector/tsconfig.host.json" },

@@ -753,7 +753,11 @@ describe('/plan', () => {
 })
 
 describe('exit_plan_mode', () => {
-  async function setupWithReview(answer?: { selected: string[]; custom?: string }) {
+  async function setupWithReview(answer?: {
+    selected: string[]
+    custom?: string
+    settings?: Record<string, string>
+  }) {
     const ctx = await setup()
     await ctx.plugin(AgentRegistry)
     await ctx.plugin(UserQuestionService)
@@ -1016,7 +1020,7 @@ describe('exit_plan_mode', () => {
     expect(result.content).toEqual([{ type: 'text', text: 'Error: The user chose to keep planning; revise the plan and present it again.' }])
   })
 
-  it('declares the plan-review presentation intent naming its approve option', async () => {
+  it('declares the plan-review presentation intent naming its approve options and settings', async () => {
     const { ctx, agent, asked } = await setupWithReview({ selected: ['Approve and keep context'] })
     await callExit(ctx, agent)
     const question = asked[0]?.questions[0]
@@ -1027,9 +1031,55 @@ describe('exit_plan_mode', () => {
         'Approve and compact context',
         'Approve and keep context',
       ],
+      settings: ['provider', 'model', 'reasoningEffort', 'agentPreset'],
     })
     expect(question?.intent?.approve.every(label => question.options?.some(option => option.label === label)))
       .toBe(true)
+  })
+
+  it('starts the fresh execution session on the route the review collected', async () => {
+    const ctx = new Context()
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    await ctx.plugin(PlanModeController, PLAN_CONFIG)
+    await ctx.plugin(UserQuestionService)
+    const live: Agent[] = []
+    const creates: { agentOptions?: Record<string, unknown> }[] = []
+    ctx.provide('agents', {
+      enter: (agent: Agent) => { live.push(agent) },
+      announce: () => undefined,
+      get: (id: SessionId) => live.find(candidate => candidate.id === id),
+      roots: () => live,
+      // The child factory is out of scope here: the request it receives is the
+      // assertion, and rejecting it exercises the documented fallback.
+      create: (request: { agentOptions?: Record<string, unknown> }) => {
+        creates.push(request)
+        return Promise.reject(new Error('the child factory is stubbed out'))
+      },
+    } as never)
+    registerAnswerer(ctx, {
+      ask: () => Promise.resolve({
+        answers: [{
+          id: 'plan-review',
+          selected: ['Approve and execute'],
+          settings: {
+            provider: 'acme', model: 'acme-large', reasoningEffort: 'high', agentPreset: 'ptc',
+          },
+        }],
+      }),
+    })
+    const agent = await agentWithSession(ctx, 'reviewed-route', { active: true })
+    const mutable = agent as unknown as { status: string; steer: () => void }
+    mutable.status = 'idle'
+    mutable.steer = () => undefined
+
+    const result = await callExit(ctx, agent)
+
+    expect(result.isError).toBe(false)
+    await vi.waitFor(() => { expect(creates).toHaveLength(1) })
+    expect(creates[0]?.agentOptions).toEqual({
+      provider: 'acme', model: 'acme-large', reasoningEffort: 'high',
+    })
   })
 
   it('reads a dismissed review as the user taking the turn back, not as a failure', async () => {

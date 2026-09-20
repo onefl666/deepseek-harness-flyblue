@@ -220,6 +220,14 @@ describe('approved execution handoff', () => {
   })
 })
 
+/** The stubbed child factory's request, as the handoff built it. */
+interface ChildRequest {
+  sessionId: SessionId
+  meta?: { cwd?: string; parentSession?: SessionId; agentPreset?: string }
+  agentOptions?: { provider?: string; model?: string; reasoningEffort?: string }
+  setup?: (agentCtx: Context) => Promise<void>
+}
+
 interface ClearHarness {
   ctx: Context
   source: Agent & { session: Session }
@@ -230,6 +238,10 @@ interface ClearHarness {
   dispose: ReturnType<typeof vi.fn>
   detachSession: ReturnType<typeof vi.fn>
   renames: { session: Session; title: string }[]
+  /** Every child the handoff asked the factory to create. */
+  creates: ChildRequest[]
+  /** Preset ids the child's creation-time setup mounted. */
+  mounted: (string | undefined)[]
 }
 
 /**
@@ -245,6 +257,11 @@ async function clearHarness(options: {
   workspaceMissing?: boolean
   /** Compose no `ctx.agents` at all. */
   withoutAgents?: boolean
+  /** Compose an `agentPresets` roster: the preset the source runs and how ids resolve. */
+  presets?: {
+    composed?: string
+    resolve?: (id: string) => Promise<{ id: string; broken?: string }>
+  }
   createError?: Error
   steerError?: Error
   detachError?: Error
@@ -282,15 +299,30 @@ async function clearHarness(options: {
   } as unknown as Agent
   const disposeError = options.disposeError
   const dispose = vi.fn(() => disposeError === undefined ? Promise.resolve() : Promise.reject(disposeError))
+  const creates: ChildRequest[] = []
   const createError = options.createError
   if (options.withoutAgents !== true) {
     ctx.provide('agents', {
       create: createError === undefined
-        ? (request: { sessionId: SessionId }) => {
+        ? (request: ChildRequest) => {
+          creates.push(request)
           childSession = Session.create(request.sessionId)
           return Promise.resolve({ agent: child, dispose })
         }
         : () => Promise.reject(createError),
+    } as never)
+  }
+
+  const mounted: (string | undefined)[] = []
+  const roster = options.presets
+  if (roster !== undefined) {
+    ctx.provide('agentPresets', {
+      composedPreset: () => roster.composed,
+      resolve: roster.resolve ?? ((id: string) => Promise.resolve({ id })),
+      mount: (_agentCtx: Context, id?: string) => {
+        mounted.push(id)
+        return Promise.resolve({ id: id ?? roster.composed })
+      },
     } as never)
   }
 
@@ -323,8 +355,90 @@ async function clearHarness(options: {
       throw new Error('the clear path must not compact')
     },
   } as never)
-  return { ctx, source, childSteered, sourceSteered, dispose, detachSession, renames }
+  return {
+    ctx, source, childSteered, sourceSteered, dispose, detachSession, renames, creates, mounted,
+  }
 }
+
+describe('reviewed execution selection', () => {
+  it('starts the child on the route the review chose', async () => {
+    const { ctx, source, creates } = await clearHarness()
+    await clearThenExecute(ctx, source, '# Title\n\nDo the work.', 'Title', {
+      provider: 'acme', model: 'acme-large', reasoningEffort: 'high',
+    })
+    expect(creates[0]?.agentOptions).toEqual({
+      provider: 'acme', model: 'acme-large', reasoningEffort: 'high',
+    })
+  })
+
+  it('leaves the inherited route alone when the review named none', async () => {
+    const { ctx, source, creates } = await clearHarness()
+    await clearThenExecute(ctx, source, '# Title\n\nDo the work.', 'Title')
+    expect(creates[0]?.agentOptions).toEqual({ provider: 'mock', model: 'mock' })
+  })
+
+  it('keeps the inherited pair when the route is half answered', async () => {
+    const { ctx, source, creates } = await clearHarness()
+    await clearThenExecute(ctx, source, '# Title\n\nDo the work.', 'Title', { provider: 'acme' })
+    expect(creates[0]?.agentOptions).toEqual({ provider: 'mock', model: 'mock' })
+  })
+
+  it('drops a blank effort instead of failing the whole route', async () => {
+    const { ctx, source, creates } = await clearHarness()
+    await clearThenExecute(ctx, source, '# Title\n\nDo the work.', 'Title', {
+      provider: 'acme', model: 'acme-large', reasoningEffort: '',
+    })
+    expect(creates[0]?.agentOptions).toEqual({ provider: 'acme', model: 'acme-large' })
+  })
+
+  it('composes and mounts the preset the review chose', async () => {
+    const { ctx, source, creates, mounted } = await clearHarness({ presets: { composed: 'standard' } })
+    await clearThenExecute(ctx, source, '# Title\n\nDo the work.', 'Title', { agentPreset: 'ptc' })
+    expect(creates[0]?.meta?.agentPreset).toBe('ptc')
+    await creates[0]?.setup?.(ctx)
+    expect(mounted).toEqual(['ptc'])
+  })
+
+  it('falls back to the planning preset when the reviewed one is unknown', async () => {
+    const { ctx, source, creates, mounted } = await clearHarness({
+      presets: {
+        composed: 'standard',
+        resolve: () => Promise.reject(new Error('agent-presets: preset "ptc" not found')),
+      },
+    })
+    const result = await clearThenExecute(ctx, source, '# Title\n\nDo the work.', 'Title', { agentPreset: 'ptc' })
+    expect(result.kind).toBe('cleared')
+    expect(creates[0]?.meta?.agentPreset).toBe('standard')
+    await creates[0]?.setup?.(ctx)
+    expect(mounted).toEqual(['standard'])
+  })
+
+  it('falls back when the reviewed preset resolves but cannot compose', async () => {
+    const { ctx, source, creates } = await clearHarness({
+      presets: {
+        composed: 'standard',
+        resolve: id => Promise.resolve({ id, broken: 'unparsable composition' }),
+      },
+    })
+    await clearThenExecute(ctx, source, '# Title\n\nDo the work.', 'Title', { agentPreset: 'ptc' })
+    expect(creates[0]?.meta?.agentPreset).toBe('standard')
+  })
+
+  it('skips resolution when the review picked the preset the source already runs', async () => {
+    const resolve = vi.fn(() => Promise.resolve({ id: 'standard' }))
+    const { ctx, source, creates } = await clearHarness({ presets: { composed: 'standard', resolve } })
+    await clearThenExecute(ctx, source, '# Title\n\nDo the work.', 'Title', { agentPreset: 'standard' })
+    expect(creates[0]?.meta?.agentPreset).toBe('standard')
+    expect(resolve).not.toHaveBeenCalled()
+  })
+
+  it('names no preset when the deployment composes no roster', async () => {
+    const { ctx, source, creates } = await clearHarness()
+    await clearThenExecute(ctx, source, '# Title\n\nDo the work.', 'Title', { agentPreset: 'ptc' })
+    expect(creates[0]?.meta?.agentPreset).toBeUndefined()
+    expect(creates[0]?.setup).toBeUndefined()
+  })
+})
 
 describe('execution session title', () => {
   it('names the child after the planning session title', async () => {

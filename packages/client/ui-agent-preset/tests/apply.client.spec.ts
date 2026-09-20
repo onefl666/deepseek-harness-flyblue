@@ -14,6 +14,8 @@ import { RemoteError, TestRemote } from '@deepseek-ai/dsh-client-test-runtime'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { apply as settingsApply, inject as settingsInject } from '@deepseek-ai/dsh-client-ui-settings/client'
 import { apply, inject } from '@deepseek-ai/dsh-client-ui-agent-preset/client'
+import { AgentPresetChoice } from '../src/client/AgentPresetChoice.tsx'
+import type { AgentPresetChoiceInjected } from '../src/client/AgentPresetChoice.tsx'
 import { AgentPresetLabel } from '../src/client/AgentPresetLabel.tsx'
 import type { AgentPresetLabelInjected } from '../src/client/AgentPresetLabel.tsx'
 import { AgentPresetSection } from '../src/client/AgentPresetSection.tsx'
@@ -168,6 +170,9 @@ function declareConversation(slots: SlotRegistry): () => void {
     children: {
       'conversation.hero.agentPreset': { kind: 'single', scope: 'root' },
       'conversation.session.header.actions': { kind: 'list', scope: 'session' },
+      // The shipped app declares this as a child of the question composer's
+      // own entry; the bench only needs some declaration to wait for.
+      'question.planReview.agentPreset': { kind: 'single', scope: 'session' },
     },
   } as never, () => null)
 }
@@ -332,7 +337,7 @@ describe('ui-agent-preset apply', () => {
     expect(calls.length - before).toBe(1)
   })
 
-  it('registers the new-session chip and the header label, and drops both on disposal', async () => {
+  it('registers the review card’s choice over the same roster, and drops it on disposal', async () => {
     const { ctx, slots } = await bench()
     declareRoot(slots)
     const conversation = declareConversation(slots)
@@ -347,9 +352,20 @@ describe('ui-agent-preset apply', () => {
     const label = slots.entries('conversation.session.header.actions')[0]!
     expect(label.component).toBe(AgentPresetLabel)
     expect(label.options).toMatchObject({ id: 'agent-preset', order: -10 })
+    const choice = slots.entries('question.planReview.agentPreset')[0]!
+    expect(choice.component).toBe(AgentPresetChoice)
+    expect(choice.locale).toBe('settings.agentPreset')
+    // The card's control reads the same roster instance as the chip and the
+    // label, so a pick offered there names what the roster published.
+    const face = (choice.inject as unknown as () => AgentPresetChoiceInjected)()
+    await face.load()
+    expect(face.hooks.agentPresets.getSnapshot().options).toEqual([
+      { id: 'standard', trust: 'system' },
+    ])
     await fiber.dispose()
     expect(slots.entries('conversation.hero.agentPreset')).toHaveLength(0)
     expect(slots.entries('conversation.session.header.actions')).toHaveLength(0)
+    expect(slots.entries('question.planReview.agentPreset')).toHaveLength(0)
     expect(slots.entries('settings.section')).toHaveLength(0)
     conversation()
   })

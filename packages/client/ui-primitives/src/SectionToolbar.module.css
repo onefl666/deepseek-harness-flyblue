@@ -1,0 +1,19 @@
+/* The row above a section's list: scope picker, search field, trailing
+   actions on its right edge. */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search {
+  flex: 1;
+  min-width: 0;
+}
+
+.toolbarEnd {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

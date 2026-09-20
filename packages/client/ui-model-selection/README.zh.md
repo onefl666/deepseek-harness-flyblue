@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-Web GUI 允许用户通过 `/model` 弹窗或 composer 模型控件切换既有会话使用的模型与推理（reasoning）强度。两个界面呈现同一组按提供方分组的选择；所选模型决定可用的推理强度名称与默认值。完整选择从下一次请求开始生效；运行中的步骤保留其启动时的模型与推理强度。如果没有适配器可以服务会话路由，composer 会保持停用，直至路由恢复可用。
+Web GUI 允许用户通过 `/model` 弹窗或 composer 模型控件切换既有会话使用的模型与推理（reasoning）强度，并允许计划评审暂存被批准的计划应当使用的路由。每个界面呈现同一组按提供方分组的选择；所选模型决定可用的推理强度名称与默认值。完整选择从下一次请求开始生效；运行中的步骤保留其启动时的模型与推理强度。如果没有适配器可以服务会话路由，composer 会保持停用，直至路由恢复可用。
 
 ## 目录
 
@@ -43,7 +43,7 @@ Web GUI 允许用户通过 `/model` 弹窗或 composer 模型控件切换既有�
 <details>
 <summary>实现细节——点击展开</summary>
 
-两个入口共用一份由 `ModelDirectoryResolver`（`ctx.modelDirectories`）持有的会话级目录：`/model` popupSelect 贡献项（经 `ctx.commandUi` 注册）与 composer 的具名 `conversation.input.model` 位都经 `session.models` 加载会话的建议目录、经 `session.selectModel` 通过同一个 `ModelDirectory` 实例提交，因此任一入口所做的切换正是另一个入口接下来显示的。目录加载与选择共享一个代次计数器，旧响应不会覆盖新结果；连接重置丢弃所有常驻投影，并在显示前重新拉取 Host 恢复的选择。目录按会话惰性解析，随会话作用域一并 dispose（资源释放）；已寻址 subagent 会话不公开任一入口。每份常驻目录都会直接在转发的 `llm/adapters-updated` 与 `settings/document-updated` owner 事件上重拉。任何消费方都可以调用 `ctx.modelDirectories.directoryFor()` 而不必声明 `remote.session`：解析器读的是提供方插件的上下文，因此解析不取决于调用方的注入链。
+三个界面共用一份由 `ModelDirectoryResolver`（`ctx.modelDirectories`）持有的会话级目录：`/model` popupSelect 贡献项（经 `ctx.commandUi` 注册）、composer 的具名 `conversation.input.model` 位，以及计划评审卡片的 `question.planReview.model` 位，都经 `session.models` 加载会话的建议目录、通过同一个 `ModelDirectory` 实例工作，因此其中一个界面所做的切换正是其他界面接下来显示的。前两者经 `session.selectModel` 提交；卡片座位只做暂存，把选择交给决定是否提交它的评审。`ModelMenu` 是两个宿主共用的纯呈现部分——它接收目录 store 与一个提交动词——因此两个座位共用一个控件，而不是两份会各自漂移的菜单。目录加载与选择共享一个代次计数器，旧响应不会覆盖新结果；连接重置丢弃所有常驻投影，并在显示前重新拉取 Host 恢复的选择。目录按会话惰性解析，随会话作用域一并 dispose（资源释放）；已寻址 subagent 会话不公开任一入口。每份常驻目录都会直接在转发的 `llm/adapters-updated` 与 `settings/document-updated` owner 事件上重拉。任何消费方都可以调用 `ctx.modelDirectories.directoryFor()` 而不必声明 `remote.session`：解析器读的是提供方插件的上下文，因此解析不取决于调用方的注入链。
 
 </details>
 

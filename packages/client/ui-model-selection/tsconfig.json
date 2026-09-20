@@ -45,6 +45,9 @@
       "path": "../ui-slots"
     },
     {
+      "path": "../ui-user-questions"
+    },
+    {
       "path": "../../core/session"
     },
     {

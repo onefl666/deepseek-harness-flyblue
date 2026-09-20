@@ -63,6 +63,7 @@ kind: "package-reference"
 
 </details>
 
+<a id="further-exploration"></a>
 ## 进一步探索
 
 - [技能子系统参考](../../../docs/subsystems/skills.zh.md) —— 本包围绕其工作的注册表、提供方契约与本地发现优先级。

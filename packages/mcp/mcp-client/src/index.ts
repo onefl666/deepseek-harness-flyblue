@@ -146,6 +146,21 @@ const Reconnect: z<ReconnectConfig> = z.object({
   maxAttempts: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).default(RECONNECT_DEFAULTS.maxAttempts),
 })
 
+/**
+ * Fields the two URL-addressed transports share. They differ only in the
+ * transport tag, and a second copy would be a second place to change a header
+ * default or a timeout.
+ */
+const UrlTransportFields = {
+  serverName: z.string().required().pattern(SERVER_NAME_PATTERN),
+  url: z.string().required(),
+  headers: z.dict(String).default({}),
+  toolCallTimeoutMs: z.number().default(DEFAULT_TOOL_CALL_TIMEOUT_MS),
+  failOnStartupError: z.boolean().default(false),
+  reconnect: Reconnect,
+  minProtocolVersion: z.string(),
+}
+
 export const Config = z.union([
   z.object({
     transport: z.const('stdio'),
@@ -159,26 +174,8 @@ export const Config = z.union([
     reconnect: Reconnect,
     minProtocolVersion: z.string(),
   }),
-  z.object({
-    transport: z.const('streamable-http'),
-    serverName: z.string().required().pattern(SERVER_NAME_PATTERN),
-    url: z.string().required(),
-    headers: z.dict(String).default({}),
-    toolCallTimeoutMs: z.number().default(DEFAULT_TOOL_CALL_TIMEOUT_MS),
-    failOnStartupError: z.boolean().default(false),
-    reconnect: Reconnect,
-    minProtocolVersion: z.string(),
-  }),
-  z.object({
-    transport: z.const('sse'),
-    serverName: z.string().required().pattern(SERVER_NAME_PATTERN),
-    url: z.string().required(),
-    headers: z.dict(String).default({}),
-    toolCallTimeoutMs: z.number().default(DEFAULT_TOOL_CALL_TIMEOUT_MS),
-    failOnStartupError: z.boolean().default(false),
-    reconnect: Reconnect,
-    minProtocolVersion: z.string(),
-  }),
+  z.object({ transport: z.const('streamable-http'), ...UrlTransportFields }),
+  z.object({ transport: z.const('sse'), ...UrlTransportFields }),
 ]) as unknown as z<ConfigInput, Config>
 
 // ---- Plugin apply ----

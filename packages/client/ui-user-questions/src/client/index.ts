@@ -22,13 +22,16 @@ import type { TypertClientEventListener } from '@deepseek-ai/dsh-typert-protocol
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-api-session-controller/client'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { PendingQuestion } from './contract/slots.ts'
+import type { QuestionComposerInjected } from './contract/slots.ts'
 import { createQuestionDraftStore } from './draft-store.ts'
 import { QuestionComposer } from './QuestionComposer.tsx'
 import { en, zh, type QuestionKey } from './locales.ts'
 
 export type {
-  PendingQuestion, PlanReview, QuestionAnswer, QuestionComposerProps, QuestionWait,
+  PendingQuestion, PlanReview, PlanReviewModelOwnerProps, PlanReviewPresetOwnerProps,
+  QuestionAnswer, QuestionComposerInjected, QuestionComposerProps, QuestionWait,
 } from './contract/slots.ts'
 export type { QuestionKey } from './locales.ts'
 
@@ -47,8 +50,8 @@ type ClientQuestionRequest = Parameters<QuestionListener>[0]
 type ClientQuestionNext = Parameters<QuestionListener>[1]
 type ClientQuestionAnswer = Awaited<ReturnType<QuestionListener>>
 
-/** Required services: Agent scopes, Remote Events, Session UI, Slot registry, and copy. */
-export const inject = ['sessions', 'remote', 'uiSession', 'slots', 'locale']
+/** Required services: Agent scopes, Remote Events and the Session namespace, Session UI, Slot registry, and copy. */
+export const inject = ['sessions', 'remote', 'remote.session', 'uiSession', 'slots', 'locale']
 
 /** Present one request until the user answers, cancels, or its lifetime ends. */
 async function answerQuestion(
@@ -98,6 +101,28 @@ export function apply(ctx: ClientContext): void {
         pendingInteraction instanceof PendingQuestion ? pendingInteraction : null,
       locale: NS,
       store: questionDraftStore,
+      // The plan-review card's execution settings. Declaring them here is what
+      // authorizes the card to render them; a deployment that composes neither
+      // owner still renders the review, with no settings row.
+      children: {
+        'question.planReview.model': { kind: 'single', scope: 'session' },
+        'question.planReview.agentPreset': { kind: 'single', scope: 'session' },
+      },
+      inject: (sessionId: SessionId): QuestionComposerInjected => ({
+        // Bound to the session this entry renders for: the card reports a
+        // choice, and this is the one call that commits it to the Host.
+        commitModel: async (selection) => {
+          const result = await ctx.remote.session.selectModel({
+            sessionId,
+            provider: selection.provider,
+            model: selection.model,
+            ...selection.reasoningEffort === undefined
+              ? {}
+              : { reasoningEffort: selection.reasoningEffort },
+          })
+          return result.ok
+        },
+      }),
     },
     QuestionComposer,
   ))

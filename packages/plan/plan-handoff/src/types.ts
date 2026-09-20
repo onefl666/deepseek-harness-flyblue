@@ -12,6 +12,28 @@
  */
 export type PlanExecution = 'clear' | 'compact' | 'keep'
 
+/**
+ * What the review chose for the session an approved plan executes in: the
+ * execution selection the review collected beside its decision, as the review
+ * answer carried it.
+ *
+ * Only the `clear` path reads this. `compact` and `keep` execute in the
+ * planning session, whose route the reviewer's own selection already moved, so
+ * these fields describe a session that does not exist yet. Every field is
+ * optional and its absence means the reviewer left that choice alone, which
+ * leaves the inherited value in force.
+ */
+export interface PlanExecutionSelection {
+  /** Provider route the fresh execution session starts on; absent keeps the inherited route. */
+  provider?: string
+  /** Provider-owned model id the fresh session starts on; ignored without a provider. */
+  model?: string
+  /** Adapter-owned reasoning effort for that route; absent uses the model's own default. */
+  reasoningEffort?: string
+  /** Agent preset the fresh session composes; absent composes the planning session's preset. */
+  agentPreset?: string
+}
+
 declare module '@deepseek-ai/dsh-session/types' {
   interface SessionEventMap {
     /**

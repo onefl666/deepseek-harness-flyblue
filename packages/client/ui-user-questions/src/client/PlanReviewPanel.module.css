@@ -65,13 +65,42 @@
   line-height: 22px;
 }
 
+/* The execution settings ride above the decision row, inside the same band. */
 .footer {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 8px;
+  padding: 8px 16px 12px;
+}
+
+/* An uncomposed seat contributes no node; the row must then take no space,
+   including the column gap above it. */
+.settings:empty {
+  display: none;
+}
+
+.settings {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.note {
+  margin: 0;
+  color: var(--dsw-alias-label-caption);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+/* The decision row keeps the card's original shape: standing feedback on the
+   left, the action cluster on the right. */
+.row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-shrink: 0;
   gap: 12px;
-  padding: 8px 16px 12px;
 }
 
 .feedback {
@@ -111,8 +140,11 @@
     padding: 10px 12px 4px;
   }
 
-  .footer {
+  .row {
     align-items: flex-end;
+  }
+
+  .footer {
     padding: 8px 12px 10px;
   }
 }

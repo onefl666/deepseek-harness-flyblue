@@ -105,13 +105,15 @@ export class UserQuestionService extends Service {
           'DELEGATED_CALLER')
       }
     }
-    // A presentation intent asserts two things the types cannot: that every
-    // named approve label is one of this question's own options, and that a
-    // plan-review carries the plan it is a review of. A UI honouring the
-    // intent answers with those labels, and shows that detail as the plan, so
-    // either gap would put a choice the asker never offered — or an approval of
-    // something invisible — in front of the user. Caught at the asker, where
-    // the mistake is, rather than in each UI.
+    // A presentation intent asserts three things the types cannot: that every
+    // named approve label is one of this question's own options, that a
+    // plan-review carries the plan it is a review of, and that each setting it
+    // collects is addressable. A UI honouring the intent answers with those
+    // labels, shows that detail as the plan, and keys its collected values by
+    // those names, so any gap would put a choice the asker never offered — an
+    // approval of something invisible, or a value no reader can look up — in
+    // front of the user. Caught at the asker, where the mistake is, rather than
+    // in each UI.
     for (const question of request.questions) {
       const intent = question.intent
       if (intent === undefined) continue
@@ -126,6 +128,14 @@ export class UserQuestionService extends Service {
       if (question.detail === undefined) {
         throw new UserQuestionError(
           `question ${question.id} declares intent ${intent.kind} without the detail it reviews`,
+          'BAD_INTENT')
+      }
+      const names = intent.settings ?? []
+      const unusable = names.find((name, index) => name.trim() === '' || names.indexOf(name) !== index)
+      if (unusable !== undefined) {
+        throw new UserQuestionError(
+          `question ${question.id} declares intent ${intent.kind} with blank or repeated setting name `
+          + JSON.stringify(unusable),
           'BAD_INTENT')
       }
     }

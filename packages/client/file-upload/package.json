@@ -39,9 +39,7 @@
   },
   "dsh": {
     "client": {
-      "inject": [
-        "@deepseek-ai/dsh-api-remotes"
-      ],
+      "inject": [],
       "platform": "web",
       "immediately": true
     }
@@ -77,7 +75,6 @@
     "@deepseek-ai/dsh-commands": "workspace:^",
     "@deepseek-ai/dsh-scope": "workspace:^",
     "@deepseek-ai/dsh-util-crypto": "workspace:^",
-    "@deepseek-ai/dsh-api-remotes": "workspace:^",
     "@deepseek-ai/dsh-session": "workspace:^",
     "@deepseek-ai/dsh-attachment": "workspace:^"
   }

@@ -22,15 +22,17 @@ interface AskUserQuestionOption {
 
 ## Presentation intent
 
-`AskUserQuestionIntent` optionally declares a known decision kind. It is tagged on `kind` so intents can be added; a UI that does not recognise a tag renders the generic option list. An intent changes presentation only — a UI honouring it answers with the same option labels a generic UI would send, so the caller reads the same answer fields either way. `approve` names every affirmative option instead of relying on option order. `ask()` rejects the two assertions no type can carry: an `approve` entry naming none of its own question's options, and an intent on a question with no `detail`.
+`AskUserQuestionIntent` optionally declares a known decision kind. It is tagged on `kind` so intents can be added; a UI that does not recognise a tag renders the generic option list. A UI honouring an intent answers with the same option labels a generic UI would send, so the caller reads the same answer fields either way. `approve` names every affirmative option instead of relying on option order, and `settings` names the values the intent collects beside the decision — an answer carries only names the asker declared, so a UI that knows none of them still settles the decision. `ask()` rejects the three assertions no type can carry: an `approve` entry naming none of its own question's options, an intent on a question with no `detail`, and a blank or repeated setting name.
 
 ```ts type-equiv
 /**
  * A caller-declared presentation intent: the question IS this kind of
  * decision, so a UI that recognises the tag may present it as such instead of as a
  * generic option list. Tagged so further intents can be added; a UI that does
- * not know a tag renders the generic flow, and the answer encoding is identical
- * either way — an intent changes presentation only, never the protocol.
+ * not know a tag renders the generic flow, and the request encoding is
+ * identical either way. An intent changes presentation, and — through
+ * {@link AskUserQuestionIntent.settings} — may ask for values beside the
+ * decision; an intent that declares none leaves the answer encoding alone.
  */
 type AskUserQuestionIntent = {
   /** A plan submitted for review: `detail` is the plan markdown `ask()` requires, and the decision approves or declines it. */
@@ -42,6 +44,14 @@ type AskUserQuestionIntent = {
    * its own question is rejected at `ask()`.
    */
   approve: string[]
+  /**
+   * Setting names this review collects beside the decision, so a UI renders a
+   * control per name it knows and answers the ones it rendered. The asker
+   * reads only names it declared, which is what lets it add a setting without
+   * a UI that knows nothing about it silently answering the decision alone.
+   * Omit to ask for the decision by itself.
+   */
+  settings?: readonly string[]
 }
 ```
 
@@ -80,7 +90,7 @@ interface AskUserQuestionRequest extends AskUserQuestionRequestEvent {}
 
 ## Answer
 
-Providers return one answer item per question id. `selected` contains selected option labels, and `custom` carries a free-form "Other" answer when the user typed one. For a single-select question, `custom` overrides the selected choice and `selected` is empty. For a multi-select question, `custom` may supplement the labels in `selected`. A UI may also use an item with empty `selected` and no `custom` to preserve a skipped question in an otherwise completed batch.
+Providers return one answer item per question id. `selected` contains selected option labels, and `custom` carries a free-form "Other" answer when the user typed one. For a single-select question, `custom` overrides the selected choice and `selected` is empty. For a multi-select question, `custom` may supplement the labels in `selected`. A UI may also use an item with empty `selected` and no `custom` to preserve a skipped question in an otherwise completed batch. `settings` carries the values a presentation intent collected beside the decision, keyed by the names that intent declared; the generic flow sends none.
 
 ```ts type-equiv
 /** Answer to one question. */
@@ -91,6 +101,12 @@ interface AskUserQuestionAnswerItem {
   selected: string[]
   /** Optional free-text "Other" answer. */
   custom?: string
+  /**
+   * Values a presentation intent collected beside the decision, keyed by the
+   * names that intent declared. A generic request sends none, and an asker
+   * reads only the names it declared.
+   */
+  settings?: Readonly<Record<string, string>>
 }
 ```
 

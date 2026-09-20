@@ -66,7 +66,9 @@ async function bench(declare = true) {
     listener = value
     return () => { listener = undefined }
   })
-  ctx.provide('remote', { $on: on } as never)
+  const selectModel = vi.fn(async () => ({ ok: true, value: { selected: {} } }))
+  ctx.provide('remote', { $on: on, session: { selectModel } } as never)
+  ctx.provide('remote.session', { selectModel } as never)
   const fiber = ctx.plugin({ inject: [...inject], apply })
   await fiber.await()
   const invoke = (
@@ -82,6 +84,7 @@ async function bench(declare = true) {
     slots,
     locale,
     agent,
+    selectModel,
     scopeOf,
     pending: { getSnapshot: () => [...pending.keys()] },
     registerPendingInteraction,
@@ -98,7 +101,7 @@ async function bench(declare = true) {
 
 describe('apply', () => {
   it('declares the services it binds', () => {
-    expect(inject).toEqual(['sessions', 'remote', 'uiSession', 'slots', 'locale'])
+    expect(inject).toEqual(['sessions', 'remote', 'remote.session', 'uiSession', 'slots', 'locale'])
   })
 
   it('installs the Remote Event listener and delegates an unscoped request', async () => {
@@ -121,7 +124,6 @@ describe('apply', () => {
 
     const entry = b.slots.entries('conversation.composer')[0]!
     expect(entry.component).toBe(QuestionComposer)
-    expect(entry.inject).toBeUndefined()
     expect(entry.locale).toBe('question')
     const store = entry.store as ReturnType<typeof createQuestionDraftStore>
     expect(store.create(SESSION_ID).getSnapshot()).toEqual({
@@ -140,6 +142,24 @@ describe('apply', () => {
     expect(next).not.toHaveBeenCalled()
     expect(b.pending.getSnapshot()).toEqual([])
     expect(b.slots.entries('conversation.composer')).toHaveLength(1)
+  })
+
+  it('binds the review card’s model commit to the rendered session', async () => {
+    const b = await bench()
+    void b.invoke(b.agent, { questions: QUESTIONS }, async () => ANSWER)
+    await Promise.resolve()
+
+    const entry = b.slots.entries('conversation.composer')[0]!
+    const injectFace = (entry.inject as (sessionId: SessionId) => {
+      commitModel: (selection: { provider: string; model: string; reasoningEffort?: string }) => Promise<boolean>
+    })(SESSION_ID)
+
+    await expect(injectFace.commitModel({
+      provider: 'acme', model: 'acme-large', reasoningEffort: 'high',
+    })).resolves.toBe(true)
+    expect(b.selectModel).toHaveBeenCalledWith({
+      sessionId: SESSION_ID, provider: 'acme', model: 'acme-large', reasoningEffort: 'high',
+    })
   })
 
   it('preserves ASK_CANCELLED as a rejected waterfall result', async () => {

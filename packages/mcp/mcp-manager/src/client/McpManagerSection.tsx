@@ -8,11 +8,12 @@
  * toggle is process-local.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
-  Button, IconEllipsisOutline16, IconPlusOutline16, IconApiOutline14, Menu, SearchField,
-  SectionChrome, StateDot, Switch, Tag, Toast,
+  Button, IconEllipsisOutline16, IconPlusOutline16, IconApiOutline14, Menu,
+  SectionChrome, SectionState, SectionToolbar, StateDot, Switch, Tag, Toast,
+  sectionToolbarLabels, useRemoteList, useScopeChoice,
   type MenuItem, type StateDotState, type TagTone,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
@@ -47,12 +48,6 @@ export interface McpManagerSectionInjected {
 /** Which dialog the section currently shows. */
 type DialogState = { readonly kind: 'create' } | { readonly kind: 'edit'; readonly serverName: string }
 
-/** Load lifecycle of the current scope's listing. */
-type ViewState =
-  | { readonly status: 'loading' }
-  | { readonly status: 'error'; readonly message: string }
-  | { readonly status: 'ready'; readonly value: McpListView }
-
 /** Row state a status maps to. */
 const STATUS_DOT: Readonly<Record<string, StateDotState>> = {
   connected: 'done',
@@ -80,70 +75,22 @@ export function McpManagerSection({
   t, list, save, remove, setEnabled, restart, setStaticEnabled, subscribeStatus, useWorkspaces,
 }: PropsLocale<'settings.mcp'> & InjectFace<McpManagerSectionInjected> & PropsRuntime<'settings.section'>) {
   const workspaces = useWorkspaces(snapshot => snapshot.items)
-  const [chosenWorkspaceId, setChosenWorkspaceId] = useState<string | undefined>(undefined)
-  const [scopeKind, setScopeKind] = useState<'user' | 'workspace'>('user')
   const [query, setQuery] = useState('')
-  const [view, setView] = useState<ViewState>({ status: 'loading' })
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | undefined>(undefined)
   const [dialog, setDialog] = useState<DialogState | null>(null)
-  const [removing, setRemoving] = useState<string | undefined>(undefined)
-  const [toast, setToast] = useState<{ seq: number; text: string } | null>(null)
-  const [scopeMenuOpen, setScopeMenuOpen] = useState(false)
   const [rowMenu, setRowMenu] = useState<string | undefined>(undefined)
-  const sequence = useRef(0)
-  const toastSeq = useRef(0)
 
-  const workspace = workspaces.find(item => item.workspaceId === chosenWorkspaceId) ?? workspaces[0]
-  const scope = useMemo<McpScope>(
-    () => scopeKind === 'workspace' && workspace !== undefined
-      ? { kind: 'workspace', cwd: workspace.path }
-      : { kind: 'user' },
-    [scopeKind, workspace],
-  )
-
-  const announce = useCallback((text: string) => {
-    toastSeq.current += 1
-    setToast({ seq: toastSeq.current, text })
-  }, [])
-
-  const applyListing = useCallback((seq: number, result: RemoteResult<McpListView>): void => {
-    if (seq !== sequence.current) return
-    setBusy(false)
-    if (result.ok) setView({ status: 'ready', value: result.value })
-    else setView({ status: 'error', message: result.error.message })
-  }, [])
-
-  const refresh = useCallback(() => {
-    const seq = ++sequence.current
-    setBusy(true)
-    setError(undefined)
-    void list(scope).then((result) => { applyListing(seq, result) })
-  }, [list, scope, applyListing])
-
-  useEffect(() => { refresh() }, [refresh])
+  const choice = useScopeChoice(workspaces)
+  const scope = choice.scope
+  const listing = useRemoteList(list, scope)
   // A connection transition changes what the rows should say, and the manager
   // answers from its own status cache, so one more listing is the whole update.
-  useEffect(() => subscribeStatus(refresh), [subscribeStatus, refresh])
+  useEffect(() => subscribeStatus(listing.refresh), [subscribeStatus, listing.refresh])
 
-  /** Apply a mutation's refreshed listing under a sequence that retires in-flight reads. */
-  const applied = useCallback((result: RemoteResult<McpListView>, name: string, template: string): void => {
-    setRemoving(undefined)
-    if (!result.ok) {
-      setError(result.error.message)
-      return
-    }
-    sequence.current += 1
-    setError(undefined)
-    setView({ status: 'ready', value: result.value })
-    announce(template.replace('{name}', name))
-  }, [announce])
-
+  const { view } = listing
   const servers = view.status === 'ready' ? view.value.servers : []
   const staticRows = view.status === 'ready' ? view.value.staticRows : []
   const protocolVersions = view.status === 'ready' ? view.value.supportedProtocolVersions : []
   const registryPath = view.status === 'ready' ? view.value.registryPath : ''
-  const firstLoad = view.status === 'loading'
   const needle = query.trim().toLowerCase()
   const matches = (name: string, target: string): boolean => needle === ''
     || name.toLowerCase().includes(needle)
@@ -153,143 +100,97 @@ export function McpManagerSection({
   const editing = dialog?.kind === 'edit'
     ? servers.find(server => server.serverName === dialog.serverName)?.config
     : undefined
-
-  const scopeItems: MenuItem[] = [
-    { id: 'user', label: t('scopeUser') },
-    ...workspaces.map(item => ({ id: `workspace:${item.workspaceId}`, label: item.title })),
-  ]
-  const selectedScopeId = scopeKind === 'workspace' && workspace !== undefined
-    ? `workspace:${workspace.workspaceId}`
-    : 'user'
-  const scopeLabel = selectedScopeId === 'user' ? t('scopeUser') : workspace?.title ?? t('scopeNoWorkspace')
   const nothingMatches = needle !== '' && shown.length === 0 && shownStatic.length === 0
 
   return (
-    <section className={css.section} data-mcp-manager aria-busy={busy}>
+    <section className={css.section} data-mcp-manager aria-busy={listing.busy}>
       <SectionChrome
         labels={{ refresh: t('refresh'), refreshing: t('refreshing'), errorSummary: t('error'), retry: t('retry') }}
         title={t('title')}
         intro={t('intro')}
         meta={<span className={css.counts}>{t('installed').replace('{count}', String(servers.length))}</span>}
-        busy={busy}
-        onRefresh={refresh}
-        error={error}
+        busy={listing.busy}
+        onRefresh={listing.refresh}
+        error={listing.error}
       />
-      <div className={css.toolbar}>
-        <Menu
-          open={scopeMenuOpen}
-          onClose={() => { setScopeMenuOpen(false) }}
-          items={scopeItems}
-          selectedId={selectedScopeId}
-          onSelect={(id) => {
-            setScopeMenuOpen(false)
-            if (id === 'user') setScopeKind('user')
-            else {
-              setChosenWorkspaceId(id.slice('workspace:'.length))
-              setScopeKind('workspace')
-            }
-          }}
-          portal
-          align="start"
-          anchor={(
-            <button
-              type="button"
-              className={css.scope}
-              aria-haspopup="menu"
-              aria-expanded={scopeMenuOpen}
-              aria-label={t('scopeLabel')}
-              onClick={() => { setScopeMenuOpen(value => !value) }}
-            >
-              <IconApiOutline14 className={css.scopeIcon} aria-hidden="true" />
-              <span className={css.scopeText}>{scopeLabel}</span>
-            </button>
+      <SectionToolbar
+        scope={choice}
+        scopeIcon={<IconApiOutline14 />}
+        query={query}
+        onQueryChange={setQuery}
+        labels={sectionToolbarLabels(t)}
+      >
+        <Button
+          size="sm"
+          variant="ghost"
+          icon={<IconPlusOutline16 />}
+          onClick={() => { setDialog({ kind: 'create' }) }}
+        >
+          {t('create')}
+        </Button>
+      </SectionToolbar>
+      <SectionState
+        loading={view.status === 'loading'}
+        rows={2}
+        failure={view.status === 'error' ? view.message : undefined}
+        labels={{ loading: t('loading'), error: t('error') }}
+      >
+        <>
+          <h3 className={css.groupTitle}>{t('managedTitle')}</h3>
+          {servers.length === 0 ? <p className={css.empty}>{t('empty')}</p> : null}
+          {nothingMatches ? <p className={css.empty}>{t('emptySearch')}</p> : null}
+          <ul className={css.list}>
+            {shown.map((server, index) => (
+              <ManagedRow
+                key={server.serverName}
+                t={t}
+                server={server}
+                index={index}
+                menuOpen={rowMenu === server.serverName}
+                removing={listing.removing === server.serverName}
+                onMenuToggle={(open) => { setRowMenu(open ? server.serverName : undefined) }}
+                onToggleEnabled={(next) => {
+                  listing.begin(server.serverName)
+                  void setEnabled(scope, server.serverName, next).then((result) => {
+                    listing.applied(result, server.serverName, t(next ? 'toastEnabled' : 'toastDisabled'))
+                  })
+                }}
+                onEdit={() => { setDialog({ kind: 'edit', serverName: server.serverName }) }}
+                onRestart={() => {
+                  void restart(scope, server.serverName).then((result) => {
+                    listing.applied(result, server.serverName, t('toastRestarted'))
+                  })
+                }}
+                onRemove={() => {
+                  listing.begin(server.serverName)
+                  void remove(scope, server.serverName).then((result) => {
+                    listing.applied(result, server.serverName, t('toastRemoved'))
+                  })
+                }}
+              />
+            ))}
+          </ul>
+          <h3 className={css.groupTitle}>{t('declaredTitle')}</h3>
+          <p className={css.hint}>{t('declaredHint')}</p>
+          {shownStatic.length === 0 ? null : (
+            <ul className={css.list}>
+              {shownStatic.map((row, index) => (
+                <StaticRow
+                  key={row.entryId}
+                  t={t}
+                  row={row}
+                  index={index}
+                  onToggleEnabled={(next) => {
+                    void setStaticEnabled(row.entryId, next).then((result) => {
+                      listing.applied(result, row.serverName, t(next ? 'toastEnabled' : 'toastDisabled'))
+                    })
+                  }}
+                />
+              ))}
+            </ul>
           )}
-        />
-        <SearchField
-          className={css.search as string}
-          value={query}
-          onChange={setQuery}
-          label={t('search')}
-          clearLabel={t('clearSearch')}
-          placeholder={t('searchPlaceholder')}
-        />
-        <span className={css.toolbarEnd}>
-          <Button
-            size="sm"
-            variant="ghost"
-            icon={<IconPlusOutline16 />}
-            onClick={() => { setDialog({ kind: 'create' }) }}
-          >
-            {t('create')}
-          </Button>
-        </span>
-      </div>
-      {firstLoad
-        ? (
-          <div className={css.skeleton} aria-busy="true" aria-label={t('loading')}>
-            <div className={css.skeletonRow} />
-            <div className={css.skeletonRow} />
-          </div>
-        )
-        : view.status === 'error'
-          ? <p className={css.failure} role="alert">{`${t('error')}: ${view.message}`}</p>
-          : (
-            <>
-              <h3 className={css.groupTitle}>{t('managedTitle')}</h3>
-              {servers.length === 0 ? <p className={css.empty}>{t('empty')}</p> : null}
-              {nothingMatches ? <p className={css.empty}>{t('emptySearch')}</p> : null}
-              <ul className={css.list}>
-                {shown.map((server, index) => (
-                  <ManagedRow
-                    key={server.serverName}
-                    t={t}
-                    server={server}
-                    index={index}
-                    menuOpen={rowMenu === server.serverName}
-                    removing={removing === server.serverName}
-                    onMenuToggle={(open) => { setRowMenu(open ? server.serverName : undefined) }}
-                    onToggleEnabled={(next) => {
-                      setRemoving(server.serverName)
-                      void setEnabled(scope, server.serverName, next).then((result) => {
-                        applied(result, server.serverName, next ? 'toastEnabled' : 'toastDisabled')
-                      })
-                    }}
-                    onEdit={() => { setDialog({ kind: 'edit', serverName: server.serverName }) }}
-                    onRestart={() => {
-                      void restart(scope, server.serverName).then((result) => {
-                        applied(result, server.serverName, 'toastRestarted')
-                      })
-                    }}
-                    onRemove={() => {
-                      setRemoving(server.serverName)
-                      void remove(scope, server.serverName).then((result) => {
-                        applied(result, server.serverName, 'toastRemoved')
-                      })
-                    }}
-                  />
-                ))}
-              </ul>
-              <h3 className={css.groupTitle}>{t('declaredTitle')}</h3>
-              <p className={css.hint}>{t('declaredHint')}</p>
-              {shownStatic.length === 0 ? null : (
-                <ul className={css.list}>
-                  {shownStatic.map((row, index) => (
-                    <StaticRow
-                      key={row.entryId}
-                      t={t}
-                      row={row}
-                      index={index}
-                      onToggleEnabled={(next) => {
-                        void setStaticEnabled(row.entryId, next).then((result) => {
-                          applied(result, row.serverName, next ? 'toastEnabled' : 'toastDisabled')
-                        })
-                      }}
-                    />
-                  ))}
-                </ul>
-              )}
-            </>
-          )}
+        </>
+      </SectionState>
       {dialog !== null
         ? (
           <McpServerDialog
@@ -301,20 +202,19 @@ export function McpManagerSection({
             onCancel={() => { setDialog(null) }}
             onSubmit={async (configs) => {
               for (const config of configs) {
-                const result = await save(scope, config)
-                if (!result.ok) return result.error.message
-                sequence.current += 1
-                setError(undefined)
-                setView({ status: 'ready', value: result.value })
+                const failure = listing.adopt(await save(scope, config))
+                if (failure !== null) return failure
               }
               setDialog(null)
-              announce(t('toastSaved').replace('{name}', configs[0]?.serverName ?? ''))
+              listing.announce(t('toastSaved').replace('{name}', configs[0]?.serverName ?? ''))
               return undefined
             }}
           />
         )
         : null}
-      {toast !== null ? <Toast key={toast.seq} text={toast.text} onDone={() => { setToast(null) }} /> : null}
+      {listing.toast !== null
+        ? <Toast key={listing.toast.seq} text={listing.toast.text} onDone={listing.dismissToast} />
+        : null}
     </section>
   )
 }

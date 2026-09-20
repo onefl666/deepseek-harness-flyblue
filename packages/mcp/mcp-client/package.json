@@ -27,6 +27,7 @@
   },
   "files": [
     "lib/index.js",
+    "lib/types/**/*.js",
     "lib/types/**/*.d.ts"
   ],
   "license": "MIT",
@@ -53,7 +54,7 @@
     "@deepseek-ai/dsh-timeout": "workspace:^",
     "@deepseek-ai/dsh-tools": "workspace:^",
     "@modelcontextprotocol/server-everything": "^2026.7.4",
-    "@modelcontextprotocol/server-filesystem": "^2026.7.4",
+    "@modelcontextprotocol/server-filesystem": "^2026.8.31",
     "@deepseek-ai/cordis": "workspace:^",
     "@deepseek-ai/dsh-http-proxy": "workspace:^"
   }

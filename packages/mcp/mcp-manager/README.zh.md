@@ -57,6 +57,7 @@ kind: "package-reference"
 
 </details>
 
+<a id="further-exploration"></a>
 ## 进一步探索
 
 - [MCP 包分组](../README.zh.md) —— 本包所管理、并驱动其桥接的分组。

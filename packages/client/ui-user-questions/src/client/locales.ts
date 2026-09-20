@@ -20,6 +20,10 @@ export const zh = {
   'plan.approve.keep': '保留上下文',
   'plan.refine': '继续规划',
   'plan.discuss': '去聊天里说',
+  'plan.execution.start': '开始执行',
+  'plan.execution.back': '返回',
+  'plan.execution.freshNote': '该预设只用于本次新建的执行会话。',
+  'plan.execution.rejected': '模型没能切换成功，计划尚未提交。',
 } satisfies Record<string, string>
 
 /** The question namespace key union. */
@@ -45,4 +49,8 @@ export const en = {
   'plan.approve.keep': 'Keep context',
   'plan.refine': 'Refine plan',
   'plan.discuss': 'Chat about it',
+  'plan.execution.start': 'Start execution',
+  'plan.execution.back': 'Back',
+  'plan.execution.freshNote': 'This preset applies only to the execution session this approval starts.',
+  'plan.execution.rejected': 'The model could not be switched, so the plan was not submitted.',
 } satisfies Record<QuestionKey, string>

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import type { GlobalStandardProps } from '@deepseek-ai/dsh-client-ui-slots'
+import type { GlobalStandardProps, SessionProviderComponent } from '@deepseek-ai/dsh-client-ui-slots'
 import { useSyncExternalStore } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
@@ -14,6 +14,9 @@ import { zh as commonZh } from '@deepseek-ai/dsh-client-locale/src/locales/zh.ts
 // Every session-scope fixture carries the resource hook the resources plugin merges into GlobalStandardProps.
 const useResource = (() => ({ status: 'none' as const, value: undefined, failure: undefined, reload: () => {} })) as GlobalStandardProps['useResource']
 const usePanelInfo: GlobalStandardProps['usePanelInfo'] = selector => selector({ activePanelId: null })
+// Declaring a session-scope child puts this seat on the entry's props; this
+// flow renders no such child, so passing the body through is the whole job.
+const SessionProvider: SessionProviderComponent = ({ children }) => children
 
 afterEach(cleanup)
 
@@ -130,6 +133,11 @@ const kitBase: Omit<QuestionComposerProps, 'matched' | 'useStore' | 'actions'> =
     pruneAttachments: () => { throw new Error('unused') },
     submit: () => { throw new Error('unused') },
   },
+  // The question flow renders no execution-setting seat, and never commits a
+  // review's model; the card that does has its own spec.
+  renderSlot: (() => null) as QuestionComposerProps['renderSlot'],
+  SessionProvider,
+  commitModel: async () => true,
   // The seat's key domain is question ∪ common.
   t: seatOver(zh, commonZh),
 }

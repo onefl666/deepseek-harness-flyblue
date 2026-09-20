@@ -5,11 +5,12 @@
  * listing, so the page never predicts a filesystem outcome.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
-  Button, IconEllipsisOutline16, IconPlusOutline16, IconSkillOutline16, Menu, SearchField,
-  SectionChrome, StateDot, Switch, Tag, Toast,
+  Button, IconEllipsisOutline16, IconPlusOutline16, IconSkillOutline16, Menu,
+  SectionChrome, SectionState, SectionToolbar, StateDot, Switch, Tag, Toast,
+  sectionToolbarLabels, useRemoteList, useScopeChoice,
   type MenuItem, type StateDotState, type TagTone,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
@@ -45,12 +46,6 @@ type DialogState =
   | { readonly kind: 'edit'; readonly name: string }
   | { readonly kind: 'import' }
 
-/** Load lifecycle of the current scope's listing. */
-type ViewState =
-  | { readonly status: 'loading' }
-  | { readonly status: 'error'; readonly message: string }
-  | { readonly status: 'ready'; readonly value: SkillListView }
-
 /** The dot each enablement state maps to. */
 const ENABLED_DOT: Readonly<Record<'on' | 'off', StateDotState>> = { on: 'done', off: 'idle' }
 
@@ -82,219 +77,132 @@ export function SkillManagerSection({
   useWorkspaces,
 }: PropsLocale<'settings.skills'> & InjectFace<SkillManagerSectionInjected> & PropsRuntime<'settings.section'>) {
   const workspaces = useWorkspaces(snapshot => snapshot.items)
-  const [chosenWorkspaceId, setChosenWorkspaceId] = useState<string | undefined>(undefined)
-  const [scopeKind, setScopeKind] = useState<'user' | 'workspace'>('user')
   const [query, setQuery] = useState('')
   const [importMode, setImportMode] = useState<ImportMode>('directory')
-  const [view, setView] = useState<ViewState>({ status: 'loading' })
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | undefined>(undefined)
   const [dialog, setDialog] = useState<DialogState | null>(null)
   const [confirming, setConfirming] = useState<string | undefined>(undefined)
-  const [removing, setRemoving] = useState<string | undefined>(undefined)
-  const [toast, setToast] = useState<{ seq: number; text: string } | null>(null)
-  const [scopeMenuOpen, setScopeMenuOpen] = useState(false)
   const [rowMenu, setRowMenu] = useState<string | undefined>(undefined)
   const [toolbarMenuOpen, setToolbarMenuOpen] = useState(false)
-  const sequence = useRef(0)
-  const toastSeq = useRef(0)
 
-  const workspace = workspaces.find(item => item.workspaceId === chosenWorkspaceId) ?? workspaces[0]
-  const scope = useMemo<SkillScope>(
-    () => scopeKind === 'workspace' && workspace !== undefined
-      ? { kind: 'workspace', cwd: workspace.path }
-      : { kind: 'user' },
-    [scopeKind, workspace],
-  )
+  const choice = useScopeChoice(workspaces)
+  const scope = choice.scope
+  const listing = useRemoteList(list, scope)
 
-  const announce = useCallback((text: string) => {
-    toastSeq.current += 1
-    setToast({ seq: toastSeq.current, text })
-  }, [])
-
-  const applyListing = useCallback((seq: number, result: RemoteResult<SkillListView>): void => {
-    if (seq !== sequence.current) return
-    setBusy(false)
-    if (result.ok) setView({ status: 'ready', value: result.value })
-    else setView({ status: 'error', message: result.error.message })
-  }, [])
-
-  const refresh = useCallback(() => {
-    const seq = ++sequence.current
-    setBusy(true)
-    setError(undefined)
-    void list(scope).then((result) => { applyListing(seq, result) })
-  }, [list, scope, applyListing])
-
-  useEffect(() => { refresh() }, [refresh])
-
-  /** Apply a mutation's refreshed listing under a sequence that retires in-flight reads. */
-  const applied = useCallback((result: RemoteResult<SkillListView>, name: string, template: string): void => {
-    setRemoving(undefined)
+  /** Settle one row mutation: the confirm it may have armed is over either way. */
+  const applied = (result: RemoteResult<SkillListView>, name: string, template: string): void => {
     setConfirming(undefined)
-    if (!result.ok) {
-      setError(result.error.message)
-      return
-    }
-    sequence.current += 1
-    setError(undefined)
-    setView({ status: 'ready', value: result.value })
-    announce(template.replace('{name}', name))
-  }, [announce])
+    listing.applied(result, name, template)
+  }
 
+  const { view } = listing
   const skills = view.status === 'ready' ? view.value.skills : []
   const createRoot = view.status === 'ready' ? view.value.createRoot : undefined
-  const firstLoad = view.status === 'loading'
   const needle = query.trim().toLowerCase()
   const filtered = needle === ''
     ? skills
     : skills.filter(skill => skill.name.toLowerCase().includes(needle)
       || skill.description.toLowerCase().includes(needle))
 
-  const scopeItems: MenuItem[] = [
-    { id: 'user', label: t('scopeUser') },
-    ...workspaces.map(item => ({ id: `workspace:${item.workspaceId}`, label: item.title })),
-  ]
-  const selectedScopeId = scopeKind === 'workspace' && workspace !== undefined
-    ? `workspace:${workspace.workspaceId}`
-    : 'user'
-  const scopeLabel = selectedScopeId === 'user' ? t('scopeUser') : workspace?.title ?? t('scopeNoWorkspace')
-  const scopeBlocked = scopeKind === 'workspace' && workspace === undefined
+  const scopeBlocked = choice.blocked
   const toolbarItems: MenuItem[] = [
     { id: 'directory', label: t('importDirectory') },
     { id: 'git', label: t('importGit') },
   ]
 
   return (
-    <section className={css.section} data-skill-manager aria-busy={busy}>
+    <section className={css.section} data-skill-manager aria-busy={listing.busy}>
       <SectionChrome
         labels={{ refresh: t('refresh'), refreshing: t('refreshing'), errorSummary: t('error'), retry: t('retry') }}
         title={t('title')}
         intro={t('intro')}
         meta={<span className={css.counts}>{t('installed').replace('{count}', String(skills.length))}</span>}
-        busy={busy}
-        onRefresh={refresh}
-        error={error}
+        busy={listing.busy}
+        onRefresh={listing.refresh}
+        error={listing.error}
       />
       {scopeBlocked ? <p className={css.notice} role="status">{t('noWorkspace')}</p> : null}
-      <div className={css.toolbar}>
+      <SectionToolbar
+        scope={choice}
+        scopeIcon={<IconSkillOutline16 />}
+        query={query}
+        onQueryChange={setQuery}
+        labels={sectionToolbarLabels(t)}
+      >
         <Menu
-          open={scopeMenuOpen}
-          onClose={() => { setScopeMenuOpen(false) }}
-          items={scopeItems}
-          selectedId={selectedScopeId}
+          open={toolbarMenuOpen}
+          onClose={() => { setToolbarMenuOpen(false) }}
+          items={toolbarItems}
           onSelect={(id) => {
-            setScopeMenuOpen(false)
-            if (id === 'user') setScopeKind('user')
-            else {
-              setChosenWorkspaceId(id.slice('workspace:'.length))
-              setScopeKind('workspace')
-            }
+            setToolbarMenuOpen(false)
+            setImportMode(id === 'git' ? 'git' : 'directory')
+            setDialog({ kind: 'import' })
           }}
           portal
-          align="start"
+          align="end"
+          closeOnPointerLeave
           anchor={(
             <button
               type="button"
-              className={css.scope}
+              className={css.toolbarButton}
               aria-haspopup="menu"
-              aria-expanded={scopeMenuOpen}
-              aria-label={t('scopeLabel')}
-              onClick={() => { setScopeMenuOpen(value => !value) }}
+              aria-expanded={toolbarMenuOpen}
+              onClick={() => { setToolbarMenuOpen(value => !value) }}
             >
-              <IconSkillOutline16 className={css.scopeIcon} aria-hidden="true" />
-              <span className={css.scopeText}>{scopeLabel}</span>
+              {t('import')}
             </button>
           )}
         />
-        <SearchField
-          className={css.search as string}
-          value={query}
-          onChange={setQuery}
-          label={t('search')}
-          clearLabel={t('clearSearch')}
-          placeholder={t('searchPlaceholder')}
-        />
-        <span className={css.toolbarEnd}>
-          <Menu
-            open={toolbarMenuOpen}
-            onClose={() => { setToolbarMenuOpen(false) }}
-            items={toolbarItems}
-            onSelect={(id) => {
-              setToolbarMenuOpen(false)
-              setImportMode(id === 'git' ? 'git' : 'directory')
-              setDialog({ kind: 'import' })
-            }}
-            portal
-            align="end"
-            closeOnPointerLeave
-            anchor={(
-              <button
-                type="button"
-                className={css.toolbarButton}
-                aria-haspopup="menu"
-                aria-expanded={toolbarMenuOpen}
-                onClick={() => { setToolbarMenuOpen(value => !value) }}
-              >
-                {t('import')}
-              </button>
+        <Button
+          size="sm"
+          variant="ghost"
+          icon={<IconPlusOutline16 />}
+          disabled={createRoot === undefined}
+          onClick={() => { setDialog({ kind: 'create' }) }}
+        >
+          {t('create')}
+        </Button>
+      </SectionToolbar>
+      <SectionState
+        loading={view.status === 'loading'}
+        rows={3}
+        failure={view.status === 'error' ? view.message : undefined}
+        labels={{ loading: t('loading'), error: t('error') }}
+      >
+        {skills.length === 0
+          ? <p className={css.empty}>{t('empty')}</p>
+          : filtered.length === 0
+            ? <p className={css.empty}>{t('emptySearch')}</p>
+            : (
+              <ul className={css.list}>
+                {filtered.map((skill, index) => (
+                  <SkillRow
+                    key={`${skill.origin}:${skill.kind}:${skill.name}`}
+                    t={t}
+                    skill={skill}
+                    index={index}
+                    menuOpen={rowMenu === skill.name}
+                    confirming={confirming === skill.name}
+                    removing={listing.removing === skill.name}
+                    onMenuToggle={(open) => { setRowMenu(open ? skill.name : undefined) }}
+                    onToggleEnabled={(next) => {
+                      listing.begin(skill.name)
+                      void setEnabled(scope, skill.name, next).then((result) => {
+                        applied(result, skill.name, t(next ? 'toastEnabled' : 'toastDisabled'))
+                      })
+                    }}
+                    onEdit={() => { setDialog({ kind: 'edit', name: skill.name }) }}
+                    onUninstall={() => {
+                      listing.begin(skill.name)
+                      void uninstall(scope, skill.name).then((result) => {
+                        applied(result, skill.name, t('toastRemoved'))
+                      })
+                    }}
+                    onConfirm={() => { setConfirming(skill.name) }}
+                  />
+                ))}
+              </ul>
             )}
-          />
-          <Button
-            size="sm"
-            variant="ghost"
-            icon={<IconPlusOutline16 />}
-            disabled={createRoot === undefined}
-            onClick={() => { setDialog({ kind: 'create' }) }}
-          >
-            {t('create')}
-          </Button>
-        </span>
-      </div>
-      {firstLoad
-        ? (
-          <div className={css.skeleton} aria-busy="true" aria-label={t('loading')}>
-            <div className={css.skeletonRow} />
-            <div className={css.skeletonRow} />
-            <div className={css.skeletonRow} />
-          </div>
-        )
-        : view.status === 'error'
-          ? <p className={css.failure} role="alert">{`${t('error')}: ${view.message}`}</p>
-          : skills.length === 0
-            ? <p className={css.empty}>{t('empty')}</p>
-            : filtered.length === 0
-              ? <p className={css.empty}>{t('emptySearch')}</p>
-              : (
-                <ul className={css.list}>
-                  {filtered.map((skill, index) => (
-                    <SkillRow
-                      key={`${skill.origin}:${skill.kind}:${skill.name}`}
-                      t={t}
-                      skill={skill}
-                      index={index}
-                      menuOpen={rowMenu === skill.name}
-                      confirming={confirming === skill.name}
-                      removing={removing === skill.name}
-                      onMenuToggle={(open) => { setRowMenu(open ? skill.name : undefined) }}
-                      onToggleEnabled={(next) => {
-                        setRemoving(skill.name)
-                        void setEnabled(scope, skill.name, next).then((result) => {
-                          applied(result, skill.name, next ? 'toastEnabled' : 'toastDisabled')
-                        })
-                      }}
-                      onEdit={() => { setDialog({ kind: 'edit', name: skill.name }) }}
-                      onUninstall={() => {
-                        setRemoving(skill.name)
-                        void uninstall(scope, skill.name).then((result) => {
-                          applied(result, skill.name, 'toastRemoved')
-                        })
-                      }}
-                      onConfirm={() => { setConfirming(skill.name) }}
-                    />
-                  ))}
-                </ul>
-              )}
+      </SectionState>
       {dialog?.kind === 'create' || dialog?.kind === 'edit'
         ? (
           <SkillEditorDialog
@@ -309,12 +217,10 @@ export function SkillManagerSection({
               const creating = dialog.kind === 'create'
               return (creating ? create(scope, draft) : update(scope, dialog.name, draft))
                 .then((result) => {
-                  if (!result.ok) return result.error.message
+                  const failure = listing.adopt(result)
+                  if (failure !== null) return failure
                   setDialog(null)
-                  sequence.current += 1
-                  setError(undefined)
-                  setView({ status: 'ready', value: result.value })
-                  announce(t(creating ? 'toastCreated' : 'toastSaved').replace('{name}', draft.name))
+                  listing.announce(t(creating ? 'toastCreated' : 'toastSaved').replace('{name}', draft.name))
                   return undefined
                 })
             }}
@@ -333,19 +239,19 @@ export function SkillManagerSection({
                 ? installFromGit(scope, value, ref)
                 : installFromDirectory(scope, value)
               return installing.then((result) => {
-                if (!result.ok) return result.error.message
+                const failure = listing.adopt(result)
+                if (failure !== null) return failure
                 setDialog(null)
-                sequence.current += 1
-                setError(undefined)
-                setView({ status: 'ready', value: result.value })
-                announce(t('toastInstalled').replace('{name}', value.split(/[\\/]/).pop() ?? value))
+                listing.announce(t('toastInstalled').replace('{name}', value.split(/[\\/]/).pop() ?? value))
                 return undefined
               })
             }}
           />
         )
         : null}
-      {toast !== null ? <Toast key={toast.seq} text={toast.text} onDone={() => { setToast(null) }} /> : null}
+      {listing.toast !== null
+        ? <Toast key={listing.toast.seq} text={listing.toast.text} onDone={listing.dismissToast} />
+        : null}
     </section>
   )
 }

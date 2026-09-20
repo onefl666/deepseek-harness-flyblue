@@ -40,6 +40,8 @@ An approved review also appends `plan/approved` `{ execution, title }`. A clear 
 - `Approve and keep context` — conclude the current turn, then steer the full plan into this session as the next turn.
 - `Refine plan` — stay in plan mode; feedback returns as a failed call.
 
+The review also declares `settings` on its intent — `provider`, `model`, `reasoningEffort`, and `agentPreset` — the values a capable UI collects beside the decision and returns in `AskUserQuestionAnswerItem.settings`. Every one is optional, and an answer carrying none leaves the execution on what it would have inherited. A reviewed route becomes the fresh session's agent options on the clear path; keep and compact need no Host-side handling, because the client commits the same selection to this session through `session.selectModel` before it answers. An agent preset applies to the clear path alone, because only a session created from scratch can adopt a composition; an unknown or broken one falls back to the planning session's own composition with a warning rather than refusing an approval.
+
 Every approval concludes the current turn before the handoff runs, so the plugin's steer is the only input that starts execution and one approval runs the plan exactly once.
 
 A TUI or other host without `ctx.agents.create` treats clear as compact-then-steer. A clear whose child was created but whose handoff then failed detaches and disposes that child rather than executing the plan in the source session.

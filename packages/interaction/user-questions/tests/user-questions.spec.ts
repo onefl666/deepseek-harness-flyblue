@@ -352,4 +352,45 @@ describe('UserQuestionService', () => {
     ])
     expect(p.seen[0]?.questions[1]?.intent).toEqual(intent)
   })
+
+  it('rejects an intent whose setting names are blank or repeated', async () => {
+    const ctx = new Context()
+    await ctx.plugin(UserQuestionService)
+    const p = { ask: vi.fn(async () => ({ answers: [] })) }
+    registerAnswerer(ctx, p)
+
+    // A name is what an answer is keyed by, so neither shape can be looked up.
+    for (const settings of [['model', ''], ['model', 'model'], ['   ']]) {
+      await expect(ctx.userQuestions.ask({
+        questions: [{
+          id: 'plan-review', question: 'Approve?', detail: '# Plan',
+          options: [{ label: 'Approve' }],
+          intent: { kind: 'plan-review', approve: ['Approve'], settings },
+        }],
+      })).rejects.toMatchObject({ name: 'UserQuestionError', code: 'BAD_INTENT' })
+    }
+    expect(p.ask).not.toHaveBeenCalled()
+  })
+
+  it('carries the settings an answer collected beside the decision', async () => {
+    const ctx = new Context()
+    await ctx.plugin(UserQuestionService)
+    registerAnswerer(ctx, {
+      ask: () => Promise.resolve({
+        answers: [{ id: 'plan-review', selected: ['Approve'], settings: { model: 'acme-large' } }],
+      }),
+    })
+
+    const result = await ctx.userQuestions.ask({
+      questions: [{
+        id: 'plan-review', question: 'Approve?', detail: '# Plan',
+        options: [{ label: 'Approve' }],
+        intent: { kind: 'plan-review', approve: ['Approve'], settings: ['model'] },
+      }],
+    })
+
+    expect(result.answers).toEqual([
+      { id: 'plan-review', selected: ['Approve'], settings: { model: 'acme-large' } },
+    ])
+  })
 })

@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
-import type { GlobalStandardProps } from '@deepseek-ai/dsh-client-ui-slots'
+import type { GlobalStandardProps, SessionProviderComponent } from '@deepseek-ai/dsh-client-ui-slots'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { ModelSelection } from '@deepseek-ai/dsh-api-remotes/client'
 import {
-  PendingQuestion, planReviewOf, type QuestionComposerProps, type QuestionWait,
+  PendingQuestion, planReviewOf,
+  type PlanReviewModelOwnerProps, type PlanReviewPresetOwnerProps, type QuestionComposerProps, type QuestionWait,
 } from '../src/client/contract/slots.ts'
 import { createQuestionDraftStore } from '../src/client/draft-store.ts'
 import { QuestionComposer } from '../src/client/QuestionComposer.tsx'
@@ -15,6 +17,9 @@ import { zh as commonZh } from '@deepseek-ai/dsh-client-locale/src/locales/zh.ts
 // Every session-scope fixture carries the resource hook the resources plugin merges into GlobalStandardProps.
 const useResource = (() => ({ status: 'none' as const, value: undefined, failure: undefined, reload: () => {} })) as GlobalStandardProps['useResource']
 const usePanelInfo: GlobalStandardProps['usePanelInfo'] = selector => selector({ activePanelId: null })
+// Declaring a session-scope child puts this seat on the entry's props; the
+// card renders no such child, so passing the body through is the whole job.
+const SessionProvider: SessionProviderComponent = ({ children }) => children
 
 afterEach(cleanup)
 
@@ -133,13 +138,21 @@ const kit: Omit<QuestionComposerProps, 'matched'> = {
   },
   useStore: selector => selector(questionDraftStore.getSnapshot()),
   actions: questionDraftStore.actions,
+  // No execution-setting seats composed: the review must still render.
+  renderSlot: (() => null) as QuestionComposerProps['renderSlot'],
+  SessionProvider,
+  commitModel: vi.fn(async () => true),
   t: seatOver(zh, commonZh),
 }
 
 const PLAN = '# Ship the picker\n\n- read the store\n- render the rows\n'
 
-/** The plan-handoff request shape: one question, the plan as detail, every execution path named. */
-const questions = (): QuestionWait['questions'] => [{
+/**
+ * The plan-handoff request shape: one question, the plan as detail, every
+ * execution path named, and — when the asker declares them — the settings it
+ * will read beside the decision.
+ */
+const questions = (settings?: readonly string[]): QuestionWait['questions'] => [{
   id: 'plan-review',
   header: 'Plan review',
   question: 'Approve this plan and leave plan mode?',
@@ -153,8 +166,39 @@ const questions = (): QuestionWait['questions'] => [{
   intent: {
     kind: 'plan-review',
     approve: ['Approve and execute', 'Approve and compact context', 'Approve and keep context'],
+    ...settings === undefined ? {} : { settings },
   },
 }]
+
+const MODEL: ModelSelection = { provider: 'acme', model: 'acme-large', reasoningEffort: 'high' }
+
+/**
+ * The two execution-setting seats, stubbed. The card owns which values it
+ * passes down and which it answers with; the controls themselves belong to the
+ * packages that own those contracts, so the probes record what they received
+ * and stage a choice on demand.
+ */
+function seats() {
+  const model: { seen?: PlanReviewModelOwnerProps } = {}
+  const preset: { seen?: PlanReviewPresetOwnerProps } = {}
+  const renderSlot = ((key: string, owner: PlanReviewModelOwnerProps | PlanReviewPresetOwnerProps) => {
+    if (key === 'question.planReview.model') {
+      model.seen = owner as PlanReviewModelOwnerProps
+      return (
+        <button type="button" onClick={() => { (owner as PlanReviewModelOwnerProps).onChange(MODEL) }}>
+          stage model
+        </button>
+      )
+    }
+    preset.seen = owner as PlanReviewPresetOwnerProps
+    return (
+      <button type="button" onClick={() => { (owner as PlanReviewPresetOwnerProps).onChange('ptc') }}>
+        stage preset
+      </button>
+    )
+  }) as QuestionComposerProps['renderSlot']
+  return { model, preset, renderSlot }
+}
 
 /** Pending waterfall fixture with observable Client response methods. */
 function wait(items: QuestionWait['questions'] = questions()) {
@@ -179,6 +223,7 @@ describe('planReviewOf', () => {
         { label: 'Approve and keep context', description: 'Leave plan mode and execute here.' },
       ],
       refine: { label: 'Refine plan', description: 'Stay in plan mode; feedback goes back to the model.' },
+      settings: [],
     })
   })
 
@@ -339,5 +384,142 @@ describe('PlanReviewPanel', () => {
     expect(screen.getByRole('button', { name: 'Execute' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Refine plan' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Chat about it' })).toBeTruthy()
+  })
+
+  it('answers straight away when the asker declared no settings', () => {
+    const { carrier, answer } = wait()
+    const seat = seats()
+    render(<QuestionComposer matched={carrier} {...kit} renderSlot={seat.renderSlot} />)
+
+    fireEvent.click(screen.getByRole('button', { name: zh['plan.approve.execute'] }))
+    expect(answer).toHaveBeenCalledWith(decision('Approve and execute'))
+    expect(screen.queryByText(zh['plan.execution.start'])).toBeNull()
+  })
+})
+
+describe('PlanReviewPanel execution settings', () => {
+  it('passes the staged share down to both declared seats', () => {
+    const { carrier } = wait(questions(['agentPreset']))
+    const seat = seats()
+    render(<QuestionComposer matched={carrier} {...kit} renderSlot={seat.renderSlot} />)
+
+    expect(seat.model.seen).toMatchObject({ value: null, locked: false })
+    // The preset seat exists only where a session can still adopt one.
+    expect(seat.preset.seen).toBeUndefined()
+
+    fireEvent.click(screen.getByRole('button', { name: zh['plan.approve.execute'] }))
+    expect(seat.preset.seen).toMatchObject({ value: null, locked: false })
+  })
+
+  it('commits a picked model to the session, then answers on that choice', async () => {
+    const { carrier, answer } = wait()
+    const seat = seats()
+    const commitModel = vi.fn(async () => true)
+    render(
+      <QuestionComposer
+        matched={carrier} {...kit} commitModel={commitModel} renderSlot={seat.renderSlot}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'stage model' }))
+    fireEvent.click(screen.getByRole('button', { name: zh['plan.approve.keep'] }))
+
+    expect(commitModel).toHaveBeenCalledWith(MODEL)
+    await vi.waitFor(() => {
+      expect(answer).toHaveBeenCalledWith(decision('Approve and keep context'))
+    })
+  })
+
+  it('leaves the session alone when the review kept its own model', () => {
+    const { carrier, answer } = wait()
+    const seat = seats()
+    const commitModel = vi.fn(async () => true)
+    render(
+      <QuestionComposer
+        matched={carrier} {...kit} commitModel={commitModel} renderSlot={seat.renderSlot}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: zh['plan.approve.keep'] }))
+
+    expect(commitModel).not.toHaveBeenCalled()
+    expect(answer).toHaveBeenCalledWith(decision('Approve and keep context'))
+  })
+
+  it('does not submit the plan when the model could not be committed', async () => {
+    const { carrier, answer } = wait()
+    const seat = seats()
+    const commitModel = vi.fn(async () => false)
+    render(
+      <QuestionComposer
+        matched={carrier} {...kit} commitModel={commitModel} renderSlot={seat.renderSlot}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'stage model' }))
+    fireEvent.click(screen.getByRole('button', { name: zh['plan.approve.keep'] }))
+
+    expect(await screen.findByText(zh['plan.execution.rejected'])).toBeTruthy()
+    expect(answer).not.toHaveBeenCalled()
+    // Re-armed: the review is still the user's to settle.
+    expect(screen.getByRole('button', { name: zh['plan.approve.keep'] }).hasAttribute('disabled')).toBe(false)
+  })
+
+  it('answers the fresh-session step with the staged preset', async () => {
+    const { carrier, answer } = wait(questions(['agentPreset']))
+    const seat = seats()
+    render(<QuestionComposer matched={carrier} {...kit} renderSlot={seat.renderSlot} />)
+
+    fireEvent.click(screen.getByRole('button', { name: zh['plan.approve.execute'] }))
+    // The fresh session is the only one that can take a preset, so its own
+    // approval waits for the choice rather than sending it blind.
+    expect(answer).not.toHaveBeenCalled()
+    expect(screen.getByText(zh['plan.execution.freshNote'])).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'stage preset' }))
+    fireEvent.click(screen.getByRole('button', { name: zh['plan.execution.start'] }))
+
+    await vi.waitFor(() => {
+      expect(answer).toHaveBeenCalledWith({
+        answers: [{ id: 'plan-review', selected: ['Approve and execute'], settings: { agentPreset: 'ptc' } }],
+      })
+    })
+  })
+
+  it('sends no preset when the reviewer left the fresh session’s own in place', async () => {
+    const { carrier, answer } = wait(questions(['agentPreset']))
+    const seat = seats()
+    render(<QuestionComposer matched={carrier} {...kit} renderSlot={seat.renderSlot} />)
+
+    fireEvent.click(screen.getByRole('button', { name: zh['plan.approve.execute'] }))
+    fireEvent.click(screen.getByRole('button', { name: zh['plan.execution.start'] }))
+
+    await vi.waitFor(() => {
+      expect(answer).toHaveBeenCalledWith(decision('Approve and execute'))
+    })
+  })
+
+  it('steps back out of the fresh-session step without answering', () => {
+    const { carrier, answer, cancel } = wait(questions(['agentPreset']))
+    const seat = seats()
+    render(<QuestionComposer matched={carrier} {...kit} renderSlot={seat.renderSlot} />)
+
+    fireEvent.click(screen.getByRole('button', { name: zh['plan.approve.execute'] }))
+    fireEvent.click(screen.getByRole('button', { name: zh['plan.execution.back'] }))
+
+    expect(answer).not.toHaveBeenCalled()
+    expect(cancel).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: zh['plan.approve.execute'] })).toBeTruthy()
+    expect(screen.queryByText(zh['plan.execution.freshNote'])).toBeNull()
+  })
+
+  it('answers a continuing path immediately even when the preset is offered', () => {
+    const { carrier, answer } = wait(questions(['agentPreset']))
+    const seat = seats()
+    render(<QuestionComposer matched={carrier} {...kit} renderSlot={seat.renderSlot} />)
+
+    fireEvent.click(screen.getByRole('button', { name: zh['plan.approve.compact'] }))
+
+    expect(answer).toHaveBeenCalledWith(decision('Approve and compact context'))
   })
 })

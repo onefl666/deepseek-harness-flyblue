@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-19-plan-handoff.md
-2026-08-19-plan-handoff.md: fb0897d5a2efa0394108cffbb41d5dd9cd9835d7
-2026-08-19-plan-handoff.zh.md: 848b47171d696b6ea0e12fa4abd79379fc2db92f
+2026-08-19-plan-handoff.md: bd337efe00ea025c1621a44ff2359b19feec5b22
+2026-08-19-plan-handoff.zh.md: a81166876e1e24cdf9daa8534e6e790d67a3e50b

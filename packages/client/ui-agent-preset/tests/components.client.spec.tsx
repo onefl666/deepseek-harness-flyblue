@@ -1,15 +1,19 @@
 // @vitest-environment jsdom
 /**
- * The two conversation-adjacent surfaces: the new-session chip naming the
- * next session's preset, and the session header's read-only label. The split
+ * The three conversation-adjacent surfaces: the new-session chip naming the
+ * next session's preset, the session header's read-only label, and the
+ * plan-review card's choice for the session an approved plan starts. The split
  * is the host's rule — a session's history is produced under its preset's
- * tools, so the choice is only ever offered before one starts.
+ * tools, so a choice is only ever offered before one starts, and the card's is
+ * staged until the approval creates that session.
  */
 
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { bindSnapshotSelector } from '@deepseek-ai/dsh-client-test-runtime'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
+import { AgentPresetChoice } from '../src/client/AgentPresetChoice.tsx'
+import type { AgentPresetChoiceProps } from '../src/client/AgentPresetChoice.tsx'
 import { AgentPresetLabel } from '../src/client/AgentPresetLabel.tsx'
 import type { AgentPresetLabelProps } from '../src/client/AgentPresetLabel.tsx'
 import { AgentPresetSeat } from '../src/client/AgentPresetSeat.tsx'
@@ -79,6 +83,96 @@ function renderLabel(
   } as unknown as AgentPresetLabelProps)} />)
   return { load, view }
 }
+
+/** The plan-review card's preset choice, over the same roster the chip reads. */
+function renderChoice(options: {
+  value?: string | null
+  recorded?: string | null
+  roster?: Partial<AgentPresetSettingsState>
+  locked?: boolean
+} = {}) {
+  const roster = createSnapshotStore<AgentPresetSettingsState>({
+    ...ROSTER_READY, options: SEAT_READY.options, ...options.roster,
+  })
+  const sessions = createSnapshotStore({
+    byId: {
+      s1: {
+        id: 's1',
+        projectionValues: {
+          agentPreset: options.recorded === undefined ? 'standard' : options.recorded,
+        },
+      },
+    },
+  })
+  const load = vi.fn(() => Promise.resolve())
+  const onChange = vi.fn()
+  render(<AgentPresetChoice {...({
+    value: options.value === undefined ? null : options.value,
+    onChange,
+    locked: options.locked === true,
+    sessionId: 's1',
+    useSessions: bindSnapshotSelector(sessions),
+    useAgentPresets: bindSnapshotSelector(roster),
+    load,
+    t: translate,
+  } as unknown as AgentPresetChoiceProps)} />)
+  return { load, onChange }
+}
+
+describe('the review card’s preset choice', () => {
+  it('reads the roster once and opens on the composition the session runs', async () => {
+    const { load } = renderChoice()
+
+    await waitFor(() => { expect(load).toHaveBeenCalledTimes(1) })
+    expect(screen.getByText(en.choiceLabel)).toBeTruthy()
+    expect(screen.getByRole('button').textContent).toContain(en.presetStandardName)
+  })
+
+  it('stages a pick instead of applying it', () => {
+    const { onChange } = renderChoice()
+
+    fireEvent.click(screen.getByRole('button'))
+    fireEvent.click(screen.getByText('mine'))
+
+    expect(onChange).toHaveBeenCalledWith('mine')
+    // Nothing was applied: the chip still shows what the session inherits, so
+    // the card owns the staged value entirely.
+    expect(screen.getByRole('button').textContent).toContain(en.presetStandardName)
+  })
+
+  it('shows the value the card holds once it has one', () => {
+    renderChoice({ value: 'mine' })
+
+    expect(screen.getByRole('button').textContent).toContain('mine')
+  })
+
+  it('offers each preset with what it is for', () => {
+    renderChoice()
+
+    fireEvent.click(screen.getByRole('button'))
+
+    expect(screen.getByText(en.presetStandardDescription)).toBeTruthy()
+    expect(screen.getByText(en.noDescription)).toBeTruthy()
+  })
+
+  it('freezes while a submission is in flight', () => {
+    renderChoice({ locked: true })
+
+    expect(screen.getByRole('button').hasAttribute('disabled')).toBe(true)
+  })
+
+  it('renders nothing where a pick could not be used', () => {
+    const empty = renderChoice({ roster: { options: [] } })
+    expect(screen.queryByRole('button')).toBeNull()
+    expect(empty.onChange).not.toHaveBeenCalled()
+
+    cleanup()
+    // A planning session that joined no preset has nothing to inherit, so no
+    // value this control could honestly show.
+    renderChoice({ recorded: null })
+    expect(screen.queryByRole('button')).toBeNull()
+  })
+})
 
 describe('the new-session chip', () => {
   it('renders nothing while the picker is disabled', () => {

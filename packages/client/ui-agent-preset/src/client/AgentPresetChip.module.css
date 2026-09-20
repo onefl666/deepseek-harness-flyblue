@@ -1,5 +1,7 @@
-/* Agent-preset chip on the new-session screen, beside the workspace picker.
-   Geometry mirrors HeroShell's .workspace so the two read as one row. */
+/* The agent-preset chip and its menu rows: one owner for the visual language
+   shared by the new-session seat and the plan-review card's execution choice.
+   On the new-session screen the geometry mirrors HeroShell's .workspace so the
+   two read as one row. */
 
 /* Overflow-driven degradation (mirrors HeroShell's .workspace), no
    breakpoint: the label shrinks with an ellipsis down to nothing, so the
@@ -13,6 +15,15 @@
 .menuAnchor {
   min-width: 54px;
   max-width: 100%;
+}
+
+/* The plan-review card's row label. The card's settings row supplies the flex
+   line; this only names the value the chip shows. */
+.rowLabel {
+  flex: none;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  line-height: 20px;
 }
 
 .seat {

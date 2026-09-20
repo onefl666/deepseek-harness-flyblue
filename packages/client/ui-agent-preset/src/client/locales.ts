@@ -19,6 +19,7 @@ export type AgentPresetSettingsKey =
   | 'deleteTitle' | 'deleteDescription' | 'deleteConfirm' | 'deleting'
   | 'showPicker' | 'showPickerBeta' | 'showPickerDescription'
   | 'enablePickerToSetDefault' | 'enablePickerToCreate'
+  | 'choiceLabel'
 
 /** English copy. */
 export const en: Record<AgentPresetSettingsKey, string> = {
@@ -89,6 +90,7 @@ export const en: Record<AgentPresetSettingsKey, string> = {
     'When enabled, new tasks can choose Standard, PTC, Creator, Minimal, and custom modes. When disabled, all new tasks use the default mode (Standard by default; configurable). Only affects new tasks.',
   enablePickerToSetDefault: 'Turn on Agent mode selection to choose a default',
   enablePickerToCreate: 'Turn on Agent mode selection to start Creator mode',
+  choiceLabel: 'Agent preset for the execution session',
 }
 
 /** Simplified Chinese copy. */
@@ -150,6 +152,7 @@ export const zh: Record<AgentPresetSettingsKey, string> = {
   showPickerDescription: '开启后，新任务可选择标准、PTC、创造、极简及自定义模式；关闭后统一使用默认模式（默认为标准模式，可自定义）。仅影响新任务。',
   enablePickerToSetDefault: '请先开启 Agent 模式选择，再设置默认模式',
   enablePickerToCreate: '请先开启 Agent 模式选择，再启动创造模式',
+  choiceLabel: '执行会话的 Agent 预设',
 }
 
 // The resolution itself is the shared fold in `dsh-agent-presets/display`,

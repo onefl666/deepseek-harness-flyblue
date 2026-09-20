@@ -36,6 +36,10 @@
     - listitem:
       - strong: No tests or config changes
       - text: unless they already exist and directly validate the flag's presence.
+  - text: Execution model and reasoning
+  - button "Select model, current DeepSeek-V4-Flash":
+    - text: DeepSeek-V4-Flash
+    - img
   - status
   - button "Chat about it":
     - img
