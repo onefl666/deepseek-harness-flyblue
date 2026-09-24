@@ -44,6 +44,8 @@ kind: "package-reference"
 
 一行会报告 `connected`、`reconnecting`、`failed`、`stopped` 或 `disabled`，取值来自每个 `dsh-mcp-client` 实例发出的 `mcp/status` 事件，并在两次调用之间缓存。实例无法启动的定义会被报告为带消息的失败行，而不是让清单失败，因此服务器宕机时页面仍能作答。
 
+本包不发布运行时 invariant 配套模块，因为每次列出前都会调和已存定义与管理器拥有的子挂载，再返回当前状态。
+
 <a id="understand-the-implementation"></a>
 ## 理解实现
 

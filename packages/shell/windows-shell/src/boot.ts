@@ -45,14 +45,21 @@ function storedShell(document: unknown): unknown {
  * file, exactly as the provider would on the same text.
  * @param env - environment object seeded in place (defaults to `process.env`).
  * @param filename - settings document read (defaults to `settings.yaml` under the harness home).
+ * @param profileShell - effective shell from the active profile's `windows-shell` Config.
  * @returns the shell stack the composition will mount.
  */
 export function seedWindowsShellEnvironment(
   env: NodeJS.ProcessEnv = process.env,
   filename: string = defaultSettingsPath(),
+  profileShell?: unknown,
 ): WindowsShell {
   const explicit = env[WINDOWS_SHELL_ENV_KEY]
   if (explicit !== undefined) return explicit === 'pwsh' ? 'pwsh' : 'gitbash'
+
+  if (profileShell !== undefined) {
+    if (profileShell === 'pwsh') env[WINDOWS_SHELL_ENV_KEY] = 'pwsh'
+    return profileShell === 'pwsh' ? 'pwsh' : 'gitbash'
+  }
 
   let text: string
   try {

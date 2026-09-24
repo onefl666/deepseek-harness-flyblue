@@ -9,7 +9,7 @@
 
 import { useState } from 'react'
 import {
-  Button, IconPlusOutline16, IconTrashOutline16, Input, Menu, Modal, SegmentedRange,
+  Button, IconPlusOutlineRegular, IconTrashOutlineRegular, Input, Menu, Modal, SegmentedRange,
   type MenuItem,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
@@ -437,14 +437,14 @@ function PairEditor({
               aria-label={t('removePair')}
               onClick={() => { onChange(pairs.filter((_candidate, at) => at !== index)) }}
             >
-              <IconTrashOutline16 aria-hidden="true" />
+              <IconTrashOutlineRegular size={16} aria-hidden="true" />
             </button>
           </div>
         ))}
         <Button
           size="sm"
           variant="ghost"
-          icon={<IconPlusOutline16 />}
+          icon={<IconPlusOutlineRegular size={16} />}
           onClick={() => { onChange([...pairs, { key: '', value: '' }]) }}
         >
           {t('addPair')}

@@ -13,15 +13,16 @@
 import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 // Type-only: the plan domain declares `plan/handoff` on SessionEventMap.
-import type {} from '@deepseek-ai/dsh-plan-handoff/client'
+import type {} from '@deepseek-ai/dsh-plan-mode/client'
 
 /**
  * Watch the selected session for a clear plan handoff and select the execution
  * session it names.
  * @param sessions - the Client sessions service.
+ * @param openSession - main-view navigation owned by ui-workspace.
  * @returns teardown removing both subscriptions.
  */
-export function followPlanHandoff(sessions: ISessions): () => void {
+export function followPlanHandoff(sessions: ISessions, openSession: (sessionId: SessionId) => void): () => void {
   /** Session whose live event window is subscribed. */
   let watched: SessionId | undefined
   let unsubscribeEvents: (() => void) | undefined
@@ -32,11 +33,12 @@ export function followPlanHandoff(sessions: ISessions): () => void {
     if (execution === undefined || !sessions.list.getSnapshot().ids.includes(execution)) return
     const child = execution
     execution = undefined
-    sessions.open(child)
+    openSession(child)
   }
 
   const watchCurrent = (): void => {
-    const current = sessions.list.getSnapshot().current
+    const current = Object.values(sessions.list.getSnapshot().byId)
+      .find(summary => (summary.retainedBy.mainView ?? 0) > 0)?.id
     if (current === watched && unsubscribeEvents !== undefined) return
     unsubscribeEvents?.()
     unsubscribeEvents = undefined

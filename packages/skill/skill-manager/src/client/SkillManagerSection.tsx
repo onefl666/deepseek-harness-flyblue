@@ -8,7 +8,7 @@
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
-  Button, IconEllipsisOutline16, IconPlusOutline16, IconSkillOutline16, Menu,
+  Button, IconEllipsisOutlineRegular, IconPlusOutlineRegular, IconSkillOutlineRegular, Menu,
   SectionChrome, SectionState, SectionToolbar, StateDot, Switch, Tag, Toast,
   sectionToolbarLabels, useRemoteList, useScopeChoice,
   type MenuItem, type StateDotState, type TagTone,
@@ -123,7 +123,7 @@ export function SkillManagerSection({
       {scopeBlocked ? <p className={css.notice} role="status">{t('noWorkspace')}</p> : null}
       <SectionToolbar
         scope={choice}
-        scopeIcon={<IconSkillOutline16 />}
+        scopeIcon={<IconSkillOutlineRegular size={16} />}
         query={query}
         onQueryChange={setQuery}
         labels={sectionToolbarLabels(t)}
@@ -155,7 +155,7 @@ export function SkillManagerSection({
         <Button
           size="sm"
           variant="ghost"
-          icon={<IconPlusOutline16 />}
+          icon={<IconPlusOutlineRegular size={16} />}
           disabled={createRoot === undefined}
           onClick={() => { setDialog({ kind: 'create' }) }}
         >
@@ -324,7 +324,7 @@ function SkillRow({
               aria-expanded={menuOpen}
               onClick={() => { onMenuToggle(!menuOpen) }}
             >
-              <IconEllipsisOutline16 aria-hidden="true" />
+              <IconEllipsisOutlineRegular size={16} aria-hidden="true" />
             </button>
           )}
         />

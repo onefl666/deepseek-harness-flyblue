@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { ModelSelection } from '@deepseek-ai/dsh-api-remotes/client'
+import type { ToolCallId } from '@deepseek-ai/dsh-llm/brand'
 import {
   PendingQuestion, planReviewOf,
   type PlanReviewModelOwnerProps, type PlanReviewPresetOwnerProps, type QuestionComposerProps, type QuestionWait,
@@ -34,11 +35,10 @@ type ConversationState = Parameters<Parameters<QuestionComposerProps['useConvers
 type ChatState = Parameters<Parameters<QuestionComposerProps['useChat']>[0]>[0]
 type TrajectoryState = Parameters<Parameters<QuestionComposerProps['useTrajectory']>[0]>[0]
 type InputState = Parameters<Parameters<QuestionComposerProps['useInput']>[0]>[0]
-type AttentionState = Parameters<Parameters<QuestionComposerProps['useSessionPendingInteraction']>[0]>[0]
+type AttentionState = Parameters<Parameters<QuestionComposerProps['useSessionStatus']>[0]>[0]
 
 const sessionState: SessionState = {
   sessionId: SID,
-  queue: [],
   pendingSubmissions: [],
   running: false,
   subagent: null,
@@ -55,23 +55,21 @@ const sessionState: SessionState = {
 }
 const sessionList = {
   ids: [SID],
-  byId: { [SID]: { id: SID, displayTitle: 'Session', running: false, blank: false, updatedAt: 0 } },
-  current: SID,
+  byId: { [SID]: { id: SID, displayTitle: 'Session', running: false, retainedBy: {}, blank: false, updatedAt: 0 } },
   phase: 'ready' as const,
-  subagentsByParent: {},
-  jobsBySession: {},
-  currentAddress: undefined,
+  projectionsBySession: {},
 }
 const attentionState: AttentionState = new Map()
 const workspaceState = {
   items: [],
   archivedSessionIds: [],
+  pinnedSessionIds: [],
   state: 'idle' as const,
   phase: 'ready' as const,
   error: null,
 }
 const conversationState: ConversationState = {
-  views: { get: () => undefined },
+  views: { get: () => undefined, grouped: () => undefined },
   activeTargets: new Set(),
 }
 const emptyKeys: readonly string[] = []
@@ -81,6 +79,7 @@ const chatState: ChatState = {
   nodes: {
     get: () => undefined,
     source: () => emptyNodeSource,
+    turnDataSource: () => { throw new Error('unused') },
     processSource: () => emptyNodeSource,
     values: () => [],
   },
@@ -122,7 +121,8 @@ const kit: Omit<QuestionComposerProps, 'matched'> = {
   useSession: selector => selector(sessionState),
   useSessions: selector => selector(sessionList),
   usePanelInfo, useResource,
-  useSessionPendingInteraction: selector => selector(attentionState),
+  useSessionStatus: selector => selector(attentionState),
+  useSessionRetainInfo: () => undefined,
   useWorkspaces: selector => selector(workspaceState),
   useConversation: selector => selector(conversationState),
   useChat: selector => selector(chatState),
@@ -130,6 +130,8 @@ const kit: Omit<QuestionComposerProps, 'matched'> = {
   useProjection: (() => undefined),
   useInput: selector => selector(inputState),
   inputActions: {
+    captureInsertion: () => ({ start: 0, end: 0, draftRev: 0 }),
+    insertText: () => false,
     setDraft: () => { throw new Error('unused') },
     addAttachments: () => { throw new Error('unused') },
     removeAttachment: () => { throw new Error('unused') },
@@ -182,6 +184,7 @@ function seats() {
   const model: { seen?: PlanReviewModelOwnerProps } = {}
   const preset: { seen?: PlanReviewPresetOwnerProps } = {}
   const renderSlot = ((key: string, owner: PlanReviewModelOwnerProps | PlanReviewPresetOwnerProps) => {
+    if (key === 'conversation.plan-review.actions') return null
     if (key === 'question.planReview.model') {
       model.seen = owner as PlanReviewModelOwnerProps
       return (
@@ -227,6 +230,18 @@ describe('planReviewOf', () => {
     })
   })
 
+  it('retains the logged invocation so the review can reopen its exact plan', () => {
+    const question = questions()[0]!
+    const callId = 'plan-call' as ToolCallId
+    const review = planReviewOf([{
+      ...question,
+      options: [question.options![0]!],
+      intent: { kind: 'plan-review', approve: 'Approve and execute', callId },
+    }])
+    expect(review?.callId).toBe(callId)
+    expect(review?.approves).toEqual([question.options?.[0]])
+  })
+
   it('leaves refine absent when the asker offered approve paths alone', () => {
     const [question] = questions()
     const review = planReviewOf([{
@@ -268,15 +283,35 @@ describe('planReviewOf', () => {
 })
 
 describe('PlanReviewPanel', () => {
-  it('renders the plan under a review strip, with none of the quiz affordances', () => {
+  it('passes distinct pending request identities to the preview action for unlogged reviews', () => {
+    const rendered = vi.fn<(key: string, owner: unknown) => void>()
+    const renderSlot: QuestionComposerProps['renderSlot'] = (key, owner) => { rendered(key, owner); return null }
+    const first = wait()
+    const second = wait()
+    const view = render(<QuestionComposer matched={first.carrier} {...kit} renderSlot={renderSlot} />)
+    expect(rendered).toHaveBeenLastCalledWith('conversation.plan-review.actions', {
+      review: planReviewOf(first.carrier.questions), requestKey: first.carrier.key,
+    })
+    view.rerender(<QuestionComposer matched={second.carrier} {...kit} renderSlot={renderSlot} />)
+    expect(rendered).toHaveBeenLastCalledWith('conversation.plan-review.actions', {
+      review: planReviewOf(second.carrier.questions), requestKey: second.carrier.key,
+    })
+    expect(first.carrier.key).not.toBe(second.carrier.key)
+    expect(first.answer).not.toHaveBeenCalled()
+    expect(second.answer).not.toHaveBeenCalled()
+  })
+  it('shows the plan title and summary above every review action', () => {
     const { carrier } = wait()
     render(<QuestionComposer matched={carrier} {...kit} />)
 
     expect(document.querySelector('[data-plan-review-key]')?.getAttribute('data-plan-review-key')).toBe(carrier.key)
     expect(screen.getByText(zh['plan.header'])).toBeTruthy()
-    // The plan renders as markdown, so its heading is a heading.
+    expect(document.querySelector('[data-plan-review-key] [data-state="warning"]')).not.toBeNull()
     expect(screen.getByRole('heading', { name: 'Ship the picker' })).toBeTruthy()
-    expect(screen.getByText('render the rows')).toBeTruthy()
+    expect(screen.getByText('read the store')).toBeTruthy()
+    expect(screen.getAllByRole('button')).toHaveLength(5)
+    expect(screen.queryByText('render the rows')).toBeNull()
+    expect(document.querySelector('[data-plan-review-scroll]')).toBeNull()
     // The question text stays as the card's accessible name rather than a title
     // that reads like a test item.
     expect(screen.getByLabelText('Approve this plan and leave plan mode?')).toBeTruthy()
@@ -287,7 +322,24 @@ describe('PlanReviewPanel', () => {
     expect(screen.queryByRole('textbox')).toBeNull()
   })
 
-  it('answers with each asker-named approve label and keeps its description as the tooltip', () => {
+  it('extracts a plain summary and keeps a heading-only plan compact', () => {
+    const question = questions()[0]!
+    const detail = '# **Release** plan\n\nReview the [changes](https://example.com) before **shipping**.\n\n## Steps\n- Build'
+    const { carrier } = wait([{ ...question, detail }])
+    const view = render(<QuestionComposer matched={carrier} {...kit} />)
+    expect(screen.getByRole('heading', { name: 'Release plan' })).toBeTruthy()
+    expect(screen.getByText('Review the changes before shipping.')).toBeTruthy()
+    expect(screen.queryByRole('link')).toBeNull()
+    const onlyTitle = wait([{ ...question, detail: '# Plan without a summary' }])
+    view.rerender(<QuestionComposer matched={onlyTitle.carrier} {...kit} />)
+    expect(screen.getByRole('heading', { name: 'Plan without a summary' })).toBeTruthy()
+    expect(document.querySelector('[data-plan-review-key] p')).toBeNull()
+    const paragraph = wait([{ ...question, detail: 'A single paragraph plan.' }])
+    view.rerender(<QuestionComposer matched={paragraph.carrier} {...kit} />)
+    expect(screen.getAllByText('A single paragraph plan.')).toHaveLength(1)
+  })
+
+  it('answers with an asker-named approve label and keeps its description as the tooltip', () => {
     const { carrier, answer } = wait()
     render(<QuestionComposer matched={carrier} {...kit} />)
 
@@ -295,9 +347,11 @@ describe('PlanReviewPanel', () => {
     expect(approve.getAttribute('title')).toBe('Leave plan mode and execute in a fresh session.')
     fireEvent.click(approve)
     expect(answer).toHaveBeenCalledWith(decision('Approve and execute'))
+    expect(document.querySelector('[data-plan-review-key] [data-state="ongoing"]')).not.toBeNull()
+    expect(document.querySelector('[data-plan-review-key] section')?.getAttribute('aria-busy')).toBe('true')
     // One-shot: every action locks until the host's resolved frame lands.
     expect(approve.hasAttribute('disabled')).toBe(true)
-    expect(screen.getByRole('button', { name: zh['plan.refine'] }).hasAttribute('disabled')).toBe(true)
+    expect(screen.getByRole('button', { name: zh['plan.discuss'] }).hasAttribute('disabled')).toBe(true)
     fireEvent.click(approve)
     expect(answer).toHaveBeenCalledTimes(1)
   })
@@ -320,11 +374,12 @@ describe('PlanReviewPanel', () => {
   })
 
   it('dismisses the request so the composer returns for a plain message', () => {
-    const { carrier, cancel } = wait()
+    const { carrier, cancel, answer } = wait()
     render(<QuestionComposer matched={carrier} {...kit} />)
 
     fireEvent.click(screen.getByRole('button', { name: zh['plan.discuss'] }))
     expect(cancel).toHaveBeenCalledWith()
+    expect(answer).not.toHaveBeenCalled()
   })
 
   it('omits the tooltip for an option carrying no description', () => {
@@ -393,13 +448,14 @@ describe('PlanReviewPanel', () => {
 
     fireEvent.click(screen.getByRole('button', { name: zh['plan.approve.execute'] }))
     expect(answer).toHaveBeenCalledWith(decision('Approve and execute'))
+    expect(seat.model.seen).toBeUndefined()
     expect(screen.queryByText(zh['plan.execution.start'])).toBeNull()
   })
 })
 
 describe('PlanReviewPanel execution settings', () => {
   it('passes the staged share down to both declared seats', () => {
-    const { carrier } = wait(questions(['agentPreset']))
+    const { carrier } = wait(questions(['provider', 'model', 'reasoningEffort', 'agentPreset']))
     const seat = seats()
     render(<QuestionComposer matched={carrier} {...kit} renderSlot={seat.renderSlot} />)
 
@@ -412,7 +468,7 @@ describe('PlanReviewPanel execution settings', () => {
   })
 
   it('commits a picked model to the session, then answers on that choice', async () => {
-    const { carrier, answer } = wait()
+    const { carrier, answer } = wait(questions(['provider', 'model', 'reasoningEffort']))
     const seat = seats()
     const commitModel = vi.fn(async () => true)
     render(
@@ -431,7 +487,7 @@ describe('PlanReviewPanel execution settings', () => {
   })
 
   it('leaves the session alone when the review kept its own model', () => {
-    const { carrier, answer } = wait()
+    const { carrier, answer } = wait(questions(['provider', 'model', 'reasoningEffort']))
     const seat = seats()
     const commitModel = vi.fn(async () => true)
     render(
@@ -447,7 +503,7 @@ describe('PlanReviewPanel execution settings', () => {
   })
 
   it('does not submit the plan when the model could not be committed', async () => {
-    const { carrier, answer } = wait()
+    const { carrier, answer } = wait(questions(['provider', 'model', 'reasoningEffort']))
     const seat = seats()
     const commitModel = vi.fn(async () => false)
     render(
@@ -463,6 +519,36 @@ describe('PlanReviewPanel execution settings', () => {
     expect(answer).not.toHaveBeenCalled()
     // Re-armed: the review is still the user's to settle.
     expect(screen.getByRole('button', { name: zh['plan.approve.keep'] }).hasAttribute('disabled')).toBe(false)
+  })
+
+  it('sends a fresh-session route without changing the planning session model', async () => {
+    const { carrier, answer } = wait(questions(['provider', 'model', 'reasoningEffort']))
+    const seat = seats()
+    const commitModel = vi.fn(async () => true)
+    render(<QuestionComposer matched={carrier} {...kit} commitModel={commitModel} renderSlot={seat.renderSlot} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'stage model' }))
+    fireEvent.click(screen.getByRole('button', { name: zh['plan.approve.execute'] }))
+
+    expect(commitModel).not.toHaveBeenCalled()
+    await vi.waitFor(() => {
+      expect(answer).toHaveBeenCalledWith({
+        answers: [{ id: 'plan-review', selected: ['Approve and execute'], settings: MODEL }],
+      })
+    })
+  })
+
+  it('leaves a staged model untouched when the reviewer refines the plan', () => {
+    const { carrier, answer } = wait(questions(['provider', 'model', 'reasoningEffort']))
+    const seat = seats()
+    const commitModel = vi.fn(async () => true)
+    render(<QuestionComposer matched={carrier} {...kit} commitModel={commitModel} renderSlot={seat.renderSlot} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'stage model' }))
+    fireEvent.click(screen.getByRole('button', { name: zh['plan.refine'] }))
+
+    expect(commitModel).not.toHaveBeenCalled()
+    expect(answer).toHaveBeenCalledWith(decision('Refine plan'))
   })
 
   it('answers the fresh-session step with the staged preset', async () => {

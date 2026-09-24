@@ -6,7 +6,7 @@ English | [中文](2026-09-13-plan-command-attachments.zh.md)
 
 ## Problem
 
-`@deepseek-ai/dsh-plan-handoff` replaces `@deepseek-ai/dsh-plan-mode` in shipped compositions, and its `/plan` registration declared `input: { hint: '[off|message]' }` without `attachments: true` while its handler read only `rawInput`. The Web composer and the host command executor both gate attachment admission on that declaration, so a `/plan` submission carrying an image or file was refused before the handler ran and plan mode never received the task material. The client fixture already advertised `attachments: true`, which is why the gap surfaced as a fixture-versus-host disagreement rather than a client error.
+`@deepseek-ai/dsh-plan-mode` replaces `@deepseek-ai/dsh-plan-mode` in shipped compositions, and its `/plan` registration declared `input: { hint: '[off|message]' }` without `attachments: true` while its handler read only `rawInput`. The Web composer and the host command executor both gate attachment admission on that declaration, so a `/plan` submission carrying an image or file was refused before the handler ran and plan mode never received the task material. The client fixture already advertised `attachments: true`, which is why the gap surfaced as a fixture-versus-host disagreement rather than a client error.
 
 ## Decision
 
@@ -26,4 +26,4 @@ Attachment admission follows the shared command path; no client change was neede
 
 ## Testing
 
-[plan-mode.spec.ts](../../../../packages/plan/plan-handoff/tests/plan-mode.spec.ts) drives the real `CommandRuntime` with a fake attachment store: `/plan sketch the layout` with an image and a file steers one `[image, file, text]` message, bare `/plan` with the same attachments steers one `[image, file]` message, and `/plan off` with attachments returns the error with `steer` uncalled and `ctx.planMode.get` still active.
+[plan-mode.spec.ts](../../../../packages/plan/plan-mode/tests/plan-mode.spec.ts) drives the real `CommandRuntime` with a fake attachment store: `/plan sketch the layout` with an image and a file steers one `[image, file, text]` message, bare `/plan` with the same attachments steers one `[image, file]` message, and `/plan off` with attachments returns the error with `steer` uncalled and `ctx.planMode.get` still active.

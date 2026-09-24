@@ -10,7 +10,8 @@ function view(shell: string, revision = 0): SettingsNamespaceView {
     schema: { uid: 1, refs: {} },
     value: { shell },
     base: { shell: 'gitbash' },
-    applies: 'restart',
+    autoGenerate: true,
+    applies: 'live',
     secrets: [],
     revision,
   }

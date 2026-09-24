@@ -11,9 +11,20 @@
  * @module @deepseek-ai/dsh-windows-shell
  */
 
-import type { Context } from '@deepseek-ai/cordis'
-import type {} from '@deepseek-ai/dsh-settings'
-import { WindowsShellSettingsSchema, WINDOWS_SHELL_SETTINGS_NAMESPACE } from './settings.ts'
+import type { Context, Volatile } from '@deepseek-ai/cordis'
+import z from '@deepseek-ai/schemastery'
+import { WINDOWS_SHELLS, DEFAULT_WINDOWS_SHELL } from './settings.ts'
+
+/** Profile preference projected by SettingsForms for the General-settings row. */
+export interface Config {
+  /** Shell stack selected for the next launch. */
+  shell: Volatile<(typeof WINDOWS_SHELLS)[number]>
+}
+
+/** Runtime config schema; the volatile field is editable through SettingsForms. */
+export const Config = z.object({
+  shell: z.union([...WINDOWS_SHELLS]).default(DEFAULT_WINDOWS_SHELL).volatile(),
+})
 
 export {
   DEFAULT_WINDOWS_SHELL, WINDOWS_SHELLS, WINDOWS_SHELL_FIELD,
@@ -22,15 +33,5 @@ export {
 } from './settings.ts'
 export { seedWindowsShellEnvironment, WINDOWS_SHELL_ENV_KEY } from './boot.ts'
 
-/**
- * Register the durable Windows shell preference when the optional settings
- * service is composed.
- * @param ctx - host context that may acquire the settings service.
- */
-export function apply(ctx: Context): void {
-  ctx.inject(['settings'], (settingsCtx) => {
-    settingsCtx.settings.register(WINDOWS_SHELL_SETTINGS_NAMESPACE, WindowsShellSettingsSchema, {
-      applies: 'restart',
-    })
-  })
-}
+/** Mount the Config-bearing profile entry consumed by SettingsForms. */
+export function apply(_ctx: Context): void {}

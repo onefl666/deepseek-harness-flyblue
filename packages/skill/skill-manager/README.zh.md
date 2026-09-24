@@ -50,6 +50,8 @@ kind: "package-reference"
 
 每种拒绝都带有稳定错误码：`skill-manager/not-found`、`skill-manager/conflict`、`skill-manager/read-only`，或带可执行原因的 `skill-manager/rejected`。frontmatter 未声明可用技能的条目会从清单中跳过，而不会让清单失败。
 
+本包不发布运行时 invariant 配套模块，因为管理器只负责文件系统改动，没有单独维护实时注册表；技能提供方会发现改动后的目录。
+
 <a id="understand-the-implementation"></a>
 ## 理解实现
 

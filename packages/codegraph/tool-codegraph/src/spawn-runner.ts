@@ -3,13 +3,20 @@
  * @module @deepseek-ai/dsh-tool-codegraph/spawn-runner
  */
 
-import { spawn as nodeSpawn } from 'node:child_process'
+import { spawn as nodeSpawn, type ChildProcessWithoutNullStreams, type SpawnOptionsWithoutStdio } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import type { CodegraphProcessRunner } from './types.ts'
 
-/** `child_process.spawn` face used by the runner (real spawn or a test double). */
-export type SpawnFn = typeof nodeSpawn
+/** `child_process.spawn` call and child members used by the runner. */
+export type SpawnFn = (
+  command: string,
+  args: readonly string[],
+  options: SpawnOptionsWithoutStdio,
+) => Pick<ChildProcessWithoutNullStreams, 'stdout' | 'stderr'> & {
+  on(event: 'error', listener: (error: Error) => void): unknown
+  on(event: 'close', listener: (code: number | null) => void): unknown
+}
 
 /**
  * Absolute path of the bundled `codegraph` CLI script.

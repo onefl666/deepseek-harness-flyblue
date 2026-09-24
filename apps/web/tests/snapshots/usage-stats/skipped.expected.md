@@ -4,7 +4,7 @@
 - status:
   - text: 以下会话无法统计，已从结果中排除：
   - list:
-    - listitem: "usage-poisoned: session \"usage-poisoned\" contains event type \"vision/describe\" (seq 3) unknown to this harness and not marked ignorable; refusing to interpret the log — it was likely written by a newer harness (raw log: {{sessions}}/_no-cwd/usage-poisoned/session.v3.jsonl.zstd)"
+    - listitem: "usage-poisoned: session \"usage-poisoned\" contains event type \"vision/describe\" (seq 3) unknown to this harness and not marked ignorable; refusing to interpret the log — it was likely written by a newer harness (raw log: {{sessions}}/_no-cwd/usage-poisoned/session.v4.jsonl.zstd)"
 - article:
   - strong: "111"
   - text: Token 总量

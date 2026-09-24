@@ -8,10 +8,9 @@ kind: "package-reference"
 English | [中文](README.zh.md)
 
 ## Summary
-When an agent asks a question in the Web client, this package replaces the chat composer with an interactive question surface. Users answer with single or multiple choice, custom input, or skip, and submit one structured batch. Single-choice selections advance immediately; drafts survive Session navigation for the page's lifetime.
+When an agent asks a question in the Web client, this package replaces the chat composer with an interactive question surface. Users answer with single or multiple choice, custom input, or skip, and submit one batch. Single-choice selections advance immediately; drafts survive Session navigation for the page's lifetime.
 
-A single question declaring a presentation intent renders as that intent's surface. `plan-review`, set by `dsh-plan-handoff` on the `exit_plan_mode` review, takes the waiting-approval card: the intent names the decision actions, answers use the asker's own option labels, and the plan forms the body. The card claims only requests it can answer.
-
+A single question declaring a presentation intent renders as that intent's surface. `plan-review`, set by `dsh-plan-mode` on the `exit_plan_mode` review, takes the waiting-approval card: the intent names the decision actions, answers use the asker's own option labels, and the card links to the full plan. It claims only requests it can answer.
 
 ## Table of Contents
 
@@ -31,17 +30,17 @@ When the agent asks a question, the composer becomes the question surface: answe
 
 ### Answering
 
-A multi-select draft keeps its selected labels while the user opens or edits the custom answer, so its submitted item may carry both `selected` and `custom`; a single-select custom answer remains exclusive. Question detail reuses the assistant-output `MarkdownText` primitive, including its GFM rendering and untrusted-content policy. The capped card keeps its title, navigation, and submission actions fixed while long detail and choices share an internal scroll region. "Skip this question" retains other drafts and emits the existing blank `{ selected: [] }` result for that item, while close rejects the whole wait as `ASK_CANCELLED`.
+A multi-select draft keeps its selected labels while the user opens or edits the custom answer, so its submitted item may carry both `selected` and `custom`; a single-select custom answer remains exclusive. Question detail reuses the assistant-output `MarkdownText` primitive, including its GFM rendering and untrusted-content policy. The capped card keeps its title, navigation, and submission actions fixed while long detail and choices share an internal scroll region. "Skip" retains other drafts and emits the existing blank `{ selected: [] }` result for that item, while close rejects the whole wait as `ASK_CANCELLED`.
 
 ### The plan-review card
 
-A `plan-review` intent — set by `dsh-plan-handoff` on the `exit_plan_mode` review — renders the waiting-approval card layout: a `Plan review` strip, the plan as the scrolling markdown body, and one decision row of `Chat about it` / `Refine plan` / `Execute` / `Compact and execute` / `Keep context`. Every button but `Chat about it` answers with the label the asker published for that option, so a plan host that offers fewer execution paths renders fewer buttons; `Chat about it` rejects the wait as `ASK_CANCELLED`, returning the composer so the user can say what they want instead.
+A `plan-review` intent renders a compact card with a `Plan review` strip, a full-plan link, a plain-text title and summary, and the available decisions: `Chat about it`, `Refine plan`, `Execute`, `Compact and execute`, and `Keep context`. The complete plan opens in the sidebar through the link or its permanent Chat card. Every decision except `Chat about it` answers with the asker's option label, so a host offering fewer paths renders fewer buttons. `Chat about it` rejects the wait as `ASK_CANCELLED` and returns the composer for feedback. The strip's warning dot becomes a loader while an action settles.
 
 The card also carries the execution settings the intent declared, staged on the card rather than written to the session: a reviewer who refines the plan leaves the session exactly as it was. A `question.planReview.model` seat holds the model and thinking intensity an approval should commit, and the card commits it through `session.selectModel` before it answers, so a route that cannot be installed never leaves an approved plan on the old one. When the asker declared `agentPreset`, `Execute` opens the fresh-session step first — only a session created from scratch can adopt a composition — and `Back` returns to the decision row without answering. Both seats are contributions from the packages that own those contracts, so a deployment composing neither renders this card without the settings rows.
 
 ### Failure and recovery
 
-The generic question flow keeps its current page, selected labels, custom text, and explicit skips in a non-persisted Slot store scoped to the owning Session and keyed by the pending request's local render identity. Switching from Session A to B remounts the strict composer entry, but returning to A reuses A's store and restores the unfinished draft. A different request identity reads an empty draft and replaces the previous value on its first edit; a successful answer or cancellation clears the matching value. The host remains authoritative for whether the request is pending.
+The generic question flow keeps its current page, selected labels, custom text, and explicit skips in a non-persisted Slot store scoped to the owning Session generation and keyed by the pending request's local render identity. Switching from Session A to B retires A when no other reference owns it, so returning to A starts an empty question draft; another reference that keeps A's generation alive also keeps that draft. A different request identity reads an empty draft and replaces the previous value on its first edit; a successful answer or cancellation clears the matching value. The host remains authoritative for whether the request is pending.
 
 -----
 
@@ -55,11 +54,13 @@ The package is one ownership rule: rendering a question is a host UI capability,
 
 ### Intent surface election
 
-The card claims a request only when it can send every answer that request allows: one question, the intent declared, the plan present as `detail`, the named approve label offered, and a binary single choice (at most one option besides approve, not multi-select). Anything else stays on the generic flow, which can express it. An intent changes the layout, never which answers are reachable.
+The card accepts one question declaring the intent, carrying the plan as `detail`, and offering every named approve label, with at most one other option and no multi-select. Its chat action returns to the composer for change requests. Other question sets remain in the generic flow.
 
 ### Copy and locale
 
 Composer chrome copy (pager, buttons, placeholders, validation feedback) is bilingual: the plugin registers zh/en dictionaries under the `question` namespace of `dsh-client-locale` and hands the entry its bound translator plus the locale snapshot source through the inject face, so a locale switch re-renders a mounted composer. Question and option text arrives from the model and renders verbatim; carrier failure messages also display untranslated.
+
+A plan review exposes `conversation.plan-review.actions` with its request key, full text, and optional invocation identity. The plan plugin opens logged plans from history and unlogged reviews as temporary sidebar previews. Opening a document does not answer or dismiss the review.
 
 </details>
 

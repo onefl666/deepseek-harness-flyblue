@@ -70,7 +70,7 @@ SDK 语料现在能在 win32 上启动：`initialize` 返回 `serverInfo`，18 �
 
 该分歧并未闭合，这也是本次改动的诚实边界。67 个 headless 用例钉住带 `sandbox_permissions` 与 `justification` 的 `bash` 工具 schema，而该工具只在所挂载的执行器能够约束时才公布它们；win32 默认执行的正是刻意不受约束的 Git Bash 执行器。18 个 SDK 用例钉住 `workspace-write` 的 sandbox 模式与预设，而 `permission-presets` 拒绝在无法强制该模式的执行器上挂载它——这正是本发行版提供 `permission-unconfined` 的原因。二者都无法靠配置钉住，因为它们都源自执行器的约束能力。
 
-另有两处差异贯穿 headless 的失败，且都不是启动路径的缺陷。harness 终止的命令在 POSIX 上报告 `[killed by signal: SIGTERM]`，在 win32 上报告 Node 观察到的退出码——那里终止即 `TerminateProcess`，不携带信号；子进程结果契约报告的是平台所给出的事实。此外 fixture 仍钉住已退役的 `dsh-plan-mode` 的 `exit_plan_mode` 文本，而组合挂载的是 `dsh-plan-handoff`，其描述与 `execution` 参数都不同。
+另有两处差异贯穿 headless 的失败，且都不是启动路径的缺陷。harness 终止的命令在 POSIX 上报告 `[killed by signal: SIGTERM]`，在 win32 上报告 Node 观察到的退出码——那里终止即 `TerminateProcess`，不携带信号；子进程结果契约报告的是平台所给出的事实。此外 fixture 仍钉住已退役的 `dsh-plan-mode` 的 `exit_plan_mode` 文本，而组合挂载的是 `dsh-plan-mode`，其描述与 `execution` 参数都不同。
 
 在 win32 上复现已提交的 fixture 需要一份在 win32 上录制的 fixture，而那会与 Linux 泳道所比较的 POSIX 录制产生分歧。因此语料在该平台默认让位：win32 上的 `pnpm run test:snapshot` 保留语料完整性断言并把场景报告为跳过，而 `DSH_SNAPSHOT_ALLOW_UNSUPPORTED=1` 仍会运行它们，供需要诊断本笔记所记录分歧的人使用。POSIX 与 macOS 宿主看到 `recordedCorpusReplayable` 为真，行为与之前完全一致。
 

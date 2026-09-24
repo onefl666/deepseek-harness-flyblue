@@ -17,7 +17,9 @@
 
 import { useMemo, useState } from 'react'
 import type { ModelSelection } from '@deepseek-ai/dsh-api-remotes/client'
-import { Button, IconEditOutline16, MarkdownText } from '@deepseek-ai/dsh-client-ui-primitives'
+import {
+  Button, extractMarkdownPlainText, IconEditOutlineRegular, StateDot,
+} from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PendingQuestion, PlanReview, QuestionComposerProps } from './contract/slots.ts'
 import css from './PlanReviewPanel.module.css'
 
@@ -63,7 +65,7 @@ function tooltip(description: string | undefined): { title?: string } {
 }
 
 /**
- * Render a plan review as a decision card.
+ * Render plan review controls; the submitted document opens in the sidebar.
  *
  * @param props - the question domain face, the narrowed plan review, the two
  * declared seats, and `t`.
@@ -72,14 +74,6 @@ function tooltip(description: string | undefined): { title?: string } {
 export function PlanReviewPanel({
   pending, review, t, renderSlot, commitModel,
 }: PlanReviewPanelProps) {
-  // One-shot latch shaped like the approval takeover's: the panel leaves only
-  // when the host's resolved frame lands, so until then a second click must
-  // not re-fire. A failed send (rejected receipt / transport) re-arms it and
-  // shows why, since nothing else would tell the user the click was lost.
-  const markdownLabels = useMemo(() => ({
-    code: { copyLabel: t('copy'), copiedLabel: t('copied') },
-    footnotes: t('markdown.footnotes'),
-  }), [t])
   // The panel waits for the host's resolved frame before leaving, so repeated
   // clicks must not resubmit. A failed send re-enables it and shows the error.
   const [busy, setBusy] = useState(false)
@@ -102,20 +96,28 @@ export function PlanReviewPanel({
   }
   const decide = (label: string): void => {
     settle(async () => {
-      // The choice reaches the session first: a submission that cannot move
-      // the model must not leave a plan approved to run on the old one.
-      if (stagedModel !== null && !await commitModel(stagedModel)) {
-        throw new Error(t('plan.execution.rejected'))
+      const fresh = label === 'Approve and execute'
+      const approving = review.approves.some(option => option.label === label)
+      const settings: Record<string, string> = {}
+      if (approving && stagedModel !== null && review.settings.includes('provider') && review.settings.includes('model')) {
+        if (fresh) {
+          settings.provider = stagedModel.provider
+          settings.model = stagedModel.model
+          if (stagedModel.reasoningEffort !== undefined && review.settings.includes('reasoningEffort')) {
+            settings.reasoningEffort = stagedModel.reasoningEffort
+          }
+        } else if (!await commitModel(stagedModel)) {
+          throw new Error(t('plan.execution.rejected'))
+        }
+      }
+      if (fresh && stagedPreset !== null && review.settings.includes(AGENT_PRESET_SETTING)) {
+        settings[AGENT_PRESET_SETTING] = stagedPreset
       }
       await pending.answer({
         answers: [{
           id: review.id,
           selected: [label],
-          // The preset is the fresh session's alone; a continuing path still
-          // sends none, so the Host keeps what the planning session ran.
-          ...label === 'Approve and execute' && stagedPreset !== null
-            ? { settings: { [AGENT_PRESET_SETTING]: stagedPreset } }
-            : {},
+          ...Object.keys(settings).length === 0 ? {} : { settings },
         }],
       })
     })
@@ -131,25 +133,36 @@ export function PlanReviewPanel({
     decide(label)
   }
   const refine = review.refine
+  const summary = useMemo(() => {
+    const title = extractMarkdownPlainText(review.plan, { mode: 'first-line' })
+    const description = extractMarkdownPlainText(review.plan, { mode: 'first-paragraph' })
+    return { title, description: description === title ? '' : description }
+  }, [review.plan])
 
   return (
     <div className={css.frame} data-plan-review-key={pending.key}>
-      <section className={css.card} aria-label={review.question}>
+      <section className={css.card} aria-label={review.question} aria-busy={busy}>
         <div className={css.strip}>
-          <span className={css.dot} />
+          <StateDot state={busy ? 'ongoing' : 'warning'} />
           {t('plan.header')}
+          <div className={css.previewActions}>
+            {renderSlot('conversation.plan-review.actions', { review, requestKey: pending.key })}
+          </div>
         </div>
-        <div className={css.body} data-plan-review-scroll>
-          <MarkdownText text={review.plan} labels={markdownLabels} />
+        <div className={css.summary}>
+          <h3 className={css.title}>{summary.title}</h3>
+          {summary.description !== '' && <p className={css.description}>{summary.description}</p>}
         </div>
         <div className={css.footer}>
-          <div className={css.settings}>
-            {renderSlot('question.planReview.model', {
-              value: stagedModel,
-              onChange: setStagedModel,
-              locked: busy,
-            })}
-          </div>
+          {review.settings.includes('provider') && review.settings.includes('model') && (
+            <div className={css.settings}>
+              {renderSlot('question.planReview.model', {
+                value: stagedModel,
+                onChange: setStagedModel,
+                locked: busy,
+              })}
+            </div>
+          )}
           {confirmingFresh && (
             <>
               <div className={css.settings}>
@@ -166,7 +179,7 @@ export function PlanReviewPanel({
             <div className={css.feedback} role="status">{error}</div>
             <div className={css.actions}>
               <Button
-                variant="ghost" className={css.discuss} icon={<IconEditOutline16 size={14} />}
+                variant="outline" className={css.discuss} icon={<IconEditOutlineRegular size={14} />}
                 disabled={busy} onClick={() => { settle(() => pending.cancel()) }}
               >
                 {t('plan.discuss')}
@@ -195,7 +208,7 @@ export function PlanReviewPanel({
                         variant="outline" {...tooltip(refine.description)}
                         disabled={busy} onClick={() => { decide(refine.label) }}
                       >
-                        {t('plan.refine')}
+                        {refine.label === 'Refine plan' ? t('plan.refine') : t('plan.decline')}
                       </Button>
                     )}
                     {review.approves.map((option, index) => (

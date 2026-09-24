@@ -18,8 +18,19 @@ import { resolveGitBashPath } from '@deepseek-ai/dsh-gitbash-local'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import { SandboxPolicyService } from '@deepseek-ai/dsh-sandbox-policy'
 import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
+import type { ShellExecSpec, ShellExecution, ShellRunResult } from '@deepseek-ai/dsh-shell'
 import { SandboxGitBashExecutor } from '../src/index.ts'
 import { classifyRunnerFailure, isRunnerSpawnFailure, matchesSignature } from '../src/helpers.ts'
+
+/** Historical foreground shorthand over the unified execute() method. */
+async function run(x: { execute(spec: ShellExecSpec): Promise<ShellExecution> }, spec: ShellExecSpec): Promise<ShellRunResult> {
+  return (await x.execute(spec)).result()
+}
+
+/** Historical background shorthand without an armed deadline. */
+function start(x: { execute(spec: ShellExecSpec): Promise<ShellExecution> }, spec: ShellExecSpec): Promise<ShellExecution> {
+  return x.execute({ ...spec, onExpiry: 'none' })
+}
 
 // The same probe gitbash-local's suites and the vitest coverage exemption
 // use: spawnSync never throws on a missing binary (it reports status null) —
@@ -64,7 +75,7 @@ async function setup(
 ): Promise<{ executor: SandboxGitBashExecutor; calls: ConfineCall[] }> {
   const calls: ConfineCall[] = []
   class FakeSandboxProvider extends SandboxProvider {
-    confine(argv: readonly string[], policy: SandboxPolicy): ConfinedArgv {
+    async confine(argv: readonly string[], policy: SandboxPolicy): Promise<ConfinedArgv> {
       calls.push({ argv: [...argv], policy })
       return behavior(argv, policy)
     }
@@ -92,7 +103,7 @@ describe('helpers (pure)', () => {
     const bare = 'node'
     const relative = './sandbox-runner'
 
-    it('attributes ENOENT/EACCES with argv[0] provenance and a usable workdir', () => {
+    it('attributes ENOENT/EACCES to argv[0] with a usable workdir', () => {
       for (const runnerProgram of [absolute, bare, relative]) {
         expect(isRunnerSpawnFailure({ code: 'ENOENT', syscall: `spawn ${runnerProgram}`, path: runnerProgram }, runnerProgram, workdir)).toBe(true)
         expect(isRunnerSpawnFailure({ code: 'EACCES', syscall: `spawn ${runnerProgram}`, path: runnerProgram }, runnerProgram, workdir)).toBe(true)
@@ -101,7 +112,7 @@ describe('helpers (pure)', () => {
       }
     })
 
-    it('rejects mismatched provenance, foreign codes, unusable workdirs, and non-object errors', () => {
+    it('rejects mismatched runner paths, foreign codes, unusable workdirs, and non-object errors', () => {
       expect(isRunnerSpawnFailure({ code: 'ENOENT', syscall: 'spawn', path: 'other' }, 'node', workdir)).toBe(false)
       expect(isRunnerSpawnFailure({ code: 'ENOENT', syscall: 'spawn other', path: 'node' }, 'node', workdir)).toBe(false)
       expect(isRunnerSpawnFailure({ code: 'EMFILE', syscall: 'spawn', path: 'node' }, 'node', workdir)).toBe(false)
@@ -177,7 +188,7 @@ describe.skipIf(!gitBashAvailable())('SandboxGitBashExecutor', () => {
 
   it('wraps the exact gitbash argv through ctx.sandbox with the per-call policy', async () => {
     const { executor, calls } = await setup()
-    const result = await executor.run(executor.resolve({ command: 'echo wrapped', sandboxPolicy: RO }))
+    const result = await run(executor, executor.resolve({ command: 'echo wrapped', sandboxPolicy: RO }))
     expect(result.exitCode).toBe(0)
     expect(calls).toHaveLength(1)
     const call = calls[0]
@@ -192,14 +203,14 @@ describe.skipIf(!gitBashAvailable())('SandboxGitBashExecutor', () => {
   it('advertises the deployment default mode and stamps the deployment policy when none rides the request', async () => {
     const { executor, calls } = await setup()
     expect(executor.sandboxMode).toBe('workspace-write')
-    const result = await executor.run(executor.resolve({ command: 'echo fallback' }))
+    const result = await run(executor, executor.resolve({ command: 'echo fallback' }))
     expect(result.exitCode).toBe(0)
     expect(calls[0]?.policy.mode).toBe('workspace-write')
   }, 30_000)
 
   it('danger-full-access bypasses confine entirely and stamps full-access facts', async () => {
     const { executor, calls } = await setup()
-    const result = await executor.run(executor.resolve({ command: 'echo full', sandboxPolicy: { mode: 'danger-full-access', workspaceRoot: '/ws' } }))
+    const result = await run(executor, executor.resolve({ command: 'echo full', sandboxPolicy: { mode: 'danger-full-access', workspaceRoot: '/ws' } }))
     expect(result.exitCode).toBe(0)
     expect(calls).toHaveLength(0)
     expect(result.sandbox).toEqual({ mode: 'danger-full-access', denied: false })
@@ -214,7 +225,7 @@ describe.skipIf(!gitBashAvailable())('SandboxGitBashExecutor', () => {
       denialSignatures: [],
       runnerFailureRules: [],
     }))
-    await expect(executor.run(executor.resolve({ command: 'echo never', sandboxPolicy: RO, signal: controller.signal })))
+    await expect(run(executor, executor.resolve({ command: 'echo never', sandboxPolicy: RO, signal: controller.signal })))
       .rejects.toThrow('caller-cancel')
   }, 30_000)
 
@@ -223,7 +234,7 @@ describe.skipIf(!gitBashAvailable())('SandboxGitBashExecutor', () => {
   // (the ACL runner denies scratch paths — unit tests never leave temp).
   it.skipIf(process.platform === 'win32')('classifies a failed write against the backend denial dialect', async () => {
     const { executor } = await setup()
-    const result = await executor.run(executor.resolve({
+    const result = await run(executor, executor.resolve({
       command: deniedWriteCommand,
       sandboxPolicy: RO,
     }))
@@ -238,7 +249,7 @@ describe.skipIf(!gitBashAvailable())('SandboxGitBashExecutor', () => {
       denialSignatures: [],
       runnerFailureRules: [{ fatalSignatures: ['fake-runner: '] }],
     }))
-    await expect(executor.run(executor.resolve({ command: 'echo never-runs', sandboxPolicy: RO })))
+    await expect(run(executor, executor.resolve({ command: 'echo never-runs', sandboxPolicy: RO })))
       .rejects.toThrow(SandboxUnavailableError)
   }, 30_000)
 
@@ -250,12 +261,12 @@ describe.skipIf(!gitBashAvailable())('SandboxGitBashExecutor', () => {
       denialSignatures: [],
       runnerFailureRules: [{ fatalSignatures: ['fake-runner: '] }],
     }), throwingSubprocessRuntime(attributable))
-    await expect(closed.run(closed.resolve({ command: 'echo never', sandboxPolicy: RO })))
+    await expect(run(closed, closed.resolve({ command: 'echo never', sandboxPolicy: RO })))
       .rejects.toThrow(SandboxUnavailableError)
 
     const foreign = Object.assign(new Error('sync-emfile'), { code: 'EMFILE', syscall: 'spawn', path: 'node' })
     const { executor: passthroughError } = await setup(undefined, throwingSubprocessRuntime(foreign))
-    await expect(passthroughError.run(passthroughError.resolve({ command: 'echo never', sandboxPolicy: RO })))
+    await expect(run(passthroughError, passthroughError.resolve({ command: 'echo never', sandboxPolicy: RO })))
       .rejects.toThrow('sync-emfile')
   }, 30_000)
 
@@ -267,13 +278,13 @@ describe.skipIf(!gitBashAvailable())('SandboxGitBashExecutor', () => {
       denialSignatures: [],
       runnerFailureRules: [{ fatalSignatures: ['fake-runner: '] }],
     }), throwingSubprocessRuntime(attributable))
-    expect(() => closed.start(closed.resolve({ command: 'echo never', sandboxPolicy: RO })))
-      .toThrow(SandboxUnavailableError)
+    await expect(start(closed, closed.resolve({ command: 'echo never', sandboxPolicy: RO })))
+      .rejects.toThrow(SandboxUnavailableError)
 
     const foreign = Object.assign(new Error('sync-emfile-start'), { code: 'EMFILE', syscall: 'spawn', path: 'node' })
     const { executor: passthroughError } = await setup(undefined, throwingSubprocessRuntime(foreign))
-    expect(() => passthroughError.start(passthroughError.resolve({ command: 'echo never', sandboxPolicy: RO })))
-      .toThrow('sync-emfile-start')
+    await expect(start(passthroughError, passthroughError.resolve({ command: 'echo never', sandboxPolicy: RO })))
+      .rejects.toThrow('sync-emfile-start')
   }, 30_000)
 
   it('a runner that REFUSES at runtime (fatal signature, nonzero exit) fails closed too', async () => {
@@ -283,13 +294,13 @@ describe.skipIf(!gitBashAvailable())('SandboxGitBashExecutor', () => {
       denialSignatures: [],
       runnerFailureRules: [{ fatalSignatures: ['fake-runner: '] }],
     }))
-    await expect(executor.run(executor.resolve({ command: 'echo never-runs', sandboxPolicy: RO })))
+    await expect(run(executor, executor.resolve({ command: 'echo never-runs', sandboxPolicy: RO })))
       .rejects.toThrow(SandboxUnavailableError)
   }, 30_000)
 
   it('background confined runs stamp clean facts at settlement', async () => {
     const { executor } = await setup()
-    const clean = executor.start(executor.resolve({ command: 'echo background-ok', sandboxPolicy: RO }))
+    const clean = await start(executor, executor.resolve({ command: 'echo background-ok', sandboxPolicy: RO }))
     await clean.done
     expect(clean.sandbox).toEqual({ mode: 'read-only', denied: false, enforcement: 'full' })
   }, 30_000)
@@ -298,7 +309,7 @@ describe.skipIf(!gitBashAvailable())('SandboxGitBashExecutor', () => {
   // coverage lives in tests/acl.e2e.ts.
   it.skipIf(process.platform === 'win32')('background denied writes stamp denied facts at settlement', async () => {
     const { executor } = await setup()
-    const denied = executor.start(executor.resolve({
+    const denied = await start(executor, executor.resolve({
       command: deniedWriteCommand,
       sandboxPolicy: RO,
     }))
@@ -306,14 +317,14 @@ describe.skipIf(!gitBashAvailable())('SandboxGitBashExecutor', () => {
     expect(denied.sandbox).toEqual({ mode: 'read-only', denied: true, enforcement: 'full' })
   }, 30_000)
 
-  it('background provider rejections with runner provenance settle as runnerFailed facts', async () => {
+  it('background provider rejections naming the runner settle as runnerFailed facts', async () => {
     const { executor } = await setup(() => ({
       argv: ['definitely-not-a-real-runner', '--', 'bash'],
       enforcement: 'full',
       denialSignatures: [],
       runnerFailureRules: [{ fatalSignatures: ['fake-runner: '] }],
     }))
-    const proc = executor.start(executor.resolve({ command: 'echo never', sandboxPolicy: RO }))
+    const proc = await start(executor, executor.resolve({ command: 'echo never', sandboxPolicy: RO }))
     await proc.done
     expect(proc.sandbox).toEqual({ mode: 'read-only', denied: false, enforcement: 'full', runnerFailed: true })
     // The failure note surfaces through the read path.
@@ -323,7 +334,7 @@ describe.skipIf(!gitBashAvailable())('SandboxGitBashExecutor', () => {
 
   it('danger-full-access background runs bypass confine and carry no facts', async () => {
     const { executor, calls } = await setup()
-    const proc = executor.start(executor.resolve({
+    const proc = await start(executor, executor.resolve({
       command: 'echo full-bg',
       sandboxPolicy: { mode: 'danger-full-access', workspaceRoot: '/ws' },
     }))

@@ -44,7 +44,7 @@ describe('codegraph-index real Loader composition through cordis.yml', () => {
         if (!modules.has(specifier)) throw new Error(`unexpected Loader import: ${specifier}`)
         return modules.get(specifier)
       },
-    } as unknown as NonNullable<typeof ctx.loader.internal>
+    } as Partial<NonNullable<typeof ctx.loader.internal>> as NonNullable<typeof ctx.loader.internal>
     await ctx.loader.create({ name: 'cordis:include', config: { path: pathToFileURL(configPath).href } })
     await ctx.loader.await()
     expect(ctx.codegraphIndex).toBeInstanceOf(CodegraphIndexService)

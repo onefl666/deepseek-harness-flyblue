@@ -1,0 +1,593 @@
+/**
+ * Plan mode is logged per-agent collaboration state: while active, a
+ * deployment-owned guidance section is included in each model request, and
+ * `exit_plan_mode` presents the completed plan for user review, while the
+ * `/plan off` command lets a user leave directly. Sandbox mode and approval
+ * policy enforce restrictions independently and do not read or write plan
+ * state.
+ *
+ * The state in force is folded from the session log (`plan/mode`, last one
+ * wins), so resume and fork restore it without a live mirror. User selections
+ * remain pending until the next accepted in-turn pre-step. The service includes
+ * the selected state in the proposed step assembly, then appends `plan/mode`
+ * from `agent/pre-step` only when the step is accepted. Same-step request
+ * retries reuse their assembly.
+ *
+ * The exit tool remains registered while plan mode is inactive, so entering
+ * or leaving plan mode changes only the prompt section, not the request tool
+ * catalog.
+ *
+ * After an approved review the turn ends and the plugin waits for the source
+ * agent to go idle, then keeps context, compacts, or opens a sibling execution
+ * session named after the planning session. The plugin's steer is the only
+ * thing that starts execution, so one approval runs the plan once.
+ *
+ * Agent Note:
+ * - .agents/notes/implemented/feature/2026-08-19-plan-handoff.md
+ *
+ * @module @deepseek-ai/dsh-plan-mode
+ */
+
+import { Context, Service } from '@deepseek-ai/cordis'
+import { z as zod } from 'zod'
+import type { ZodType } from 'zod'
+import type { Agent, PreStepDecision } from '@deepseek-ai/dsh-agent'
+import { brandString } from '@deepseek-ai/dsh-brand'
+import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import type { ContextFormed } from '@deepseek-ai/dsh-llm'
+import type { Session, SessionEvent, UserMessage } from '@deepseek-ai/dsh-session'
+import { defineTool } from '@deepseek-ai/dsh-tools'
+import type {} from '@deepseek-ai/dsh-system-prompt'
+import { UserQuestionError } from '@deepseek-ai/dsh-user-questions'
+// Type-only edge: resolves `ctx.commands` for the optional command child.
+import type { CommandDefinitionId, CommandId } from '@deepseek-ai/dsh-commands'
+// Type-only: resolves ctx.sessionProjections for the optional unit child.
+import type {} from '@deepseek-ai/dsh-session-projection'
+import type { PlanExecution, PlanExecutionSelection, PlanProjection } from './types.ts'
+import {
+  APPROVE_COMPACT, APPROVE_EXECUTE, APPROVE_KEEP, APPROVE_LABELS, PLAN_REVIEW_SETTINGS,
+  REFINE_PLAN, approvedResultText,
+} from './prompts.ts'
+import { runHandoff, type PendingHandoff } from './handoff.ts'
+import type {} from '@deepseek-ai/dsh-compaction'
+import type {} from '@deepseek-ai/dsh-agent-preset-registry'
+import type {} from '@deepseek-ai/dsh-workspace'
+import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
+import type { PlanUnitState } from './types.ts'
+declare module '@deepseek-ai/dsh-llm' {
+  interface MessageSourceMap {
+    'plan-mode': { kind: 'plan-mode' } & ContextFormed
+  }
+}
+// The `plan` projection-key and session-event declarations live in
+// src/types.ts (their one home); this re-export projects that type face onto
+// the package root AND keeps the module edge in the emitted index.d.ts, so
+// aggregate programs consuming the declarations still receive the merges.
+export type * from './types.ts'
+export {
+  APPROVE_COMPACT, APPROVE_EXECUTE, APPROVE_KEEP, APPROVE_LABELS, EXECUTION_SESSION_TITLE_PREFIX,
+  PLAN_REVIEW_SETTINGS, REFINE_PLAN, approvedPlanPrompt, approvedResultText,
+} from './prompts.ts'
+
+declare module '@deepseek-ai/cordis' {
+  interface Context {
+    planMode: PlanModeController
+  }
+}
+
+/**
+ * The model-facing exit tool's name. It stays registered while plan mode is
+ * inactive so the request tool catalog is stable across transitions.
+ */
+export const EXIT_PLAN_MODE = 'exit_plan_mode'
+
+/** Deployment-owned plan guidance. */
+export interface PlanModeConfig {
+  /** Guidance rendered as the `plan:policy` prompt section while plan mode is active. */
+  section: string
+}
+
+/** The review question's id, echoed in the answer this tool reads. */
+const REVIEW_ID = 'plan-review'
+
+const EXIT_DESCRIPTION
+  = 'Use only in plan mode. Present your plan for the user\'s review and, on approval, leave plan mode. '
+  + 'Send the COMPLETE plan as markdown, starting with a # heading that names it. '
+  + 'The user may approve and execute (fresh session), approve and compact context, '
+  + 'approve and keep context, or refine the plan — their feedback comes back in '
+  + 'the tool result; revise and present again.'
+
+/** Map a review label to an execution mode, or undefined when the label refines. */
+function executionOf(label: string): PlanExecution | undefined {
+  switch (label) {
+    case APPROVE_EXECUTE:
+      return 'clear'
+    case APPROVE_COMPACT:
+      return 'compact'
+    case APPROVE_KEEP:
+      return 'keep'
+    default:
+      return undefined
+  }
+}
+
+/**
+ * One declared setting's value from a review answer: the collected string, or
+ * `undefined` when the answer carried none.
+ *
+ * The answer is a wire value, so a blank string is a UI that offered a control
+ * the reviewer left empty — not a provider, model, effort, or preset id. Read
+ * as absent so the inherited value stays in force.
+ *
+ * @param settings - the answer's collected settings, keyed by declared name.
+ * @param name - one name this review declared.
+ * @returns the value to honour, or undefined when there is none.
+ */
+function collected(settings: Readonly<Record<string, string>>, name: string): string | undefined {
+  const value = settings[name]
+  return value === undefined || value.trim() === '' ? undefined : value
+}
+
+/**
+ * Read a review answer's collected settings as the execution selection.
+ *
+ * Only the names this review declared are read, so a UI that answers more than
+ * this asker asked for cannot steer the execution session with values the
+ * review never showed the user.
+ *
+ * @param settings - the answer's collected settings, or undefined when it carried none.
+ * @returns exactly the settings that were both declared and answered.
+ */
+function executionSelection(
+  settings: Readonly<Record<string, string>> | undefined,
+): PlanExecutionSelection {
+  if (settings === undefined) return {}
+  const selection: PlanExecutionSelection = {}
+  for (const name of PLAN_REVIEW_SETTINGS) {
+    const value = collected(settings, name)
+    if (value !== undefined) selection[name] = value
+  }
+  return selection
+}
+
+/** The plan's first markdown heading (any level), or `undefined` when it has none. */
+function firstHeading(plan: string): string | undefined {
+  for (const line of plan.split('\n')) {
+    const match = /^#{1,6}\s+(.+?)\s*$/.exec(line)
+    if (match) return match[1]
+  }
+  return undefined
+}
+
+/**
+ * Validate deployment-owned plan guidance. Missing, blank, non-string, or
+ * unknown fields fail at plugin load rather than being ignored.
+ *
+ * @param config Raw plugin config.
+ * @returns A detached validated config.
+ */
+export function resolveConfig(config: PlanModeConfig): PlanModeConfig {
+  const section = (config as Partial<PlanModeConfig>).section
+  if (typeof section !== 'string') {
+    throw new Error('PlanModeConfig needs a string `section`')
+  }
+  if (section.trim() === '') {
+    throw new Error('PlanModeConfig needs a non-empty `section`')
+  }
+  const unknown = Object.keys(config).filter(key => key !== 'section')
+  if (unknown.length > 0) {
+    throw new Error(`PlanModeConfig has unknown key(s) ${unknown.join(', ')} — config is { section }`)
+  }
+  return { section }
+}
+
+/**
+ * Whether plan mode is active after the first `end` events. The last
+ * `plan/mode` wins; a prefix with none is inactive.
+ *
+ * @param events The session log or any prefix of it.
+ * @param end Fold `events[0, end)`; defaults to the whole log.
+ * @returns Whether plan mode is active.
+ */
+export function foldPlanMode(events: readonly SessionEvent[], end = events.length): boolean {
+  let active = false
+  let index = 0
+  for (const event of events) {
+    if (index >= end) break
+    index++
+    if (event.type === 'plan/mode') active = event.data.active
+  }
+  return active
+}
+
+/** Wire payload schema of the `plan` projection. */
+const planProjectionSchema: ZodType<PlanProjection> = zod.object({
+  active: zod.boolean(),
+  pending: zod.boolean(),
+})
+
+const planUnitStateSchema: ZodType<PlanUnitState> = zod.object({
+  active: zod.boolean(),
+  wanted: zod.boolean().nullable(),
+  running: zod.object({
+    commandId: zod.string() as unknown as ZodType<CommandId>,
+    wanted: zod.boolean(),
+  }).strict().nullable(),
+  activeAtLastHeader: zod.boolean().nullable(),
+}).strict()
+
+/** Projection of logged plan selections and committed mode. */
+export const planProjectionDefinition = {
+  key: 'plan',
+  stateVersion: 3,
+  stateSchema: planUnitStateSchema,
+  init: () => ({ active: false, wanted: null, running: null, activeAtLastHeader: null }),
+  apply: (state, event) => {
+    if (event.type === 'command/run' && event.data.name === 'plan') {
+      if (event.data.args === undefined) return state
+      const wanted = event.data.args.trim() !== 'off'
+      return { ...state, running: { commandId: event.data.commandId, wanted } }
+    }
+    if (event.type === 'command/done' && event.data.commandId === state.running?.commandId) {
+      const wanted = event.data.kind === 'success' && state.running.wanted !== state.active
+        ? state.running.wanted
+        : null
+      return { ...state, wanted, running: null }
+    }
+    if (event.type === 'plan/mode') return { ...state, active: event.data.active, wanted: null }
+    if (event.type === 'request/header') return { ...state, activeAtLastHeader: state.active }
+    return state
+  },
+  wire: {
+    viewSchema: planProjectionSchema,
+    view: (state) => {
+      const wanted = state.running?.wanted ?? state.wanted
+      return { active: state.active, pending: wanted !== null && wanted !== state.active }
+    },
+  },
+} satisfies ProjectionDefinition<'plan', PlanUnitState>
+
+/**
+ * `ctx.planMode`: owns logged plan state, applies and narrates selected state at step start,
+ * the `plan:policy` section, the `/plan` command, and the stable exit tool.
+ * UIs observe committed flips through `session/event`; there is no live mirror.
+ */
+export class PlanModeController extends Service {
+  static inject = ['tools', 'systemPrompt', 'sessionProjections']
+
+  /** Validated deployment-owned guidance. */
+  private readonly section: string
+
+  /**
+   * Latest selection per session awaiting the next accepted in-turn pre-step.
+   * `narrate` is true for user selections and false for the exit tool, whose
+   * result already narrates the transition.
+   */
+  private readonly pendingIntents = new WeakMap<Session, { active: boolean; narrate: boolean }>()
+
+  /** Approved execution waiting for the source agent to become idle. */
+  private readonly pendingHandoffs = new WeakMap<Session, PendingHandoff>()
+
+  constructor(ctx: Context, config: PlanModeConfig = { section: '' }) {
+    super(ctx, 'planMode')
+    this.section = resolveConfig(config).section
+    let disposed = false
+    // Pre-step is outside Session.append publication, so it can append the
+    // log-only mode event inside an open turn without re-entering the session.
+    // A failed append remains pending for a later accepted in-turn pre-step,
+    // and policy cannot block the step.
+    ctx.on('agent/pre-step', async (
+      { agent, signal },
+      next,
+    ): Promise<PreStepDecision> => {
+      const decision = await next()
+      const pending = this.pendingIntents.get(agent.session)
+      if (decision.kind === 'reject' || signal.aborted || pending === undefined) return decision
+      const narration = this.narration(agent.session, pending.active)
+      try {
+        this.onBoundary(agent.session)
+      } catch (error) {
+        ctx.logger.warn('dsh-plan-mode: failed to append selected plan mode at step start: %o', error)
+        return decision
+      }
+      return !pending.narrate || narration === undefined
+        ? decision
+        : { ...decision, messages: [...decision.messages, narration] }
+    })
+    ctx.on('agent/status', ({ agent, status }) => {
+      if (status !== 'idle' || disposed) return
+      const pending = this.pendingHandoffs.get(agent.session)
+      if (pending === undefined) return
+      this.pendingHandoffs.delete(agent.session)
+      void runHandoff(this.ctx, agent, pending).catch((error: unknown) => {
+        ctx.logger.warn('dsh-plan-mode: idle handoff failed: %o', error)
+      })
+    })
+    ctx.effect(() => () => { disposed = true }, 'dsh-plan-mode: close service lifetime')
+
+    ctx.systemPrompt.section({
+      name: 'plan:policy',
+      order: ctx.systemPrompt.getSectionOrder('PLAN_POLICY'),
+      text: (context) => {
+        if (context.agent === undefined) return ''
+        const pending = this.pendingIntents.get(context.agent.session)
+        return (pending?.active ?? this.loggedActive(context.agent.session)) ? this.section : ''
+      },
+    })
+
+    ctx.sessionProjections.register(planProjectionDefinition)
+
+    // The command child activates only when a command registry is composed.
+    ctx.inject(['commands'], (commandCtx) => {
+      commandCtx.commands.register({
+        definitionId: brandString<CommandDefinitionId>('@deepseek-ai/dsh-plan-mode'),
+        name: 'plan',
+        description: 'Enter or leave plan mode',
+        input: { hint: '[off|message]', attachments: true },
+        handler: ({ agent, rawInput, attachments }) => {
+          const message = rawInput.trim()
+          if (message === 'off' && attachments.length > 0) {
+            return { kind: 'error', text: 'Attachments cannot accompany /plan off.' }
+          }
+          if (message === 'off') {
+            switch (this.set(agent, false)) {
+              case 'committed':
+                return { kind: 'success', text: 'Plan mode off.' }
+              case 'queued':
+                return { kind: 'success', text: 'Leaving plan mode (applies from the next step).' }
+              case 'cancelled':
+                return { kind: 'success', text: 'Plan mode entry cancelled.' }
+              case 'noop':
+                // Repeat the queued wording while an exit still awaits the
+                // next accepted pre-step; only a truly inactive session reads
+                // idempotent.
+                return this.loggedActive(agent.session)
+                  ? { kind: 'success', text: 'Leaving plan mode (applies from the next step).' }
+                  : { kind: 'success', text: 'Plan mode is already inactive.' }
+            }
+          }
+          const outcome = this.set(agent, true)
+          if (message !== '' || attachments.length > 0) {
+            agent.steer(createUserMessage({
+              content: [
+                ...attachments,
+                ...(message === '' ? [] : [{ type: 'text' as const, text: message }]),
+              ],
+              source: { kind: 'user' },
+            }))
+          }
+          return {
+            kind: 'success',
+            text: outcome === 'committed'
+              ? 'Plan mode on. Use /plan off to leave.'
+              : 'Entering plan mode (applies from the next step). Use /plan off to leave.',
+          }
+        },
+      })
+    })
+
+    ctx.tools.register(defineTool({
+      name: EXIT_PLAN_MODE,
+      description: EXIT_DESCRIPTION,
+      parameters: {
+        plan: { type: 'string', required: true, description: 'The complete plan, as markdown, starting with a # heading that names it.' },
+      },
+      output: {
+        schema: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            approved: { type: 'boolean', const: true, required: true },
+            execution: {
+              type: 'string',
+              enum: ['clear', 'compact', 'keep'],
+              required: true,
+            },
+          },
+        },
+        render: (_args, value) => [{ type: 'text', text: approvedResultText(value.execution) }],
+      },
+      execute: async (args, exec) => {
+        const agent = exec.agent
+        if (agent === undefined) throw new Error(`${EXIT_PLAN_MODE} requires a calling agent (no session to switch)`)
+        if (!this.loggedActive(agent.session)) {
+          throw new Error(`${EXIT_PLAN_MODE} is only available in plan mode`)
+        }
+        if (!/^#\s+\S/.test(args.plan.trim())) {
+          throw new Error(`${EXIT_PLAN_MODE} requires a non-empty markdown plan starting with a # heading`)
+        }
+        const interaction = ctx.get('userQuestions')
+        if (interaction === undefined) {
+          throw new Error('no user-questions channel is available to review the plan; ask the user to switch the session mode instead')
+        }
+        const answer = await interaction.ask({
+          questions: [{
+            id: REVIEW_ID,
+            header: 'Plan review',
+            question: 'Approve this plan and leave plan mode?',
+            detail: args.plan,
+            options: [
+              { label: APPROVE_EXECUTE, description: 'Leave plan mode and execute in a fresh session without this planning conversation.' },
+              { label: APPROVE_COMPACT, description: 'Leave plan mode, compact this session, then execute the plan.' },
+              { label: APPROVE_KEEP, description: 'Leave plan mode and execute here with the planning history.' },
+              { label: REFINE_PLAN, description: 'Stay in plan mode; feedback goes back to the model.' },
+            ],
+            intent: {
+              kind: 'plan-review',
+              approve: [...APPROVE_LABELS],
+              settings: [...PLAN_REVIEW_SETTINGS],
+              callId: exec.callId,
+            },
+          }],
+          agent,
+          signal: exec.signal,
+        }).catch((cause: unknown) => {
+          // A dismissed review is not a failed one: the user took the turn back
+          // to say something the two options do not cover. Say so, because the
+          // generic channel message names ask_user_question, which the model
+          // never called. An abort (turn cancel, provider teardown) keeps its
+          // own message — there is no user to wait for.
+          if (cause instanceof UserQuestionError && cause.code === 'ASK_CANCELLED') {
+            throw new Error('The user dismissed the plan review to speak instead; '
+              + 'stay in plan mode, stop here, and wait for their message.')
+          }
+          throw cause
+        })
+        // A review may outlive this plugin fiber. Without its pre-step listener,
+        // an approved selection could never be appended, so fail and keep planning.
+        if (disposed) {
+          throw new Error('the plan-mode service was reloaded while the plan was under review; present the plan again')
+        }
+        const reviewItems = answer.answers.filter(entry => entry.id === REVIEW_ID)
+        const item = reviewItems.length === 1 ? reviewItems[0] : undefined
+        const selected = item?.selected.length === 1 ? item.selected[0] : undefined
+        const execution = selected === undefined || item?.custom !== undefined
+          ? undefined
+          : executionOf(selected)
+        if (execution === undefined) {
+          const feedback = item?.custom ?? ''
+          throw new Error(feedback === ''
+            ? 'The user chose to keep planning; revise the plan and present it again.'
+            : `The user chose to keep planning; their feedback: ${feedback}`)
+        }
+        const title = firstHeading(args.plan) ?? 'Plan'
+        try {
+          agent.session.append('plan/approved', { execution, title })
+        } catch (error) {
+          ctx.logger.warn('dsh-plan-mode: failed to append plan/approved: %o', error)
+        }
+        this.pendingIntents.set(agent.session, { active: false, narrate: false })
+        this.pendingHandoffs.set(agent.session, {
+          execution, plan: args.plan, title, selection: executionSelection(item?.settings),
+        })
+        // Every approval ends this turn: the handoff steer is the only owner of
+        // execution. Without this, keep would execute in-turn from the tool
+        // result and again from the steer after the turn settles.
+        exec.concludeTurn()
+        if (agent.status === 'idle') {
+          const pending = this.pendingHandoffs.get(agent.session)
+          if (pending !== undefined) {
+            this.pendingHandoffs.delete(agent.session)
+            void runHandoff(this.ctx, agent, pending).catch((error: unknown) => {
+              ctx.logger.warn('dsh-plan-mode: idle handoff failed: %o', error)
+            })
+          }
+        }
+        return { approved: true, execution }
+      },
+      presentCall: args => ({
+        card: 'generic',
+        title: firstHeading(args.plan) ?? 'Plan',
+        kind: 'other',
+        content: [{ type: 'text', text: args.plan }],
+      }),
+      presentResult: (_args, result) => ({
+        card: 'generic',
+        title: 'Plan review',
+        content: result.content,
+      }),
+    }))
+  }
+
+  private loggedActive(session: Session): boolean {
+    return this.planState(session).active
+  }
+
+  private hasOpenTurn(session: Session): boolean {
+    const state = this.ctx.sessionProjections.stateOf(session, 'turnBoundary')
+    if (state === undefined) throw new Error('plan-mode requires the turnBoundary session projection')
+    return state.openTurnStartSeq !== null
+  }
+
+  private loggedActiveAtLastHeader(session: Session): boolean | undefined {
+    return this.planState(session).activeAtLastHeader ?? undefined
+  }
+
+  private planState(session: Session): PlanUnitState {
+    const state = this.ctx.sessionProjections.stateOf(session, 'plan')
+    if (state === undefined) throw new Error('plan-mode requires the plan session projection')
+    return state
+  }
+
+  /**
+   * Read the logged plan state and any selected state awaiting the next
+   * accepted in-turn pre-step.
+   *
+   * @param agent The agent to read.
+   * @returns Current logged state plus a pending selection, when present.
+   */
+  get(agent: Agent): { active: boolean; pending?: boolean } {
+    const active = this.loggedActive(agent.session)
+    const pending = this.pendingIntents.get(agent.session)
+    return pending === undefined ? { active } : { active, pending: pending.active }
+  }
+
+  /**
+   * Select whether plan mode should be active. Between turns the method
+   * appends the change immediately because no in-turn pre-step will run until
+   * another prompt starts a turn. The open-turn fold is the idle signal:
+   * agent status stays `running` through post-turn checkpointing, when no
+   * further in-turn pre-step runs. During an open turn the selection remains
+   * pending until the next accepted in-turn pre-step. Repeated selection of
+   * the current or already-pending state is a no-op.
+   *
+   * @param agent The agent to switch.
+   * @param active Whether plan mode should be active.
+   * @returns what happened: `committed` (logged now), `queued` (awaiting the
+   * next accepted in-turn pre-step), `cancelled` (an opposite pending selection
+   * was cleared; the logged state already matches), or `noop` (already in that
+   * state).
+   */
+  set(agent: Agent, active: boolean): 'committed' | 'queued' | 'cancelled' | 'noop' {
+    const session = agent.session
+    const pending = this.pendingIntents.get(session)
+    const target = pending?.active ?? this.loggedActive(session)
+    if (active === target) return 'noop'
+    if (this.hasOpenTurn(session)) {
+      this.pendingIntents.set(session, { active, narrate: true })
+      return this.loggedActive(session) === active ? 'cancelled' : 'queued'
+    }
+    // No open turn: commit now. Delete only after append succeeds so a
+    // failed durable write leaves the selection retryable, not dropped.
+    if (active === this.loggedActive(session)) {
+      this.pendingIntents.delete(session)
+      return 'cancelled'
+    }
+    session.append('plan/mode', { active })
+    this.pendingIntents.delete(session)
+    const narration = this.narration(session, active)
+    if (narration !== undefined) agent.inject(narration)
+    return 'committed'
+  }
+
+  /** Append one pending selection before the next request assembly. */
+  private onBoundary(session: Session): void {
+    const pending = this.pendingIntents.get(session)
+    if (pending === undefined) return
+    const target = pending.active
+    if (target === this.loggedActive(session)) {
+      this.pendingIntents.delete(session)
+      return
+    }
+    session.append('plan/mode', { active: target })
+    // Delete only after append succeeds so a later accepted in-turn pre-step
+    // can retry a failed durable write.
+    this.pendingIntents.delete(session)
+  }
+
+  /** Build a user-switch notice when the last logged header described the other mode. */
+  private narration(session: Session, target: boolean): UserMessage | undefined {
+    const told = this.loggedActiveAtLastHeader(session)
+    if (told === undefined || told === target) return
+    const text = target
+      ? 'The user switched this session to plan mode.'
+      : 'The user switched this session back to the default mode.'
+    return createUserMessage({
+      content: [{ type: 'text', text }],
+      // The narration is already one sentence, so it is its own summary.
+      source: { kind: 'plan-mode', form: 'notice', summary: text },
+    })
+  }
+}
+
+export default PlanModeController

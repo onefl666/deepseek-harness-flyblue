@@ -52,7 +52,7 @@ describe('ui-task-board apply', () => {
     expect(entry.component).toBe(TaskBoardSection)
     expect(entry.options).toMatchObject({ id: 'task-board', order: 41 })
     expect(resolveSlotLabel(entry.options.label)).toBe('任务看板')
-    const injected = (entry.inject as unknown as () => TaskBoardInjected)()
+    const injected = (entry.inject as (() => TaskBoardInjected) & NonNullable<typeof entry.inject>)()
     await injected.list()
     expect(list).toHaveBeenCalledTimes(1)
     await injected.create('title', 'req-1')

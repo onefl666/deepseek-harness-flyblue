@@ -18,6 +18,7 @@ const row = (cwd: string): SessionSummary => ({
   displayTitle: 'session',
   cwd,
   running: false,
+  retainedBy: {},
   blank: false,
   updatedAt: 0,
 })

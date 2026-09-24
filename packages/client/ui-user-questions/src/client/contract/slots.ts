@@ -4,6 +4,7 @@ import type {
   InjectFace, PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore,
 } from '@deepseek-ai/dsh-client-ui-slots'
 // The client module declares the conversation.composer SlotMap entry required by PropsRuntime.
+import type { ToolCallId } from '@deepseek-ai/dsh-llm/brand'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type {
   AskUserQuestionAnswer, AskUserQuestionItem,
@@ -33,6 +34,8 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      * a composition, so this control exists where that session is decided.
      */
     'question.planReview.agentPreset': { kind: 'single'; scope: 'session'; owner: PlanReviewPresetOwnerProps }
+    /** Actions for the exact plan under review; approval remains with the question composer. */
+    'conversation.plan-review.actions': { kind: 'list'; scope: 'session'; owner: { review: PlanReview; requestKey: PendingQuestion['key'] } }
   }
 }
 
@@ -72,6 +75,8 @@ export interface PlanReview {
   question: string
   /** The plan markdown under review. */
   plan: string
+  /** Logged tool invocation used to reopen this plan. */
+  callId?: ToolCallId
   /** Options that leave plan mode, in the intent's order. */
   approves: QuestionOption[]
   /** The option that stays in plan mode; absent when the asker offered none. */
@@ -133,8 +138,8 @@ export function planReviewOf(questions: readonly QuestionItem[]): PlanReview | u
   const intent = question.intent
   if (intent?.kind !== 'plan-review' || question.detail === undefined) return undefined
   if (question.multiSelect === true) return undefined
-  const named = intent.approve
-  if (!Array.isArray(named) || named.length === 0) return undefined
+  const named = typeof intent.approve === 'string' ? [intent.approve] : intent.approve
+  if (named.length === 0) return undefined
   // A declared setting name the card does not know is simply not rendered:
   // the asker reads only names it declared, so an unanswered unknown name
   // leaves its default in force rather than blocking the decision.
@@ -153,6 +158,7 @@ export function planReviewOf(questions: readonly QuestionItem[]): PlanReview | u
     id: question.id,
     question: question.question,
     plan: question.detail,
+    ...(intent.callId === undefined ? {} : { callId: intent.callId }),
     approves,
     settings,
     ...(extras[0] === undefined ? {} : { refine: extras[0] }),
@@ -283,7 +289,7 @@ export type QuestionWait = PendingQuestion
  */
 export type QuestionComposerProps =
   PropsRuntime<'conversation.composer'>
-  & PropsRenderSlots<'question.planReview.model' | 'question.planReview.agentPreset'>
+  & PropsRenderSlots<'question.planReview.model' | 'question.planReview.agentPreset' | 'conversation.plan-review.actions'>
   & PropsStore<ReturnType<typeof createQuestionDraftStore>>
   & InjectFace<QuestionComposerInjected>
   & { matched: QuestionWait }

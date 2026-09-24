@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { createMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
-import SessionStore, { SESSION_FORMAT_VERSION, SessionId, SessionLogOffset } from '@deepseek-ai/dsh-session'
+import SessionStore, { SESSION_FORMAT_VERSION, SessionId, SessionLogOffset, SessionSeq } from '@deepseek-ai/dsh-session'
 import type { SessionEvent, SessionHeader } from '@deepseek-ai/dsh-session'
 import SessionPersistence, { SessionPersistenceRevision } from '@deepseek-ai/dsh-session-persistence'
 import type { SessionHandle, SessionPersistenceSnapshot } from '@deepseek-ai/dsh-session-persistence'
@@ -33,7 +33,7 @@ class FakePersistence extends SessionPersistence {
       flush: () => Promise.resolve(),
       close: () => Promise.resolve(),
       [Symbol.asyncDispose]: () => Promise.resolve(),
-    } as unknown as SessionHandle
+    } as SessionHandle
   }
 
   private async inspect(id: ReturnType<typeof SessionId>) {
@@ -72,7 +72,7 @@ function stored(id: string, revision: string, time: number): Stored {
   const sessionId = SessionId(id)
   return {
     header: { version: SESSION_FORMAT_VERSION, id: sessionId, createdAt: time, isSeeded: false }, revision,
-    events: [{ type: 'user/message', seq: 0, time, data: { id: `m-${id}`, role: 'user', content: [{ type: 'text', text: id }], source: { kind: 'user' } }, surfaceOp: 'append' } as SessionEvent],
+    events: [{ type: 'user/message', seq: SessionSeq(0), time, data: createUserMessage({ content: [{ type: 'text', text: id }], source: { kind: 'user' } }), surfaceOp: 'append' }],
   }
 }
 

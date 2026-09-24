@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { resolveSlotLabel } from '@deepseek-ai/dsh-client-ui-slots'
 import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
-import { stubSettingsScope } from '@deepseek-ai/dsh-client-test-runtime'
+import { stubConfigForm } from '@deepseek-ai/dsh-client-test-runtime'
 import type { CodegraphSettings } from '@deepseek-ai/dsh-codegraph-index/client'
 import { apply, inject } from '../src/client/index.ts'
 import { CodegraphDock } from '../src/client/CodegraphDock.tsx'
@@ -17,8 +17,8 @@ async function bench() {
   const locale = new LocaleRuntime(ctx)
   locale.setLocale('zh')
   ctx.provide('locale', locale)
-  const scope = stubSettingsScope<CodegraphSettings>()
-  ctx.provide('settingsScope', { bind: () => scope.scope } as never)
+  const scope = stubConfigForm<CodegraphSettings>()
+  ctx.provide('configForms', { get: () => scope.scope } as never)
   const status = vi.fn(async () => ({
     ok: true as const,
     value: { projectPath: '/repo', indexed: false, indexing: false },
@@ -49,7 +49,7 @@ function declare(slots: SlotRegistry): () => void {
 
 describe('ui-codegraph apply', () => {
   it('declares the services it uses', () => {
-    expect(inject).toEqual(['slots', 'locale', 'remote', 'remote.codegraphIndex', 'settingsScope'])
+    expect(inject).toEqual(['slots', 'locale', 'remote', 'remote.codegraphIndex', 'configForms'])
   })
 
   it('registers the settings page and dock prompt', async () => {
@@ -62,14 +62,14 @@ describe('ui-codegraph apply', () => {
     expect(section.component).toBe(CodegraphSection)
     expect(section.options).toMatchObject({ id: 'codegraph', order: 25 })
     expect(resolveSlotLabel(section.options.label)).toBe('代码索引')
-    const sectionFace = (section.inject as unknown as () => CodegraphSectionInjected)()
+    const sectionFace = (section.inject as (() => CodegraphSectionInjected) & NonNullable<typeof section.inject>)()
     sectionFace.setAutoInit(true)
     expect(scope.set).toHaveBeenCalledWith('autoInit', true)
 
     const dock = slots.entries('conversation.input.dock')[0]!
     expect(dock.component).toBe(CodegraphDock)
     expect(dock.options).toMatchObject({ id: 'codegraph-index', order: 5 })
-    const dockFace = (dock.inject as unknown as () => CodegraphDockInjected)()
+    const dockFace = (dock.inject as (() => CodegraphDockInjected) & NonNullable<typeof dock.inject>)()
     expect(typeof dockFace.status).toBe('function')
     expect(typeof dockFace.init).toBe('function')
 

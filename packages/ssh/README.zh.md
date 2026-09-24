@@ -1,32 +1,45 @@
 ---
-description: "SSH 主机清单与一次性命令执行：Host 能力及其可选的面向模型工具；面向 SSH 子系统的使用者与维护者。"
+description: "POSIX SSH 提供方与用户主机清单：远端文件系统、进程、沙箱及一次性命令。"
 kind: "package-group"
 ---
 
-# ssh/：SSH 主机清单与执行
+# ssh/ — SSH 提供方与主机清单
 
 [English](README.md) | 中文
 
 ## 概述
-SSH 主机存储与一次性命令执行，分为 Host 能力与面向模型的消费方。`ctx.sshHosts` 拥有含凭据的主机记录，并保证每条命令至多派发一次；Typert 命名空间仍为 `ssh`。工具插件只在该服务挂载时注册 `ssh_list`/`ssh_exec`。
+本家族将文件、进程、终端及沙箱执行放在同一台 POSIX SSH 主机上，Harness 保留在本地。另由 `ctx.sshHosts` 存储用户主机，供一次性命令使用；其 Typert 命名空间仍为 `ssh`，可选的工具消费方注册 `ssh_list`/`ssh_exec`。两项服务可以同时组合。
 
-| 包 | 职责 | ctx 键 |
+## 目录
+
+- [包](#packages)
+- [相关文档](#related-documentation)
+- [开发备注](#dev-note)
+
+<a id="packages"></a>
+## 包
+
+| 包 | 职责 | 服务 |
 |---|---|---|
-| [`ssh-hosts/`](ssh-hosts/README.zh.md) | Host 侧主机存储与一次性执行。 | `sshHosts` |
-| [`tool-ssh/`](tool-ssh/README.zh.md) | 在 `ctx.tools` 上注册 `ssh_list` 与 `ssh_exec`。 | （注册到 `ctx.tools`） |
+| [`ssh`](ssh/README.zh.md) | 连接、辅助程序身份及传输生命周期 | `ctx.ssh` |
+| [`fs-ssh`](fs-ssh/README.zh.md) | 远端文件身份、读取及带保护的原子修改 | `ctx.fs` |
+| [`subprocess-ssh`](subprocess-ssh/README.zh.md) | 可执行文件查找、进程、控制流及终端 | `ctx.subprocess` |
+| [`sandbox-ssh`](sandbox-ssh/README.zh.md) | 远端文件效果限制及执行信息 | `ctx.sandbox` |
+| [`ssh-hosts`](ssh-hosts/README.zh.md) | 用户主机清单与至多一次命令派发 | `ctx.sshHosts` |
+| [`tool-ssh`](tool-ssh/README.zh.md) | 可选的 `ssh_list` 和 `ssh_exec` 模型工具 | `ctx.tools` |
 
-能力侧负责凭据存储与至多一次规则；工具插件负责面向模型的 schema，服务缺席时不注册任何工具。
-
+<a id="related-documentation"></a>
 ## 相关文档
 
-- [SSH 子系统参考](../../docs/subsystems/ssh.zh.md) —— 主机记录、执行约定与至多一次派发边界。
+- [SSH 子系统](../../docs/subsystems/ssh.zh.md) — 远端执行坐标及用户主机命令语义。
+- [POSIX SSH 决策](../../.agents/notes/implemented/architecture/2026-09-11-posix-ssh-runtime.zh.md) — 替代方案、影响及验证要求。
 
 <a id="dev-note"></a>
-### 开发备注
+## 开发备注
 
 <details>
-<summary>维护者工作上下文——点击展开</summary>
+<summary>维护者工作上下文 — 点击展开</summary>
 
-None.
+远端能力实现保留共享异步终端及取消接口。绝不能从远端路径字符串推断本地路径访问能力。
 
 </details>

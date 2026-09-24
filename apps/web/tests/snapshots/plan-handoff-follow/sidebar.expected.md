@@ -1,6 +1,8 @@
 - tree "Sessions":
-  - treeitem "Ungrouped" [expanded]:
-    - img
-    - text: Ungrouped
+  - treeitem "Ungrouped" [expanded]
   - treeitem "New Session" [selected]
-  - treeitem "Plan handoff follow {{age}}"
+  - treeitem "Plan handoff follow Session actions for Plan handoff follow Archive session Pin session":
+    - text: Plan handoff follow
+    - button "Session actions for Plan handoff follow"
+    - button "Archive session"
+    - button "Pin session"

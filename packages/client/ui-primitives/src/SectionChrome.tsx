@@ -6,7 +6,7 @@
 
 import type { ReactNode } from 'react'
 import { Button } from './Button.tsx'
-import { IconLoadingOutline16, IconRefreshOutline16 } from './icons/index.tsx'
+import { IconLoadingOutlineRegular, IconRefreshOutlineRegular } from './icons/index.tsx'
 import css from './SectionChrome.module.css'
 
 /** Localized copy for {@link SectionChrome}'s refresh control and failure strip. */
@@ -55,7 +55,7 @@ export function SectionChrome({ title, intro, meta, busy, refreshDisabled = fals
           <Button
             variant="ghost"
             size="sm"
-            icon={busy ? <IconLoadingOutline16 className={css.spin} /> : <IconRefreshOutline16 />}
+            icon={busy ? <IconLoadingOutlineRegular className={css.spin} /> : <IconRefreshOutlineRegular />}
             disabled={busy || refreshDisabled}
             onClick={onRefresh}
             aria-label={labels.refresh}

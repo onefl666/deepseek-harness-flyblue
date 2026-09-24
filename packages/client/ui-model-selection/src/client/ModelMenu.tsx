@@ -23,8 +23,8 @@ import { createPortal } from 'react-dom'
 import clsx from 'clsx'
 import type { ModelReasoningEffort, ModelSelection } from '@deepseek-ai/dsh-api-remotes/client'
 import {
-  IconCheckOutline16, IconChevronDownOutline14, IconChevronRightOutline14,
-  IconDataOutline16, IconWarningOutline16, Toast,
+  IconCheckOutlineRegular, IconChevronDownOutlineRegular, IconChevronRightOutlineRegular,
+  IconDataOutlineRegular, IconWarningOutlineRegular, Toast,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
@@ -40,6 +40,9 @@ interface EffortChoice {
   effort: string | undefined
   label: string
 }
+
+/** A menu selection either commits or carries its own user-facing failure. */
+export type ModelApplyResult = { ok: true } | { ok: false; message: string }
 
 /** Unplaced portal card: hidden but laid out at a fixed origin so offsetWidth/offsetHeight are real (Menu primitive's measure pass). */
 const MEASURE_STYLE: CSSProperties = { visibility: 'hidden', left: 0, top: 0 }
@@ -58,9 +61,9 @@ export interface ModelMenuProps {
   /**
    * Apply one complete selection.
    * @param selection - provider, provider-owned model id, and optional adapter-owned effort.
-   * @returns whether the host accepted it; false keeps the menu open and raises the failure toast.
+   * @returns the selection result; failure keeps the menu open and raises its message.
    */
-  apply: (selection: ModelSelection) => Promise<boolean>
+  apply: (selection: ModelSelection) => Promise<ModelApplyResult>
   /** Whether the trigger refuses input. */
   locked: boolean
   /** Translate seat of the `model` namespace. */
@@ -92,6 +95,8 @@ export function ModelMenu({ value, store, load, apply, locked, t }: ModelMenuPro
   const menuRef = useRef<HTMLDivElement | null>(null)
   const [menuPos, setMenuPos] = useState<CSSProperties | null>(null)
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
+  const drilledCell = useRef(0)
+  const previousPane = useRef<Pane>('root')
   const id = useId()
 
   const choices = useMemo(() => state.groups.flatMap(group =>
@@ -130,6 +135,17 @@ export function ModelMenu({ value, store, load, apply, locked, t }: ModelMenuPro
       })),
     ], [reasoning, t])
   const busy = state.status === 'selecting'
+
+  useLayoutEffect(() => {
+    if (!open) { previousPane.current = 'root'; return }
+    if (previousPane.current === pane) return
+    previousPane.current = pane
+    const items = itemRefs.current.filter(item => item !== null)
+    const target = pane === 'root'
+      ? items[drilledCell.current]
+      : items.find(item => item.getAttribute('aria-checked') === 'true') ?? items[0]
+    ;(target ?? triggerRef.current)?.focus()
+  }, [open, pane])
 
   const reload = (): void => {
     lastActionRef.current = 'load'
@@ -185,6 +201,7 @@ export function ModelMenu({ value, store, load, apply, locked, t }: ModelMenuPro
   const show = (): void => {
     setPane('root')
     setOpen(true)
+    triggerRef.current?.focus()
     reload()
   }
 
@@ -198,7 +215,9 @@ export function ModelMenu({ value, store, load, apply, locked, t }: ModelMenuPro
     const items = itemRefs.current.filter(item => item !== null)
     if (items.length === 0) return
     const active = items.findIndex(item => item === document.activeElement)
-    const next = (Math.max(active, 0) + offset + items.length) % items.length
+    const next = active < 0
+      ? offset > 0 ? 0 : items.length - 1
+      : (active + offset + items.length) % items.length
     items[next]?.focus()
   }
 
@@ -211,6 +230,22 @@ export function ModelMenu({ value, store, load, apply, locked, t }: ModelMenuPro
       return
     }
     if (!open) return
+    if (event.key === 'Tab') {
+      const active = document.activeElement
+      if (active !== triggerRef.current && !itemRefs.current.includes(active as HTMLButtonElement)) return
+      event.preventDefault()
+      if (event.shiftKey) {
+        if (pane === 'root') close(true)
+        else setPane('root')
+      } else if (active === triggerRef.current) {
+        itemRefs.current[0]?.focus()
+      } else if (pane === 'root') {
+        ;(active as HTMLButtonElement).click()
+      } else {
+        ;(active as HTMLButtonElement).click()
+      }
+      return
+    }
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault()
       moveFocus(event.key === 'ArrowDown' ? 1 : -1)
@@ -225,18 +260,14 @@ export function ModelMenu({ value, store, load, apply, locked, t }: ModelMenuPro
     close()
   }
 
-  const settleSelection = (accepted: boolean): void => {
-    if (accepted) {
+  const settleSelection = (result: ModelApplyResult): void => {
+    if (result.ok) {
       if (rootRef.current !== null) close(true)
       return
     }
-    // Read live rather than from the rendered snapshot: a rejection settles
-    // before the state that carries its message has re-rendered.
-    const failure = store.getSnapshot().error
-    if (failure !== null) {
-      toastSeq.current += 1
-      setToast({ seq: toastSeq.current, text: t('error.action', { message: failure }) })
-    }
+    toastSeq.current += 1
+    setToast({ seq: toastSeq.current, text: result.message })
+    triggerRef.current?.focus()
   }
 
   const choose = (selection: ModelSelection): void => {
@@ -295,6 +326,7 @@ export function ModelMenu({ value, store, load, apply, locked, t }: ModelMenuPro
         aria-controls={open ? `${id}-menu` : undefined}
         title={triggerLabel}
         disabled={locked}
+        onMouseDown={(event) => { event.preventDefault() }}
         onClick={() => {
           if (open) {
             close()
@@ -303,10 +335,10 @@ export function ModelMenu({ value, store, load, apply, locked, t }: ModelMenuPro
           }
         }}
       >
-        <IconDataOutline16 className={css.triggerIcon} size={16} />
+        <IconDataOutlineRegular size={16} className={css.triggerIcon} />
         <span className={css.triggerLabel}>{modelLabel}</span>
         {effortLabel !== undefined && <span className={css.triggerEffort}>{effortLabel}</span>}
-        <IconChevronDownOutline14 className={clsx(css.chevron, open && css.chevronOpen)} />
+        <IconChevronDownOutlineRegular size={14} className={clsx(css.chevron, open && css.chevronOpen)} />
       </button>
 
       {/* Portaled to body (Menu primitive's portal mode) so the sidebar and
@@ -321,19 +353,22 @@ export function ModelMenu({ value, store, load, apply, locked, t }: ModelMenuPro
           role="menu"
           aria-label={t('menu.aria')}
           aria-busy={state.status === 'loading' || busy}
+          onMouseDown={(event) => {
+            if (event.target instanceof Element && event.target.closest('button') !== null) event.preventDefault()
+          }}
         >
           {pane === 'root' && (
             <>
-              <button ref={itemRef()} type="button" role="menuitem" className={css.cell} onClick={() => { setPane('model') }}>
+              <button ref={itemRef()} type="button" role="menuitem" className={css.cell} onClick={() => { drilledCell.current = 0; setPane('model') }}>
                 <span className={css.cellLabel}>{t('menu.model')}</span>
                 <span className={css.cellValue}>{modelLabel}</span>
-                <IconChevronRightOutline14 className={css.cellChevron} />
+                <IconChevronRightOutlineRegular size={14} className={css.cellChevron} />
               </button>
               {reasoning !== undefined && (
-                <button ref={itemRef()} type="button" role="menuitem" className={css.cell} onClick={() => { setPane('effort') }}>
+                <button ref={itemRef()} type="button" role="menuitem" className={css.cell} onClick={() => { drilledCell.current = 1; setPane('effort') }}>
                   <span className={css.cellLabel}>{t('menu.effort')}</span>
                   <span className={css.cellValue}>{effortLabel}</span>
-                  <IconChevronRightOutline14 className={css.cellChevron} />
+                  <IconChevronRightOutlineRegular size={14} className={css.cellChevron} />
                 </button>
               )}
             </>
@@ -380,7 +415,7 @@ export function ModelMenu({ value, store, load, apply, locked, t }: ModelMenuPro
                               <span className={css.modelName}>{model.name}</span>
                             </span>
                             <span className={css.check}>
-                              {selected ? <IconCheckOutline16 /> : null}
+                              {selected ? <IconCheckOutlineRegular size={16} /> : null}
                             </span>
                           </button>
                         )
@@ -420,7 +455,7 @@ export function ModelMenu({ value, store, load, apply, locked, t }: ModelMenuPro
                       <span className={css.modelName}>{level.label}</span>
                     </span>
                     <span className={css.check}>
-                      {effectiveEffort === level.effort ? <IconCheckOutline16 /> : null}
+                      {effectiveEffort === level.effort ? <IconCheckOutlineRegular size={16} /> : null}
                     </span>
                   </button>
                 ))}
@@ -433,7 +468,7 @@ export function ModelMenu({ value, store, load, apply, locked, t }: ModelMenuPro
         <Toast
           key={toast.seq}
           text={toast.text}
-          icon={<IconWarningOutline16 />}
+          icon={<IconWarningOutlineRegular size={16} />}
           anchor={rootRef.current?.closest<HTMLElement>('[data-composer-card]') ?? null}
           onDone={() => { setToast(null) }}
         />

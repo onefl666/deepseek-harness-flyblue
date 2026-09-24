@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
-  IconChevronRightOutline14, IconFolderOpenOutline16, IconSearchOutline16,
+  IconChevronRightOutlineRegular, IconFolderOpenOutlineRegular, IconSearchOutlineRegular,
   Input, Pill, SectionChrome,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
@@ -162,7 +162,7 @@ export function WorkspaceInspectorSection({
           : (
             <>
               <Input
-                icon={<IconSearchOutline16 />}
+                icon={<IconSearchOutlineRegular size={16} />}
                 placeholder={t('searchPlaceholder')}
                 aria-label={t('searchAria')}
                 value={query}
@@ -176,7 +176,7 @@ export function WorkspaceInspectorSection({
                       const target = segments.slice(0, index + 1).join('/')
                       return (
                         <span key={target} className={css.crumbGroup}>
-                          <IconChevronRightOutline14 className={css.crumbSep} />
+                          <IconChevronRightOutlineRegular size={14} className={css.crumbSep} />
                           <button type="button" className={css.crumb} onClick={() => { navigate(target) }}>{segment}</button>
                         </span>
                       )
@@ -201,7 +201,7 @@ export function WorkspaceInspectorSection({
                                   }}
                                 >
                                   {entry.directory
-                                    ? <IconFolderOpenOutline16 className={css.entryIcon} />
+                                    ? <IconFolderOpenOutlineRegular size={16} className={css.entryIcon} />
                                     : <span className={css.fileIcon} aria-hidden="true" />}
                                   <span className={css.entryName} title={entry.path}>{entry.name}</span>
                                   <span className={css.entryMeta}>{entry.directory ? t('directory') : formatBytes(entry.size)}</span>

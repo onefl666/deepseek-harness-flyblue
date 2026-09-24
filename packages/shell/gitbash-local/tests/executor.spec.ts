@@ -21,7 +21,17 @@ import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
 import SubprocessRuntime from '@deepseek-ai/dsh-subprocess'
 import type { SubprocessHandle, SubprocessOutcome, SubprocessOutputReader, SubprocessSpawnSpec } from '@deepseek-ai/dsh-subprocess'
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
-import type { ShellProcess } from '@deepseek-ai/dsh-shell'
+import type { ShellExecSpec, ShellExecution, ShellProcess, ShellRunResult } from '@deepseek-ai/dsh-shell'
+
+/** Historical foreground shorthand over the unified execute() method. */
+async function run(x: { execute(spec: ShellExecSpec): Promise<ShellExecution> }, spec: ShellExecSpec): Promise<ShellRunResult> {
+  return (await x.execute(spec)).result()
+}
+
+/** Historical background shorthand without an armed deadline. */
+function start(x: { execute(spec: ShellExecSpec): Promise<ShellExecution> }, spec: ShellExecSpec): Promise<ShellExecution> {
+  return x.execute({ ...spec, onExpiry: 'none' })
+}
 
 const spillDir = mkdtempSync(join(tmpdir(), 'dsh-gitbash-exec-spec-'))
 
@@ -79,7 +89,7 @@ function samePath(actual: string, expected: string): boolean {
   return norm(actual) === norm(expected)
 }
 
-async function setup(config: ConstructorParameters<typeof GitBashExecutor>[1] = {}) {
+async function setup(config: Parameters<typeof GitBashExecutor.Config>[0] = {}) {
   const ctx = createContext()
   await ctx.plugin(LocalSubprocessRuntime)
   ;(ctx.subprocess as LocalSubprocessRuntime).internals = { spillDir }
@@ -148,14 +158,12 @@ describe('resolveGitBashPath and candidateGitBashPaths (pure, every platform)', 
       join('P:\\Program Files', 'Git', 'bin', 'bash.exe'),
       join('P:\\Program Files (x86)', 'Git', 'bin', 'bash.exe'),
       join('L:\\app-data', 'Programs', 'Git', 'bin', 'bash.exe'),
-      // Every PATH entry contributes the installation its git.exe names
-      // (`…\Git\cmd` → `…\Git\bin`; host join collapses the `..` segment);
-      // the `P:\plain\bin` derived candidate equals its direct candidate, so
-      // it lists once.
+      // Host path handling collapses the Windows separator only on Windows.
       join('Q:\\quoted git\\cmd', '..', 'bin', 'bash.exe'),
-      join('P:\\plain\\bin', 'bash.exe'),
+      join('P:\\plain\\bin', '..', 'bin', 'bash.exe'),
       join('Q:\\quoted git\\cmd', 'bash.exe'),
-    ])
+      join('P:\\plain\\bin', 'bash.exe'),
+    ].filter((candidate, index, all) => all.indexOf(candidate) === index))
   })
 
   it('skips System32 and WindowsApps PATH entries whose bash.exe is the WSL launcher or a Store alias', () => {
@@ -251,6 +259,7 @@ describe('resolveGitBashPath and candidateGitBashPaths (pure, every platform)', 
 describe('spawn construction (pure, every platform)', () => {
   /** A subprocess service that records spawn specs and settles instantly. */
   class CapturingSubprocessRuntime extends SubprocessRuntime {
+    override async terminalEnvironment() { return { platform: 'windows' as const } }
     specs: SubprocessSpawnSpec[] = []
     done: Promise<SubprocessOutcome> = Promise.resolve({ exitCode: 0, signal: null })
     stderrText = ''
@@ -272,6 +281,7 @@ describe('spawn construction (pure, every platform)', () => {
         stdin: undefined,
         stdout: undefined,
         stderr: undefined,
+        control: undefined,
         collected: { stdout: this.stdoutReader, stderr: this.stderrReader },
         done: this.done,
         terminate: () => {},
@@ -286,7 +296,7 @@ describe('spawn construction (pure, every platform)', () => {
     await ctx.plugin(GitBashExecutor, { gitBashPath: 'C:\\git\\bin\\bash.exe' })
     const bash = ctx.shell as GitBashExecutor
     expect(bash.gitBashPath).toBe('C:\\git\\bin\\bash.exe')
-    await ctx.shell.run(ctx.shell.resolve({ command: 'printf 你好' }))
+    await run(ctx.shell, ctx.shell.resolve({ command: 'printf 你好' }))
     expect(subprocess.specs).toHaveLength(1)
     expect(subprocess.specs[0]!.argv).toEqual(['C:\\git\\bin\\bash.exe', '-c', 'printf 你好'])
   })
@@ -298,7 +308,7 @@ describe('spawn construction (pure, every platform)', () => {
     subprocess.stderrText = 'target stderr'
     subprocess.done = Promise.reject(new Error('provider lost the direct outcome'))
 
-    const proc = ctx.shell.start(ctx.shell.resolve({ command: 'echo maybe-ran' }))
+    const proc = await start(ctx.shell, ctx.shell.resolve({ command: 'echo maybe-ran' }))
     await expect(proc.done).resolves.toBeUndefined()
     expect(proc.status).toBe('killed')
     const output = proc.readOutput().delta
@@ -317,7 +327,7 @@ describe('spawn construction (pure, every platform)', () => {
     })
     subprocess.done = Promise.reject(providerError)
 
-    const proc = ctx.shell.start(ctx.shell.resolve({ command: 'echo maybe-ran' }))
+    const proc = await start(ctx.shell, ctx.shell.resolve({ command: 'echo maybe-ran' }))
     await expect(proc.done).resolves.toBeUndefined()
     expect(proc.status).toBe('killed')
     expect(proc.readOutput().delta).toContain('unprintable provider failure')
@@ -331,7 +341,7 @@ describe('spawn construction (pure, every platform)', () => {
 
     const killedOutcome = Promise.withResolvers<SubprocessOutcome>()
     subprocess.done = killedOutcome.promise
-    const killed = ctx.shell.start(ctx.shell.resolve({ command: 'echo maybe-ran' }))
+    const killed = await start(ctx.shell, ctx.shell.resolve({ command: 'echo maybe-ran' }))
     expect(killed.kill()).toBe(true)
     killedOutcome.resolve({ exitCode: 0, signal: null })
     await killed.done
@@ -341,7 +351,7 @@ describe('spawn construction (pure, every platform)', () => {
     const abortedOutcome = Promise.withResolvers<SubprocessOutcome>()
     subprocess.done = abortedOutcome.promise
     const controller = new AbortController()
-    const aborted = ctx.shell.start(ctx.shell.resolve({
+    const aborted = await start(ctx.shell, ctx.shell.resolve({
       command: 'echo maybe-ran',
       signal: controller.signal,
     }))
@@ -353,6 +363,7 @@ describe('spawn construction (pure, every platform)', () => {
 
   it.skipIf(process.platform === 'win32')('refuses to mount without a configured path off win32', async () => {
     const ctx = createContext()
+    await ctx.plugin(LocalSubprocessRuntime)
     await expect(ctx.plugin(GitBashExecutor, {})).rejects.toThrow('gitbash-local: Git Bash resolution requires the win32 platform')
   })
 })
@@ -360,7 +371,7 @@ describe('spawn construction (pure, every platform)', () => {
 describe.skipIf(!hasGitBash)('GitBashExecutor.run', () => {
   it('resolves with output and the effective timeout', { timeout: 15_000 }, async () => {
     const { bash } = await setup({ timeoutMs: 10_000 })
-    const result = await bash.run(bash.resolve({ command: "printf 'hi\\n'" }))
+    const result = await run(bash, bash.resolve({ command: "printf 'hi\\n'" }))
     expect(result.exitCode).toBe(0)
     expect(result.stdout.text).toBe('hi\n')
     expect(result.timeoutMs).toBe(10_000)
@@ -368,7 +379,7 @@ describe.skipIf(!hasGitBash)('GitBashExecutor.run', () => {
 
   it('propagates non-zero exits and stderr', async () => {
     const { bash } = await setup()
-    const result = await bash.run(bash.resolve({ command: "printf 'err\\n' >&2; exit 3" }))
+    const result = await run(bash, bash.resolve({ command: "printf 'err\\n' >&2; exit 3" }))
     expect(result.exitCode).toBe(3)
     expect(result.stderr.text).toBe('err\n')
     expect(result.stdout.text).toBe('')
@@ -376,7 +387,7 @@ describe.skipIf(!hasGitBash)('GitBashExecutor.run', () => {
 
   it('passes UTF-8 through unchanged in both directions', async () => {
     const { bash } = await setup()
-    const result = await bash.run(bash.resolve({ command: "printf '你好，世界\\n'" }))
+    const result = await run(bash, bash.resolve({ command: "printf '你好，世界\\n'" }))
     expect(result.exitCode).toBe(0)
     expect(result.stdout.text).toBe('你好，世界\n')
   })
@@ -387,21 +398,21 @@ describe.skipIf(!hasGitBash)('GitBashExecutor.run', () => {
     tempDirs.push(first, second)
     const { bash } = await setup({ cwd: first })
     // `pwd -W` reports the Windows working directory Git Bash mounted.
-    const fromConfig = await bash.run(bash.resolve({ command: 'pwd -W' }))
+    const fromConfig = await run(bash, bash.resolve({ command: 'pwd -W' }))
     expect(samePath(fromConfig.stdout.text.trim(), first)).toBe(true)
-    const fromCall = await bash.run(bash.resolve({ command: 'pwd -W', workdir: second }))
+    const fromCall = await run(bash, bash.resolve({ command: 'pwd -W', workdir: second }))
     expect(samePath(fromCall.stdout.text.trim(), second)).toBe(true)
   })
 
   it('defaults cwd to process.cwd()', async () => {
     const { bash } = await setup()
-    const result = await bash.run(bash.resolve({ command: 'pwd -W' }))
+    const result = await run(bash, bash.resolve({ command: 'pwd -W' }))
     expect(samePath(result.stdout.text.trim(), process.cwd())).toBe(true)
   })
 
   it('caps per-call timeouts at maxTimeoutMs', async () => {
     const { bash } = await setup({ timeoutMs: 1_000, maxTimeoutMs: 2_000 })
-    const result = await bash.run(bash.resolve({ command: 'true', timeoutMs: 99_999 }))
+    const result = await run(bash, bash.resolve({ command: 'true', timeoutMs: 99_999 }))
     expect(result.timeoutMs).toBe(2_000)
   })
 
@@ -425,7 +436,7 @@ describe.skipIf(!hasGitBash)('GitBashExecutor.run', () => {
     const { bash } = await setup({ maxOutputBytes: 100 })
     expect(bash.resolve({ command: 'true' }).stdoutMaxBytes).toBe(100)
 
-    const result = await bash.run(bash.resolve({
+    const result = await run(bash, bash.resolve({
       command: "printf '%0.sx' $(seq 1 500); printf '%0.se\\n' $(seq 1 500) >&2",
       stdoutMaxBytes: 500,
     }))
@@ -438,7 +449,7 @@ describe.skipIf(!hasGitBash)('GitBashExecutor.run', () => {
 
   it('per-call timeout takes precedence under the cap and kills on expiry', async () => {
     const { bash } = await setup({ timeoutMs: 60_000 })
-    const result = await bash.run(bash.resolve({ command: 'sleep 60', timeoutMs: 100 }))
+    const result = await run(bash, bash.resolve({ command: 'sleep 60', timeoutMs: 100 }))
     expect(result.timedOut).toBe(true)
     // Mutually exclusive: a timeout classifies as timedOut, never also aborted.
     expect(result.aborted).toBe(false)
@@ -448,7 +459,7 @@ describe.skipIf(!hasGitBash)('GitBashExecutor.run', () => {
   it('propagates abort signals', async () => {
     const { bash } = await setup()
     const controller = new AbortController()
-    const pending = bash.run(bash.resolve({ command: 'sleep 60', signal: controller.signal }))
+    const pending = run(bash, bash.resolve({ command: 'sleep 60', signal: controller.signal }))
     setTimeout(() => { controller.abort() }, 50)
     const result = await pending
     expect(result.aborted).toBe(true)
@@ -458,7 +469,7 @@ describe.skipIf(!hasGitBash)('GitBashExecutor.run', () => {
 
   it('classifies a self-killed command as neither timed out nor aborted', async () => {
     const { bash } = await setup({ timeoutMs: 60_000 })
-    const result = await bash.run(bash.resolve({ command: 'kill -9 $$' }))
+    const result = await run(bash, bash.resolve({ command: 'kill -9 $$' }))
     expect(result.timedOut).toBe(false)
     expect(result.aborted).toBe(false)
     // Windows reports a forced termination without a signal.
@@ -467,7 +478,7 @@ describe.skipIf(!hasGitBash)('GitBashExecutor.run', () => {
 
   it('rejects on spawn failure (bad workdir)', async () => {
     const { bash } = await setup()
-    await expect(bash.run(bash.resolve({ command: 'true', workdir: '/nonexistent-dsh' }))).rejects.toThrow(/ENOENT/)
+    await expect(run(bash, bash.resolve({ command: 'true', workdir: '/nonexistent-dsh' }))).rejects.toThrow(/ENOENT/)
   })
 
   it('resolve() carries stdin/env/dshEnv onto the spec, and run() threads them to the command', async () => {
@@ -482,7 +493,7 @@ describe.skipIf(!hasGitBash)('GitBashExecutor.run', () => {
     expect(spec.stdin).toBe('piped\n')
     expect(spec.env).toEqual({ SEAM_VAR: 'env-ok' })
     expect(spec.dshEnv).toEqual({ DSH_SEAM_VAR: 'dsh-ok' })
-    const result = await bash.run(spec)
+    const result = await run(bash, spec)
     expect(result.stdout.text).toBe('piped\n[env-ok][dsh-ok]\n')
   })
 
@@ -499,7 +510,7 @@ describe.skipIf(!hasGitBash)('GitBashExecutor.start (background process handles)
   it('start returns immediately with a running handle that settles as completed', async ({ task }) => {
     const { bash } = await setup()
     const barrier = commandBarrier()
-    const proc = bash.start(bash.resolve({
+    const proc = await start(bash, bash.resolve({
       command: `printf 'ready\\n'; ${barrier.command}; printf 'done\\n'`,
       env: barrier.env,
     }))
@@ -516,7 +527,7 @@ describe.skipIf(!hasGitBash)('GitBashExecutor.start (background process handles)
 
   it('threads stdin and extra env into a background process', async () => {
     const { bash } = await setup()
-    const proc = bash.start(bash.resolve({
+    const proc = await start(bash, bash.resolve({
       command: 'IFS= read -r s; printf \'%s\\n\' "$s" "[${BG_VAR}][${DSH_BG_VAR}]"',
       stdin: 'bg-stdin\n',
       env: { BG_VAR: 'bg-env' },
@@ -532,7 +543,7 @@ describe.skipIf(!hasGitBash)('GitBashExecutor.start (background process handles)
   it('readOutput is consuming: increments are never re-delivered, and reads stay valid after exit', async ({ task }) => {
     const { bash } = await setup()
     const barrier = commandBarrier()
-    const proc = bash.start(bash.resolve({
+    const proc = await start(bash, bash.resolve({
       command: `printf 'first\\n'; ${barrier.command}; printf 'second\\n'`,
       env: barrier.env,
     }))
@@ -553,28 +564,28 @@ describe.skipIf(!hasGitBash)('GitBashExecutor.start (background process handles)
 
   it('readOutput marks stderr sections', async () => {
     const { bash } = await setup()
-    const proc = bash.start(bash.resolve({ command: "printf 'out\\n'; printf 'err\\n' >&2" }))
+    const proc = await start(bash, bash.resolve({ command: "printf 'out\\n'; printf 'err\\n' >&2" }))
     await proc.done
     expect(proc.readOutput().delta).toBe('out\n[stderr]\nerr\n')
   })
 
   it('readOutput reports stderr-only deltas without a leading newline', async () => {
     const { bash } = await setup()
-    const proc = bash.start(bash.resolve({ command: "printf 'err\\n' >&2" }))
+    const proc = await start(bash, bash.resolve({ command: "printf 'err\\n' >&2" }))
     await proc.done
     expect(proc.readOutput().delta).toBe('[stderr]\nerr\n')
   })
 
   it('readOutput adds a separator only when stdout lacks a trailing newline', async () => {
     const { bash } = await setup()
-    const proc = bash.start(bash.resolve({ command: "printf 'out'; printf 'err\\n' >&2" }))
+    const proc = await start(bash, bash.resolve({ command: "printf 'out'; printf 'err\\n' >&2" }))
     await proc.done
     expect(proc.readOutput().delta).toBe('out\n[stderr]\nerr\n')
   })
 
   it('readOutput flags lossy reads and reports stdout spill paths', async () => {
     const { bash } = await setup({ maxOutputBytes: 100 })
-    const proc = bash.start(bash.resolve({ command: 'for i in $(seq 1 100); do echo "line-$i"; done' }))
+    const proc = await start(bash, bash.resolve({ command: 'for i in $(seq 1 100); do echo "line-$i"; done' }))
     await proc.done
     const read = proc.readOutput()
     // Window slid past offset 0 → lossy, spill path points at the full stream.
@@ -584,7 +595,7 @@ describe.skipIf(!hasGitBash)('GitBashExecutor.start (background process handles)
 
   it('readOutput reports stderr spill paths', async () => {
     const { bash } = await setup({ maxOutputBytes: 100 })
-    const proc = bash.start(bash.resolve({ command: 'for i in $(seq 1 100); do echo "line-$i" >&2; done' }))
+    const proc = await start(bash, bash.resolve({ command: 'for i in $(seq 1 100); do echo "line-$i" >&2; done' }))
     await proc.done
     const read = proc.readOutput()
     expect(read.lossy).toBe(true)
@@ -594,7 +605,7 @@ describe.skipIf(!hasGitBash)('GitBashExecutor.start (background process handles)
 
   it('kill() requests managed-range termination: true once, false after settlement', async () => {
     const { bash } = await setup()
-    const proc = bash.start(bash.resolve({ command: 'sleep 60' }))
+    const proc = await start(bash, bash.resolve({ command: 'sleep 60' }))
     expect(proc.kill()).toBe(true)
     await proc.done
     expect(proc.status).toBe('killed')
@@ -603,7 +614,7 @@ describe.skipIf(!hasGitBash)('GitBashExecutor.start (background process handles)
 
   it('kill() returns false for a naturally completed process', async () => {
     const { bash } = await setup()
-    const proc = bash.start(bash.resolve({ command: 'true' }))
+    const proc = await start(bash, bash.resolve({ command: 'true' }))
     await proc.done
     expect(proc.status).toBe('completed')
     expect(proc.kill()).toBe(false)
@@ -612,7 +623,7 @@ describe.skipIf(!hasGitBash)('GitBashExecutor.start (background process handles)
   it('a spec.signal abort settles the handle as killed, not completed', async () => {
     const { bash } = await setup()
     const controller = new AbortController()
-    const proc = bash.start(bash.resolve({ command: 'sleep 60', signal: controller.signal }))
+    const proc = await start(bash, bash.resolve({ command: 'sleep 60', signal: controller.signal }))
     controller.abort()
     await proc.done
     expect(proc.status).toBe('killed')
@@ -620,7 +631,7 @@ describe.skipIf(!hasGitBash)('GitBashExecutor.start (background process handles)
 
   it('an asynchronous creation failure settles as killed with a stage-neutral note', async () => {
     const { bash } = await setup()
-    const proc = bash.start(bash.resolve({ command: 'true', workdir: '/nonexistent-dsh' }))
+    const proc = await start(bash, bash.resolve({ command: 'true', workdir: '/nonexistent-dsh' }))
     // done resolves (never rejects) even though the process never ran.
     await expect(proc.done).resolves.toBeUndefined()
     expect(proc.status).toBe('killed')
@@ -638,7 +649,7 @@ describe.skipIf(!hasGitBash)('process lifecycle ownership (the subprocess servic
 
     // The child prints its own Windows pid ($$ is an msys pid) so the test can
     // probe liveness through the public read surface alone.
-    const proc = bash.start(bash.resolve({ command: 'cat /proc/$$/winpid; sleep 60' }))
+    const proc = await start(bash, bash.resolve({ command: 'cat /proc/$$/winpid; sleep 60' }))
     const pid = Number((await readUntil(proc, '\n', task.timeout)).trim())
     expect(Number.isInteger(pid) && pid > 0).toBe(true)
 
@@ -663,10 +674,10 @@ describe.skipIf(!hasGitBash)('process lifecycle ownership (the subprocess servic
     await ctx.plugin(GitBashExecutor, { graceMs: 200 })
     const bash = ctx.shell as GitBashExecutor
 
-    const finished = bash.start(bash.resolve({ command: 'true' }))
+    const finished = await start(bash, bash.resolve({ command: 'true' }))
     await finished.done
     expect(finished.status).toBe('completed')
-    const running = bash.start(bash.resolve({ command: 'sleep 60' }))
+    const running = await start(bash, bash.resolve({ command: 'sleep 60' }))
 
     await managerFiber.dispose()
     // A settled process was untouched; the live one was terminated and joined.

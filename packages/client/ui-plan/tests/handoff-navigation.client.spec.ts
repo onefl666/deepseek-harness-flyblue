@@ -8,7 +8,7 @@
  */
 import { afterEach, describe, expect, it } from 'vitest'
 import type {
-  SessionLiveEventEntry, SessionTransientEventEntry,
+  SessionLiveEventEntry, SessionReference, SessionTransientEventEntry,
 } from '@deepseek-ai/dsh-api-session-controller/client'
 import { SlotTestRuntime } from '@deepseek-ai/dsh-client-test-runtime'
 import { LlmAttemptId } from '@deepseek-ai/dsh-llm/brand'
@@ -20,8 +20,13 @@ const EXECUTION = 'execution-session' as SessionId
 const OTHER = 'other-session' as SessionId
 
 let runtime: SlotTestRuntime | undefined
+let selection: SessionReference | undefined
+const opened: SessionId[] = []
 
 afterEach(async () => {
+  selection?.release()
+  selection = undefined
+  opened.length = 0
   await runtime?.dispose()
   runtime = undefined
 })
@@ -57,96 +62,99 @@ function liveChunk(seq: number): SessionTransientEventEntry {
   }
 }
 
-/** Sessions the policy selected, in call order. */
-function opened(rt: SlotTestRuntime): readonly unknown[] {
-  return rt.sessions.calls.filter(call => call.method === 'open').map(call => call.args[0])
+/** Replace the main-view owner the test has selected. */
+function select(rt: SlotTestRuntime, id: SessionId): void {
+  const next = rt.sessions.retain(id, { source: 'mainView' })
+  selection?.release()
+  selection = next
 }
 
 /** One planning Session already selected on screen. */
 async function boot(): Promise<SlotTestRuntime> {
   runtime = await SlotTestRuntime.create()
-  await runtime.sessions.add({ id: PLAN }, { current: true })
+  await runtime.sessions.add({ id: PLAN })
+  select(runtime, PLAN)
   return runtime
 }
 
 describe('plan handoff follow', () => {
   it('opens the execution session when the list already carries it', async () => {
     const rt = await boot()
-    const dispose = followPlanHandoff(rt.sessions)
-    await rt.sessions.add({ id: EXECUTION }, { current: false })
+    const dispose = followPlanHandoff(rt.sessions, (id) => { opened.push(id) })
+    await rt.sessions.add({ id: EXECUTION })
 
     await rt.sessions.appendEvent(PLAN, handoff(EXECUTION, 2))
-    expect(opened(rt)).toEqual([EXECUTION])
+    expect(opened).toEqual([EXECUTION])
     dispose()
   })
 
   it('waits for a late execution session to reach the list', async () => {
     const rt = await boot()
-    const dispose = followPlanHandoff(rt.sessions)
+    const dispose = followPlanHandoff(rt.sessions, (id) => { opened.push(id) })
 
     await rt.sessions.appendEvent(PLAN, handoff(EXECUTION, 2))
-    expect(opened(rt)).toEqual([])
+    expect(opened).toEqual([])
 
-    await rt.sessions.add({ id: EXECUTION }, { current: false })
-    expect(opened(rt)).toEqual([EXECUTION])
+    await rt.sessions.add({ id: EXECUTION })
+    expect(opened).toEqual([EXECUTION])
     dispose()
   })
 
   it('does not follow history that already carries a handoff', async () => {
     const rt = await boot()
-    await rt.sessions.add({ id: EXECUTION }, { current: false })
-    const dispose = followPlanHandoff(rt.sessions)
+    await rt.sessions.add({ id: EXECUTION })
+    const dispose = followPlanHandoff(rt.sessions, (id) => { opened.push(id) })
 
     await rt.sessions.replaceEvents(PLAN, [handoff(EXECUTION, 2)])
     await rt.sessions.prependEvents(PLAN, [handoff(EXECUTION, 1)])
-    expect(opened(rt)).toEqual([])
+    expect(opened).toEqual([])
     dispose()
   })
 
   it('ignores a live handoff on a session that is not on screen', async () => {
     const rt = await boot()
-    await rt.sessions.add({ id: EXECUTION }, { current: false })
-    await rt.sessions.add({ id: OTHER }, { current: false })
-    const dispose = followPlanHandoff(rt.sessions)
+    await rt.sessions.add({ id: EXECUTION })
+    await rt.sessions.add({ id: OTHER })
+    const dispose = followPlanHandoff(rt.sessions, (id) => { opened.push(id) })
 
-    await rt.sessions.setCurrent(OTHER)
+    select(rt, OTHER)
     await rt.sessions.appendEvent(PLAN, handoff(EXECUTION, 2))
-    expect(opened(rt)).toEqual([])
+    expect(opened).toEqual([])
     dispose()
   })
 
   it('keeps a pending execution session after the user switches away', async () => {
     const rt = await boot()
-    await rt.sessions.add({ id: OTHER }, { current: false })
-    const dispose = followPlanHandoff(rt.sessions)
+    await rt.sessions.add({ id: OTHER })
+    const dispose = followPlanHandoff(rt.sessions, (id) => { opened.push(id) })
 
     await rt.sessions.appendEvent(PLAN, handoff(EXECUTION, 2))
-    await rt.sessions.setCurrent(OTHER)
-    await rt.sessions.add({ id: EXECUTION }, { current: false })
-    expect(opened(rt)).toEqual([EXECUTION])
+    select(rt, OTHER)
+    await rt.sessions.add({ id: EXECUTION })
+    expect(opened).toEqual([EXECUTION])
     dispose()
   })
 
   it('ignores live entries that are not plan handoffs', async () => {
     const rt = await boot()
-    const dispose = followPlanHandoff(rt.sessions)
+    const dispose = followPlanHandoff(rt.sessions, (id) => { opened.push(id) })
 
     rt.sessions.behavior(PLAN).eventSource.append(liveChunk(1.5))
     await rt.sessions.appendEvent(PLAN, {
       type: 'event',
       event: { type: 'turn/start', seq: SessionSeq(2), time: 2, data: { turn: 1 } },
     })
-    expect(opened(rt)).toEqual([])
+    expect(opened).toEqual([])
     dispose()
   })
 
   it('stops following once the plugin effect is disposed', async () => {
     const rt = await boot()
-    const dispose = followPlanHandoff(rt.sessions)
+    const dispose = followPlanHandoff(rt.sessions, (id) => { opened.push(id) })
 
     dispose()
     await rt.sessions.appendEvent(PLAN, handoff(EXECUTION, 2))
-    await rt.sessions.add({ id: EXECUTION }, { current: false })
-    expect(opened(rt)).toEqual([])
+    await rt.sessions.add({ id: EXECUTION })
+    expect(opened).toEqual([])
   })
 })

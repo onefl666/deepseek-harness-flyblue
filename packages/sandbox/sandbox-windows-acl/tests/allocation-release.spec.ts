@@ -26,7 +26,7 @@ const isWin32 = process.platform === 'win32'
 vi.mock('koffi', async (importOriginal) => {
   const actual = await importOriginal<{ default: typeof import('koffi') }>()
   const real = actual.default
-  const alloc = (...args: Parameters<typeof real.alloc>): unknown => real.alloc(...args) as unknown
+  const alloc = (...args: Parameters<typeof real.alloc>): unknown => real.alloc(...args)
   const free = (...args: Parameters<typeof real.free>): void => { real.free(...args) }
   return {
     default: Object.assign(Object.create(real) as typeof real, {
@@ -100,7 +100,7 @@ describe.skipIf(!isWin32)('native allocation release', () => {
       let thrown: unknown
       const allocated = await expectBalanced(() => {
         try {
-          grantWrite(api, join(scratch(), 'absent'), sid)
+          grantWrite(api, join(scratch(), 'absent'), sid, sid, sid)
         } catch (error: unknown) {
           thrown = error
         }

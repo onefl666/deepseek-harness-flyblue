@@ -3,7 +3,7 @@
 // from the computed value when the query flips mid-animation.
 
 import clsx from 'clsx'
-import { IconCloseOutline16, IconSearchOutline16 } from './icons/index.tsx'
+import { IconCloseOutlineRegular, IconSearchOutlineRegular } from './icons/index.tsx'
 import css from './SearchField.module.css'
 
 /** Props for {@link SearchField}. */
@@ -33,7 +33,7 @@ export function SearchField({
 }: SearchFieldProps) {
   return (
     <label className={clsx(css.field, className)}>
-      <IconSearchOutline16 className={css.icon} aria-hidden="true" />
+      <IconSearchOutlineRegular size={16} className={css.icon} aria-hidden="true" />
       <span className={css.visuallyHidden}>{label}</span>
       <input
         type="search"
@@ -51,7 +51,7 @@ export function SearchField({
         tabIndex={value.length === 0 ? -1 : 0}
         onClick={() => { onChange('') }}
       >
-        <IconCloseOutline16 aria-hidden="true" />
+        <IconCloseOutlineRegular size={16} aria-hidden="true" />
       </button>
     </label>
   )

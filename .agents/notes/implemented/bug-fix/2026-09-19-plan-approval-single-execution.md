@@ -10,7 +10,7 @@ English | [中文](2026-09-19-plan-approval-single-execution.zh.md)
 
 Two smaller defects sat on the same path. `clearThenExecute` created the sibling execution session and then discarded the plan heading with `void title`, so the child carried no `session/title` at all; the first prompt-provider call also refuses a session with a `parentSession`, so the Web client's `displayTitleOf` fell through to `workspaceTitleOf(cwd)` and every execution session appeared in the sidebar under the workspace directory name. And the whole create-attach-title-steer sequence ran inside one `try` whose `catch` fell back to `compactThenExecute` on the source session: a failure after `agents.create` resolved therefore left an orphan child behind *and* ran the plan in the source session, which is the same double execution in a rarer shape.
 
-Replacing `@deepseek-ai/dsh-plan-mode` with `@deepseek-ai/dsh-plan-handoff` had also changed user-visible copy without re-recording fixtures: 39 pinned snapshot files (4 Web, 26 session, 9 SDK) still described the retired plugin, so `pnpm run test:snapshot` and the Web e2e lane were red for a reason unrelated to any code defect.
+Replacing `@deepseek-ai/dsh-plan-mode` with `@deepseek-ai/dsh-plan-mode` had also changed user-visible copy without re-recording fixtures: 39 pinned snapshot files (4 Web, 26 session, 9 SDK) still described the retired plugin, so `pnpm run test:snapshot` and the Web e2e lane were red for a reason unrelated to any code defect.
 
 ## Decision
 
@@ -46,9 +46,9 @@ Cross-linked from [plan handoff after review](../feature/2026-08-19-plan-handoff
 
 ## Testing
 
-[integration.spec.ts](../../../../packages/plan/plan-handoff/tests/integration.spec.ts) drives the real agent loop with a scripted adapter and the real `UserQuestionService`: a keep approval through `APPROVE_KEEP` produces exactly two model requests (planning, execution), exactly one `plan-handoff`-sourced `user/message`, and that message's seq after the first `turn/end`; reverting `concludeTurn` to the compact/clear-only condition makes the same test observe three requests.
+[integration.spec.ts](../../../../packages/plan/plan-mode/tests/integration.spec.ts) drives the real agent loop with a scripted adapter and the real `UserQuestionService`: a keep approval through `APPROVE_KEEP` produces exactly two model requests (planning, execution), exactly one `plan-handoff`-sourced `user/message`, and that message's seq after the first `turn/end`; reverting `concludeTurn` to the compact/clear-only condition makes the same test observe three requests.
 
-[handoff.spec.ts](../../../../packages/plan/plan-handoff/tests/handoff.spec.ts) pins the title composition (source title, heading fallback, already-prefixed base), the missing-service and rejected-rename paths, and the rollback: a child whose steer fails is detached and disposed, the source session is never steered, and the call rejects. A rejected `agents.create` still steers the source session.
+[handoff.spec.ts](../../../../packages/plan/plan-mode/tests/handoff.spec.ts) pins the title composition (source title, heading fallback, already-prefixed base), the missing-service and rejected-rename paths, and the rollback: a child whose steer fails is detached and disposed, the source session is never steered, and the call rejects. A rejected `agents.create` still steers the source session.
 
 [plan-review.e2e.ts](../../../../apps/web/tests/plan-review.e2e.ts) clicks `Keep context` on the real card and asserts two `turn/start` events and one `plan-handoff` message in the replayed session.
 

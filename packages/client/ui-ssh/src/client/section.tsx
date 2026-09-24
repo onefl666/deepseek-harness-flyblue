@@ -8,8 +8,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
 import {
-  Button, IconLoadingOutline16, IconPlayOutline16, IconPlusOutline16,
-  IconTrashOutline16, Input, SectionChrome, TerminalBlock, type TerminalBlockLabels,
+  Button, IconLoadingOutlineRegular, IconPlayOutlineRegular, IconPlusOutlineRegular,
+  IconTrashOutlineRegular, Input, SectionChrome, TerminalBlock, type TerminalBlockLabels,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import { randomUUID } from '@deepseek-ai/dsh-util-crypto'
@@ -55,6 +55,7 @@ export function terminalLabels(t: PropsLocale<'ssh'>['t']): TerminalBlockLabels 
   return {
     signal: value => t('termSignal').replace('{signal}', value),
     exitCode: value => t('termExit').replace('{code}', String(value)),
+    noExitCode: t('termNoExitCode'),
     running: t('termRunning'),
     failed: t('termFailed'),
     done: t('termDone'),
@@ -225,7 +226,7 @@ export function SshSection({ t, list, put, remove, exec }: PropsLocale<'ssh'> & 
       <article className={css.card}>
         <div className={css.cardHeader}>
           <h3 className={css.cardTitle}>{t('hosts')}</h3>
-          <Button size="sm" variant="ghost" icon={<IconPlusOutline16 />} onClick={openAddForm}>{t('addHost')}</Button>
+          <Button size="sm" variant="ghost" icon={<IconPlusOutlineRegular size={16} />} onClick={openAddForm}>{t('addHost')}</Button>
         </div>
         {firstLoad
           ? <div className={css.skeleton} aria-busy="true" aria-label={t('loading')}><div className={css.skeletonRow} /><div className={css.skeletonRow} /></div>
@@ -299,7 +300,7 @@ export function SshSection({ t, list, put, remove, exec }: PropsLocale<'ssh'> & 
       <article className={css.card}>
         <div className={css.cardHeader}>
           <h3 className={css.cardTitle}>{t('console')}</h3>
-          {entries.length > 0 && <Button size="sm" variant="ghost" icon={<IconTrashOutline16 />} onClick={clearOutput}>{t('clearOutput')}</Button>}
+          {entries.length > 0 && <Button size="sm" variant="ghost" icon={<IconTrashOutlineRegular size={16} />} onClick={clearOutput}>{t('clearOutput')}</Button>}
         </div>
         <p className={css.hint}>{t('consoleHint')}</p>
         {selected === undefined
@@ -308,7 +309,7 @@ export function SshSection({ t, list, put, remove, exec }: PropsLocale<'ssh'> & 
             <>
               <form className={css.consoleForm} onSubmit={(event) => { event.preventDefault(); run() }}>
                 <Input
-                  icon={<IconPlayOutline16 />}
+                  icon={<IconPlayOutlineRegular size={16} />}
                   placeholder={t('commandPlaceholder')}
                   aria-label={t('runAria')}
                   value={command}
@@ -319,7 +320,7 @@ export function SshSection({ t, list, put, remove, exec }: PropsLocale<'ssh'> & 
                     if (event.key === 'ArrowDown') { event.preventDefault(); recall(1) }
                   }}
                 />
-                <Button type="submit" variant="primary" size="sm" icon={running ? <IconLoadingOutline16 className={css.spin} /> : undefined} disabled={command.trim() === '' || running}>
+                <Button type="submit" variant="primary" size="sm" icon={running ? <IconLoadingOutlineRegular size={16} className={css.spin} /> : undefined} disabled={command.trim() === '' || running}>
                   {running ? t('running') : t('run')}
                 </Button>
               </form>

@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
+import type { ConfigForm } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { CodegraphIndexStatus, CodegraphSettings } from '@deepseek-ai/dsh-codegraph-index/client'
 import type { InjectFace, PropsLocale, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
@@ -30,7 +30,7 @@ export interface CodegraphDockInjected {
   init: (sessionId: SessionId) => Promise<RemoteResult<CodegraphIndexStatus>>
   hooks: {
     /** Bound `codegraph` settings namespace. */
-    codegraphSettings: SettingsScope<CodegraphSettings>
+    codegraphSettings: ConfigForm<CodegraphSettings>
   }
 }
 

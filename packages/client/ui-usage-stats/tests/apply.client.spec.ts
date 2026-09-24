@@ -47,7 +47,7 @@ describe('ui-usage-stats apply', () => {
     expect(entry.component).toBe(UsageStatsSection)
     expect(entry.options).toMatchObject({ id: 'usage-stats', order: 40 })
     expect(resolveSlotLabel(entry.options.label)).toBe('用量统计')
-    const injected = (entry.inject as unknown as () => UsageStatsInjected)()
+    const injected = (entry.inject as (() => UsageStatsInjected) & NonNullable<typeof entry.inject>)()
     await injected.stats({ days: 7 })
     expect(stats).toHaveBeenCalledWith({ days: 7 })
 

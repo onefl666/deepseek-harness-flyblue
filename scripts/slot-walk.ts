@@ -1,7 +1,7 @@
 /**
  * AST helpers for the client slot surface: the `SlotMap` declaration merges
- * that type every slot, and the `slots.register` call sites that say who
- * already occupies one. Both readings are lexical (no type-checker program):
+ * that type every slot, and the `slots.register` / `slots.registerFactory`
+ * call sites that say who occupies or declares one. Both readings are lexical:
  * the client catalog generator consumes them, and the same scan doubles as its
  * own exhaustiveness backstop because it reads every source file rather than a
  * reachable-export closure.
@@ -17,8 +17,16 @@ const SLOTS_MODULE = '@deepseek-ai/dsh-client-ui-slots'
 /** Cheap textual prefilter for a slot-contract merge, quote-style agnostic. */
 const MERGE_HEAD = /declare module ['"]@deepseek-ai\/dsh-client-ui-slots['"]/
 
-/** Cheap textual prefilter for a registration call site. */
-const REGISTER_HEAD = /\.register\(/
+/** Package source files, excluding short-lived probes created by the oxlint contract spec. */
+function sourcePaths(scanRoot: string, patterns: readonly string[]): string[] {
+  return [...new Set(globSync(patterns as string[], { cwd: scanRoot })
+    .map(path => path.split(sep).join('/')))]
+    .filter(path => !/\/oxlint-contract-[^/]+\.ts$/.test(path))
+    .sort()
+}
+
+/** Cheap textual prefilter for a Slot or Factory registration call site. */
+const REGISTER_HEAD = /\.(?:register|registerFactory)\(/
 
 /** One `SlotMap` member: the slot's contract as its owning package declares it. */
 export interface SlotDeclaration {
@@ -44,7 +52,7 @@ export interface SlotDeclaration {
   source: string
 }
 
-/** One `slots.register({ name, … }, Component)` call site. */
+/** One `slots.register()` or `slots.registerFactory()` call site. */
 export interface SlotRegistration {
   /** Target SlotMap key the entry contributes into. */
   key: string
@@ -58,6 +66,8 @@ export interface SlotRegistration {
   entryKey?: string
   /** SlotMap keys this registration declares as children (they exist while it is mounted). */
   children: string[]
+  /** Whether this call installs a Factory definition instead of occupying an ordinary Slot. */
+  factory?: boolean
   /** Source pointer `packages/…/file.ts:line`. */
   source: string
 }
@@ -93,8 +103,7 @@ export interface ScannedFile {
 export function scanSlotFiles(scanRoot: string, patterns: readonly string[]): ScannedFile[] {
   const out: ScannedFile[] = []
   const names = new Map<string, string>()
-  const rels = [...new Set(globSync(patterns as string[], { cwd: scanRoot })
-    .map(path => path.split(sep).join('/')))].sort()
+  const rels = sourcePaths(scanRoot, patterns)
   for (const rel of rels) {
     const abs = resolve(scanRoot, rel)
     const text = readFileSync(abs, 'utf8')
@@ -120,8 +129,7 @@ export function scanSlotFiles(scanRoot: string, patterns: readonly string[]): Sc
 export function indexExportedTypes(scanRoot: string, patterns: readonly string[]): Map<string, TypeDeclaration> {
   const index = new Map<string, TypeDeclaration>()
   const ambiguous = new Set<string>()
-  const rels = [...new Set(globSync(patterns as string[], { cwd: scanRoot })
-    .map(path => path.split(sep).join('/')))].sort()
+  const rels = sourcePaths(scanRoot, patterns)
   for (const rel of rels) {
     const abs = resolve(scanRoot, rel)
     const sf = ts.createSourceFile(abs, readFileSync(abs, 'utf8'), ts.ScriptTarget.Latest, true, scriptKindOf(rel))
@@ -183,9 +191,9 @@ export function slotDeclarations(file: ScannedFile): SlotDeclaration[] {
 }
 
 /**
- * Read every registration call site in one scanned file: which slot it
- * occupies, with which component and cell identity, and which child slots it
- * declares. A call whose `name` is not a string literal is skipped — the
+ * Read every Slot or Factory registration call site in one scanned file: which
+ * name it targets, with which component and cell identity, and which ordinary
+ * child slots it declares. A call whose `name` is not a string literal is skipped — the
  * shipped composition always names its target literally, and a computed name
  * carries no catalog fact.
  * @param file - a file returned by {@link scanSlotFiles}.
@@ -196,7 +204,7 @@ export function slotRegistrations(file: ScannedFile): SlotRegistration[] {
   const visit = (node: ts.Node): void => {
     if (ts.isCallExpression(node)
       && ts.isPropertyAccessExpression(node.expression)
-      && node.expression.name.text === 'register'
+      && (node.expression.name.text === 'register' || node.expression.name.text === 'registerFactory')
       && isSlotsReceiver(node.expression.expression, file.sf)
       && node.arguments.length >= 1) {
       const options = node.arguments[0]
@@ -209,6 +217,7 @@ export function slotRegistrations(file: ScannedFile): SlotRegistration[] {
             key,
             package: file.package,
             component: componentText(node.arguments[1], file.sf),
+            ...node.expression.name.text === 'registerFactory' ? { factory: true } : {},
             ...id === undefined ? {} : { id },
             ...entryKey === undefined ? {} : { entryKey },
             children: childKeys(options),

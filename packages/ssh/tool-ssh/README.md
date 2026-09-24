@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 ## Summary
 
 
-Optional model-facing consumer of `ctx.sshHosts`. When the SSH service is present, the plugin registers `ssh_list` for secret-free host discovery and `ssh_exec` for one-shot remote command execution. When the service is absent, it registers no tools.
+Optional model-facing consumer of `ctx.sshHosts`. The plugin registers `ssh_list` for secret-free host discovery and `ssh_exec` for one-shot remote command execution when the service activates, including after the tool plugin mounts. Both tools disappear when the service unloads.
 
 `ssh_exec` forwards one configured host id and command to the service. It returns captured stdout followed by stderr and appends `[result unknown]` when the connection is lost after dispatch. That marker instructs callers not to repeat a potentially non-idempotent command automatically.
 

@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
+import type { ConfigFormSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { CodegraphIndexStatus, CodegraphSettings } from '@deepseek-ai/dsh-codegraph-index/client'
 import { makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
 import { zh as commonZh } from '@deepseek-ai/dsh-client-locale/src/locales/zh.ts'
@@ -14,7 +14,7 @@ const SID = 's1' as SessionId
 
 afterEach(cleanup)
 
-function settingsSnap(over: Partial<SettingsScopeSnapshot<CodegraphSettings>> = {}): SettingsScopeSnapshot<CodegraphSettings> {
+function settingsSnap(over: Partial<ConfigFormSnapshot<CodegraphSettings>> = {}): ConfigFormSnapshot<CodegraphSettings> {
   return {
     status: 'ready',
     value: { autoInit: false },
@@ -46,21 +46,19 @@ function renderSection(options: {
       close={() => {}}
       useWorkspaces={selector => selector({} as never)}
       useResource={(() => ({ status: 'none', value: undefined, failure: undefined, reload: () => {} })) as never}
-      useSessionPendingInteraction={((selector: (value: never) => unknown) => selector(new Map() as never)) as never}
+      useSessionStatus={selector => selector(new Map())}
+      useSessionRetainInfo={() => undefined}
       usePanelInfo={selector => selector({ activePanelId: null })}
       useSessions={selector => selector({
         ids: [SID],
         byId: {
           [SID]: {
             id: SID, displayTitle: 'repo', cwd: options.cwd ?? '/repo',
-            running: false, blank: true, updatedAt: 1,
+            running: false, retainedBy: { mainView: 1 }, blank: true, updatedAt: 1,
           },
         },
-        current: SID,
         phase: 'ready',
-        subagentsByParent: {},
-        jobsBySession: {},
-        currentAddress: undefined,
+        projectionsBySession: {},
       })}
       t={t}
       setAutoInit={setAutoInit}

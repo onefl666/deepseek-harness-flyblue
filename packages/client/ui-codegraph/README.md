@@ -12,7 +12,7 @@ English | [中文](README.zh.md)
 
 Web GUI for CodeGraph index lifecycle. The plugin registers a `settings.section` named「代码索引」and a `conversation.input.dock` entry `codegraph-index`.
 
-The settings page reads and writes `codegraph.autoInit` through `ctx.settingsScope`, shows the current session cwd status, and can start init. The dock prompt appears only on a blank session whose cwd is not indexed, auto-init is off, and the user has not dismissed this session. Initialize calls `codegraphIndex.init`; dismiss is a session-scoped store. While init runs, the dock shows progress. Historical sessions never see the prompt.
+The settings page reads and writes `codegraph.autoInit` through `ctx.configForms.get('codegraph')`, shows the current session cwd status, and can start init. The dock prompt appears only on a blank session whose cwd is not indexed, auto-init is off, and the user has not dismissed this session. Initialize calls `codegraphIndex.init`; dismiss is a session-scoped store. While init runs, the dock shows progress. Historical sessions never see the prompt.
 
 The host `@deepseek-ai/dsh-codegraph-index` service owns status, spawn, and auto-init. This package never writes the session log.
 
@@ -45,7 +45,7 @@ Start an index from either the settings page or the dock prompt; both call `code
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-The plugin registers `settings.section` (id `codegraph`, order 25) and `conversation.input.dock` (id `codegraph-index`, order 5). The settings page reads and writes `codegraph.autoInit` through `ctx.settingsScope`; the dock prompt renders only when the session is blank, its cwd is unindexed, auto-init is off, and this session has not dismissed it. Dismissal is a session-scoped store. The Host service `@deepseek-ai/dsh-codegraph-index` owns status, spawn, and auto-init; this package never writes the session log.
+The plugin registers `settings.section` (id `codegraph`, order 25) and `conversation.input.dock` (id `codegraph-index`, order 5). The settings page reads and writes `codegraph.autoInit` through `ctx.configForms.get('codegraph')`; the dock prompt renders only when the session is blank, its cwd is unindexed, auto-init is off, and this session has not dismissed it. Dismissal is a session-scoped store. The Host service `@deepseek-ai/dsh-codegraph-index` owns status, spawn, and auto-init; this package never writes the session log.
 
 </details>
 

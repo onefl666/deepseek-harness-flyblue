@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
+import type { WorkspaceSnapshot } from '@deepseek-ai/dsh-api-workspace-controller/client'
 import { zh as commonZh } from '@deepseek-ai/dsh-client-locale/src/locales/zh.ts'
 import { SkillManagerSection } from '../src/client/SkillManagerSection.tsx'
 import { zh } from '../src/client/locales.ts'
@@ -47,9 +48,12 @@ function bench(skills: readonly SkillEntryView[] = [entry()]) {
   }
   // The framework seat returns the same snapshot reference until the fact
   // moves; a fresh object per render would re-run every effect keyed on it.
-  const workspaces = { items: [{ workspaceId: 'w1', path: '/project', title: 'FlyBlue' }] }
-  const useWorkspaces = ((selector: (snapshot: unknown) => unknown) => selector(workspaces)) as unknown as SectionProps['useWorkspaces']
-  const props = { t, ...verbs, useWorkspaces } as unknown as SectionProps
+  const workspaces: WorkspaceSnapshot = {
+    items: [{ workspaceId: 'w1' as WorkspaceSnapshot['items'][number]['workspaceId'], path: '/project', title: 'FlyBlue', sessionIds: [], createdAt: '', updatedAt: '' }],
+    archivedSessionIds: [], pinnedSessionIds: [], state: 'idle', phase: 'ready', error: null,
+  }
+  const useWorkspaces: SectionProps['useWorkspaces'] = selector => selector(workspaces)
+  const props = { t, ...verbs, useWorkspaces } as SectionProps
   return { props, verbs, list }
 }
 

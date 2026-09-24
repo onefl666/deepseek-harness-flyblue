@@ -9,7 +9,7 @@ kind: "package-reference"
 ## 概述
 
 
-`ctx.sshHosts` 的可选模型消费者。SSH 服务存在时，插件注册用于无密钥主机发现的 `ssh_list` 和用于单次远程命令执行的 `ssh_exec`；服务不存在时不注册任何工具。
+`ctx.sshHosts` 的可选模型消费者。SSH 服务激活时，插件注册用于无密钥主机发现的 `ssh_list` 和用于单次远程命令执行的 `ssh_exec`，包括工具插件先于服务装载的情况。服务卸载时，这两个工具随之移除。
 
 `ssh_exec` 把一个已配置主机 ID 和命令转发给服务。它依次返回捕获的 stdout 与 stderr；如果连接在分发后丢失，还会追加 `[result unknown]`。该标记提示调用方不要自动重复可能非幂等的命令。
 

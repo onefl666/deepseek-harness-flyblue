@@ -6,7 +6,7 @@ Status: implemented
 
 ## 问题
 
-`@deepseek-ai/dsh-plan-handoff` 在已交付组合中替换 `@deepseek-ai/dsh-plan-mode`，而其 `/plan` 注册声明为 `input: { hint: '[off|message]' }`，缺少 `attachments: true`，handler 也只读取 `rawInput`。Web 编辑器与宿主命令执行器都按该声明决定附件准入，因此携带图片或文件的 `/plan` 提交在 handler 运行前就被拒绝，计划模式始终拿不到任务材料。客户端 fixture 早已声明 `attachments: true`，这正是该缺口表现为 fixture 与宿主不一致、而非客户端报错的原因。
+`@deepseek-ai/dsh-plan-mode` 在已交付组合中替换 `@deepseek-ai/dsh-plan-mode`，而其 `/plan` 注册声明为 `input: { hint: '[off|message]' }`，缺少 `attachments: true`，handler 也只读取 `rawInput`。Web 编辑器与宿主命令执行器都按该声明决定附件准入，因此携带图片或文件的 `/plan` 提交在 handler 运行前就被拒绝，计划模式始终拿不到任务材料。客户端 fixture 早已声明 `attachments: true`，这正是该缺口表现为 fixture 与宿主不一致、而非客户端报错的原因。
 
 ## 决策
 
@@ -26,4 +26,4 @@ Status: implemented
 
 ## 测试
 
-[plan-mode.spec.ts](../../../../packages/plan/plan-handoff/tests/plan-mode.spec.ts) 以真实的 `CommandRuntime` 与伪造的附件存储驱动：`/plan sketch the layout` 带一张图片与一个文件时 steer 一条 `[image, file, text]` 消息；裸 `/plan` 带同样附件时 steer 一条 `[image, file]` 消息；`/plan off` 带附件时返回该错误，`steer` 未被调用且 `ctx.planMode.get` 仍为激活。
+[plan-mode.spec.ts](../../../../packages/plan/plan-mode/tests/plan-mode.spec.ts) 以真实的 `CommandRuntime` 与伪造的附件存储驱动：`/plan sketch the layout` 带一张图片与一个文件时 steer 一条 `[image, file, text]` 消息；裸 `/plan` 带同样附件时 steer 一条 `[image, file]` 消息；`/plan off` 带附件时返回该错误，`steer` 未被调用且 `ctx.planMode.get` 仍为激活。

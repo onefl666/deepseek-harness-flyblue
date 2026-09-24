@@ -50,6 +50,8 @@ The managed roots are `$DSH_HOME/skills` and `$DSH_AGENTS_HOME/skills` for user 
 
 Each refusal carries a stable code: `skill-manager/not-found`, `skill-manager/conflict`, `skill-manager/read-only`, or `skill-manager/rejected` with the actionable reason. A skill whose frontmatter names no usable skill is skipped from a listing rather than failing it.
 
+No runtime invariant companion is published because this manager owns filesystem mutations but no separate live registry; the skill provider discovers the resulting directories.
+
 <a id="understand-the-implementation"></a>
 ## Understand the implementation
 

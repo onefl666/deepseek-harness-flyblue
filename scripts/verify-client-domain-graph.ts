@@ -1,9 +1,9 @@
 /**
  * Enforce intra-package domain layering inside `packages/client/*\/src/client/`.
  * verify-module-graph covers package-level edges; this gate covers the
- * directory level: domain directories may import `contract/` and never each
- * other, and only the assembly point (`apply.ts` / `index.ts`) may import
- * across domains.
+ * directory level: independently owned domains may import `contract/` but
+ * not each other. Explicitly grouped presentation folders form one domain;
+ * only declared assembly files may import across domains.
  *
  * Layer model (lower may not import higher):
  *   0  contract/            shared contract API (types + slot declarations)
@@ -24,6 +24,18 @@ const CLIENT_DIR = join(root, 'packages/client')
 const CONTRACT_DIRS = new Set(['contract'])
 /** Top-level client files allowed to import across domains (assembly layer). */
 const ASSEMBLY_FILES = new Set(['apply.ts', 'index.ts', 'index.tsx'])
+/** Directory groups whose presentation and implementation files form one client domain. */
+const INTEGRATED_DOMAINS: Readonly<Record<string, readonly string[]>> = {
+  'ui-conversation': ['input', 'skeleton'],
+  'ui-sidebar-browser': ['browser', 'electron', 'view'],
+  'ui-sidebar-documentpreview': ['code', 'document', 'excel', 'html', 'image', 'markdown', 'office', 'pdf', 'text', 'zoom'],
+  'ui-workspace': ['rows', 'session-actions'],
+}
+/** Top-level composition files for packages with integrated client domains. */
+const PACKAGE_ASSEMBLY_FILES: Readonly<Record<string, readonly string[]>> = {
+  'ui-sidebar-browser': ['pages.ts'],
+  'ui-sidebar-documentpreview': ['TextPreview.tsx', 'face.ts', 'store.ts'],
+}
 
 interface Violation { file: string; imported: string; reason: string }
 
@@ -41,6 +53,17 @@ function domainOf(rel: string): string {
   return ix === -1 ? '' : rel.slice(0, ix)
 }
 
+/** Package-aware domain identity for integrated client implementations. */
+export function clientDomain(pkgName: string, rel: string): string {
+  const domain = domainOf(rel)
+  return INTEGRATED_DOMAINS[pkgName]?.includes(domain) === true ? '@integrated' : domain
+}
+
+/** Whether one top-level file owns assembly for its package. */
+export function isClientAssembly(pkgName: string, rel: string): boolean {
+  return ASSEMBLY_FILES.has(rel) || PACKAGE_ASSEMBLY_FILES[pkgName]?.includes(rel) === true
+}
+
 /**
  * Resolve one relative import to a client-directory-relative path.
  * @param file - Importing file relative to `src/client`.
@@ -55,8 +78,8 @@ function checkPackage(pkgName: string, clientDir: string): Violation[] {
   const violations: Violation[] = []
   const files = listSources(clientDir)
   for (const rel of files) {
-    const fromDomain = domainOf(rel)
-    const isAssembly = fromDomain === '' && ASSEMBLY_FILES.has(rel)
+    const fromDomain = clientDomain(pkgName, rel)
+    const isAssembly = fromDomain === '' && isClientAssembly(pkgName, rel)
     if (isAssembly) continue
     const source = readFileSync(join(clientDir, rel), 'utf8')
     for (const match of source.matchAll(/from\s+['"](\.[^'"]+)['"]/g)) {
@@ -64,7 +87,7 @@ function checkPackage(pkgName: string, clientDir: string): Violation[] {
       if (spec === undefined) continue
       const target = resolveClientImport(rel, spec)
       if (target === '..' || target.startsWith('../')) continue // package-level rules govern
-      const toDomain = domainOf(target)
+      const toDomain = clientDomain(pkgName, target)
       if (toDomain === '' || CONTRACT_DIRS.has(toDomain)) continue // top-level shared file or contract layer
       if (fromDomain === toDomain) continue // inside one domain
       violations.push({

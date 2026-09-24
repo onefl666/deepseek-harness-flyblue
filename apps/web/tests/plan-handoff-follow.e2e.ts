@@ -22,8 +22,8 @@ import type {} from '@deepseek-ai/dsh-api-session-controller'
 import { createMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
 // Type-only: pulls the plan/handoff SessionEventMap merge so the append below
 // types as the plan-handoff event in the host aggregate.
-import type {} from '@deepseek-ai/dsh-plan-handoff'
-import { EXECUTION_SESSION_TITLE_PREFIX } from '@deepseek-ai/dsh-plan-handoff'
+import type {} from '@deepseek-ai/dsh-plan-mode'
+import { EXECUTION_SESSION_TITLE_PREFIX } from '@deepseek-ai/dsh-plan-mode'
 import { SESSION_FORMAT_VERSION, Session, SessionId } from '@deepseek-ai/dsh-session'
 import type {} from '@deepseek-ai/dsh-session-title'
 import type {} from '@deepseek-ai/dsh-workspace'

@@ -14,7 +14,7 @@
  */
 import { useEffect, useState } from 'react'
 import {
-  IconAgentPresetOutline16, IconChevronDownOutline14, Menu,
+  IconAgentPresetOutlineRegular, IconChevronDownOutlineRegular, Menu,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
@@ -92,9 +92,9 @@ export function AgentPresetChoice({
             disabled={locked}
             onClick={() => { setOpen(current => !current) }}
           >
-            <IconAgentPresetOutline16 size={14} className={css.seatIcon} />
+            <IconAgentPresetOutlineRegular size={14} className={css.seatIcon} />
             <span className={css.seatLabel}>{chosenText?.name ?? shown}</span>
-            <IconChevronDownOutline14 className={css.chevron} />
+            <IconChevronDownOutlineRegular className={css.chevron} />
           </button>
         )}
       />

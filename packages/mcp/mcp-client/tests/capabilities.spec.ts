@@ -1,6 +1,6 @@
 /**
  * Tests for the MCP client's protocol-version floor and its connection-status
- * events. Isolated file so `vi.mock` of the MCP SDK does not pollute the other
+ * events. Isolated file so `vi.mock` of the MCP client does not pollute the other
  * suites.
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest'
@@ -14,7 +14,7 @@ import type { McpConnectionStatus } from '@deepseek-ai/dsh-mcp-client/types'
 
 const { MockClient, state } = vi.hoisted(() => {
   const state = {
-    /** Version the server answers `initialize` with. */
+    /** Version reported after the SDK's negotiation handshake. */
     negotiated: '2025-11-25',
     /** Whether the transport connect itself fails. */
     connectFails: false,
@@ -28,34 +28,39 @@ const { MockClient, state } = vi.hoisted(() => {
 
     async connect(): Promise<void> {
       if (state.connectFails) throw new Error('transport refused')
-      await this.request({ method: 'initialize', params: {} }, {}, {})
+      state.requests.push('initialize')
     }
 
-    async request(request: { method: string; params?: unknown }, _schema?: unknown, _options?: unknown): Promise<unknown> {
-      state.requests.push(request.method)
-      if (request.method === 'initialize') {
-        return {
-          protocolVersion: state.negotiated,
-          capabilities: {},
-          serverInfo: { name: 'mock-server', version: '1.0.0' },
-        }
-      }
-      if (request.method === 'tools/list') return { tools: [] }
-      throw new Error(`unexpected MCP request: ${request.method}`)
+    getNegotiatedProtocolVersion(): string {
+      return state.negotiated
+    }
+
+    getInstructions(): undefined {
+      return undefined
+    }
+
+    getServerCapabilities(): object {
+      return { tools: {} }
+    }
+
+    async listTools(): Promise<{ tools: never[] }> {
+      state.requests.push('tools/list')
+      return { tools: [] }
     }
 
     async close(): Promise<void> {
       this.onclose?.()
     }
 
-    setNotificationHandler = (): void => {}
   }
   return { MockClient, state }
 })
 
-vi.mock('@modelcontextprotocol/sdk/client/index.js', () => ({ Client: MockClient }))
-vi.mock('@modelcontextprotocol/sdk/client/stdio.js', () => ({ StdioClientTransport: vi.fn() }))
-vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => ({ StreamableHTTPClientTransport: vi.fn() }))
+vi.mock('@modelcontextprotocol/client', async importOriginal => ({
+  ...await importOriginal<typeof import('@modelcontextprotocol/client')>(),
+  Client: MockClient,
+}))
+vi.mock('../src/transport.ts', () => ({ createTransport: () => ({ close: async () => {} }) }))
 
 import { apply, inject } from '@deepseek-ai/dsh-mcp-client/src/index.ts'
 import { resolveMinProtocolVersion } from '@deepseek-ai/dsh-mcp-client/src/connection.ts'

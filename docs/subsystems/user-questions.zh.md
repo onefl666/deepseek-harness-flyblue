@@ -43,7 +43,7 @@ type AskUserQuestionIntent = {
    * the verdict from option order. An `approve` entry naming no option of
    * its own question is rejected at `ask()`.
    */
-  approve: string[]
+  approve: string | readonly string[]
   /**
    * Setting names this review collects beside the decision, so a UI renders a
    * control per name it knows and answers the ones it rendered. The asker
@@ -52,6 +52,8 @@ type AskUserQuestionIntent = {
    * Omit to ask for the decision by itself.
    */
   settings?: readonly string[]
+  /** Logged tool invocation whose arguments contain the reviewed plan. */
+  callId?: ToolCallId
 }
 ```
 

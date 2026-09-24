@@ -68,7 +68,7 @@ describe('ui-git-graph apply', () => {
     expect(entry.component).toBe(GitGraphSection)
     expect(entry.options).toMatchObject({ id: 'git-graph', order: 42 })
     expect(resolveSlotLabel(entry.options.label)).toBe('Git 图谱')
-    const injected = (entry.inject as unknown as () => GitGraphInjected)()
+    const injected = (entry.inject as (() => GitGraphInjected) & NonNullable<typeof entry.inject>)()
     // The section resolves its scope itself, so every verb is addressed by the
     // workspace id its caller passes rather than by one the face captured.
     await injected.graph(WORKSPACE)

@@ -10,7 +10,7 @@ Status: implemented
 
 同一路径上还有两个更小的缺陷。`clearThenExecute` 创建兄弟执行会话后用一个 `void title` 丢掉了计划标题，于是子会话完全没有 `session/title`；而首个提示词标题提供方又拒绝带 `parentSession` 的会话，所以 Web 客户端的 `displayTitleOf` 落到 `workspaceTitleOf(cwd)`，每个执行会话在侧边栏里都显示为工作区目录名。整个「创建→挂载→标题→steer」序列还包在同一个 `try` 里，其 `catch` 会回退到源会话的 `compactThenExecute`：因此 `agents.create` 成功之后的任何失败都会既留下一个孤儿子会话，又在源会话里执行一遍计划——同一类重复的更罕见形态。
 
-用 `@deepseek-ai/dsh-plan-handoff` 替换 `@deepseek-ai/dsh-plan-mode` 时也没有重录 fixture：39 个 pin 文件（Web 4 个、session 26 个、SDK 9 个）仍在描述已退役的插件，于是 `pnpm run test:snapshot` 与 Web e2e 泳道因与代码缺陷无关的原因变红。
+用 `@deepseek-ai/dsh-plan-mode` 替换 `@deepseek-ai/dsh-plan-mode` 时也没有重录 fixture：39 个 pin 文件（Web 4 个、session 26 个、SDK 9 个）仍在描述已退役的插件，于是 `pnpm run test:snapshot` 与 Web e2e 泳道因与代码缺陷无关的原因变红。
 
 ## 决策
 
@@ -46,9 +46,9 @@ pin 文件按当前组合重录（`DSH_SNAPSHOT=refresh pnpm run test:web`，随
 
 ## Testing
 
-[integration.spec.ts](../../../../packages/plan/plan-handoff/tests/integration.spec.ts) 用脚本化 adapter 与真实 `UserQuestionService` 驱动真实 agent loop：经 `APPROVE_KEEP` 的保留上下文批准恰好产生两次模型请求（规划、执行）、恰好一条 `plan-handoff` 来源的 `user/message`，且该消息的 seq 在第一个 `turn/end` 之后；把 `concludeTurn` 改回仅压缩/清空的条件下，同一测试会观察到三次请求。
+[integration.spec.ts](../../../../packages/plan/plan-mode/tests/integration.spec.ts) 用脚本化 adapter 与真实 `UserQuestionService` 驱动真实 agent loop：经 `APPROVE_KEEP` 的保留上下文批准恰好产生两次模型请求（规划、执行）、恰好一条 `plan-handoff` 来源的 `user/message`，且该消息的 seq 在第一个 `turn/end` 之后；把 `concludeTurn` 改回仅压缩/清空的条件下，同一测试会观察到三次请求。
 
-[handoff.spec.ts](../../../../packages/plan/plan-handoff/tests/handoff.spec.ts) 钉住标题组合（源标题、H1 回退、已带前缀的基名）、缺少服务与重命名被拒两条路径，以及回滚：steer 失败的子会话被 detach 并释放，源会话从不被 steer，调用被拒绝。`agents.create` 被拒绝时仍会 steer 源会话。
+[handoff.spec.ts](../../../../packages/plan/plan-mode/tests/handoff.spec.ts) 钉住标题组合（源标题、H1 回退、已带前缀的基名）、缺少服务与重命名被拒两条路径，以及回滚：steer 失败的子会话被 detach 并释放，源会话从不被 steer，调用被拒绝。`agents.create` 被拒绝时仍会 steer 源会话。
 
 [plan-review.e2e.ts](../../../../apps/web/tests/plan-review.e2e.ts) 在真实卡片上点击 `Keep context`，并断言重放会话中出现两次 `turn/start` 与一条 `plan-handoff` 消息。
 

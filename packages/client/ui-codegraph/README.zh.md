@@ -12,7 +12,7 @@ kind: "package-reference"
 
 CodeGraph 索引生命周期的 Web GUI。插件注册名为「代码索引」的 `settings.section`，以及 `conversation.input.dock` 条目 `codegraph-index`。
 
-设置页通过 `ctx.settingsScope` 读写 `codegraph.autoInit`，显示当前会话 cwd 的索引状态，并可立即初始化。提示条只出现在空白会话：cwd 尚未索引、自动 init 关闭、且本会话尚未点「忽略」。初始化调用 `codegraphIndex.init`；忽略记在会话作用域 store。init 进行中时条显示进度。打开已有历史会话不会出现提示条。
+设置页通过 `ctx.configForms.get('codegraph')` 读写 `codegraph.autoInit`，显示当前会话 cwd 的索引状态，并可立即初始化。提示条只出现在空白会话：cwd 尚未索引、自动 init 关闭、且本会话尚未点「忽略」。初始化调用 `codegraphIndex.init`；忽略记在会话作用域 store。init 进行中时条显示进度。打开已有历史会话不会出现提示条。
 
 host 的 `@deepseek-ai/dsh-codegraph-index` 服务负责状态、进程和自动 init。本包从不写入会话日志。
 
@@ -43,7 +43,7 @@ host 的 `@deepseek-ai/dsh-codegraph-index` 服务负责状态、进程和自动
 <details>
 <summary>实现内部细节——点击展开</summary>
 
-插件注册 `settings.section`（id `codegraph`，order 25）与 `conversation.input.dock`（id `codegraph-index`，order 5）。设置页通过 `ctx.settingsScope` 读写 `codegraph.autoInit`；停靠提示只在会话为空白、其 cwd 未索引、自动 init 关闭且本会话未忽略时渲染。忽略状态记在会话作用域 store。Host 服务 `@deepseek-ai/dsh-codegraph-index` 负责状态、进程与自动 init；本包从不写入会话日志。
+插件注册 `settings.section`（id `codegraph`，order 25）与 `conversation.input.dock`（id `codegraph-index`，order 5）。设置页通过 `ctx.configForms.get('codegraph')` 读写 `codegraph.autoInit`；停靠提示只在会话为空白、其 cwd 未索引、自动 init 关闭且本会话未忽略时渲染。忽略状态记在会话作用域 store。Host 服务 `@deepseek-ai/dsh-codegraph-index` 负责状态、进程与自动 init；本包从不写入会话日志。
 
 </details>
 

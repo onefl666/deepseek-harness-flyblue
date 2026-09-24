@@ -5,10 +5,9 @@
  */
 
 import { resolve } from 'node:path'
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context, Volatile } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type { Session, SessionId } from '@deepseek-ai/dsh-session'
-import type { SettingsScope } from '@deepseek-ai/dsh-settings'
 import {
   buildInitArgv,
   createSpawnRunner,
@@ -18,18 +17,23 @@ import type { CodegraphProcessRunner } from '@deepseek-ai/dsh-tool-codegraph'
 import { TypertRemoteService, Remote } from '@deepseek-ai/dsh-typert-protocol'
 // Typert-generated ./typert and ./remote artifacts import Zod at runtime.
 import type {} from 'zod'
-import type { CodegraphIndexStatus, CodegraphSettings } from './types.ts'
+import type { CodegraphIndexStatus } from './types.ts'
 
 export type * from './types.ts'
 
-/** This host service has no loader config; settings live in the `codegraph` namespace. */
-export type Config = Readonly<Record<string, never>>
+/** Live CodeGraph index configuration edited through the profile entry. */
+export interface Config {
+  /** Automatically initialize an unindexed workspace when its session starts. */
+  autoInit: Volatile<boolean>
+}
 
 /** Runtime schema for {@link Config}. */
-export const Config = z.object({}) as unknown as z<Config>
+export const Config = z.object({
+  autoInit: z.boolean().default(false).volatile(),
+})
 
-/** Settings namespace written by the Web「代码索引」page. */
-export const CODEGRAPH_SETTINGS_NAMESPACE = 'codegraph'
+/** Profile entry edited by the Web CodeGraph page. */
+export const CODEGRAPH_SETTINGS_NAMESPACE = 'codegraph-index'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -58,11 +62,6 @@ interface IndexJob {
   readonly controller: AbortController
 }
 
-/** Schema of the `codegraph` settings section. */
-const settingsSchema: z<CodegraphSettings> = z.object({
-  autoInit: z.boolean().default(false),
-})
-
 /** Production engine: lazy bindings plus the bundled CLI runner. */
 function defaultDeps(): CodegraphIndexDeps {
   const runner = createSpawnRunner()
@@ -79,26 +78,20 @@ function defaultDeps(): CodegraphIndexDeps {
 /** Host service (`ctx.codegraphIndex`) for user-triggered workspace indexing. */
 export class CodegraphIndexService extends TypertRemoteService {
   static inject = ['sessions']
+  static Config = Config
 
   private readonly deps: CodegraphIndexDeps
   private readonly jobs = new Map<string, IndexJob>()
   private readonly lastError = new Map<string, string>()
-  private settings: SettingsScope<CodegraphSettings> | undefined
 
   /**
    * @param ctx - host context carrying live sessions.
-   * @param _config - unused; the loader may pass an empty object.
+   * @param config - live auto-init preference from this plugin's profile entry.
    * @param deps - engine faces; tests pass fakes.
    */
-  constructor(ctx: Context, _config: Config = {}, deps: CodegraphIndexDeps = defaultDeps()) {
+  constructor(ctx: Context, private readonly config: Config, deps: CodegraphIndexDeps = defaultDeps()) {
     super(ctx, 'codegraphIndex')
     this.deps = deps
-    ctx.inject(['settings'], (sctx) => {
-      this.settings = sctx.settings.register(CODEGRAPH_SETTINGS_NAMESPACE, settingsSchema)
-      sctx.effect(() => () => {
-        this.settings = undefined
-      })
-    })
     ctx.on('session/created', (session) => {
       this.maybeAutoInit(session)
     }, { global: true })
@@ -175,7 +168,7 @@ export class CodegraphIndexService extends TypertRemoteService {
 
   /** Start init when auto-init is on and the cwd is not already indexed. */
   private maybeAutoInit(session: Session): void {
-    if (this.settings?.get().autoInit !== true) return
+    if (!this.config.autoInit.get()) return
     this.startInit(session)
   }
 

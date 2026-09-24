@@ -12,9 +12,9 @@
  * @module @deepseek-ai/dsh-gitbash-local
  */
 
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context, Volatile } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import type { ShellExecSpec, ShellProcess, ShellRunResult } from '@deepseek-ai/dsh-shell'
+import type { ShellExecSpec, ShellExecution } from '@deepseek-ai/dsh-shell'
 import { LocalBashExecutor } from '@deepseek-ai/dsh-bash-local'
 import type { Config as LocalConfig } from '@deepseek-ai/dsh-bash-local'
 import { resolveGitBashPath } from './resolve.ts'
@@ -32,31 +32,26 @@ export interface Config extends LocalConfig {
    * installation a PATH `git.exe` names, then a Git `bin` directory on PATH);
    * mounting fails loudly when none exists.
    */
-  gitBashPath?: string
+  gitBashPath: Volatile<string | undefined>
 }
 
-/** The shape after schemastery applied the defaults (cwd/gitBashPath have none). */
-type ResolvedConfig = Required<Omit<Config, 'cwd' | 'gitBashPath'>> & Pick<Config, 'cwd' | 'gitBashPath'>
-
 /**
- * Git Bash executor over `ctx.subprocess`. The shared `bash` settings section
- * installs this class's schema (the parent constructor reads the concrete
- * class's `static Config`), so a stored `gitBashPath` re-resolves the
- * executable live; every other knob is read through the inherited getter at
- * each command.
+ * Git Bash executor over `ctx.subprocess`. A changed path re-resolves the
+ * executable on the next read; command budgets use the inherited live config.
  */
 export class GitBashExecutor extends LocalBashExecutor {
+  private readonly gitBashConfig: Config
   // Mirrors `LocalBashExecutor.Config` field-for-field plus `gitBashPath`
   // (schemastery objects do not spread, and the defaults are one concern with
   // the fields they default).
   static override Config = z.object({
-    cwd: z.string(),
-    timeoutMs: z.number().default(120_000),
-    maxTimeoutMs: z.number().default(600_000),
-    maxOutputBytes: z.number().default(64_000),
-    maxSpillBytes: z.number().default(64 * 1024 * 1024),
-    graceMs: z.number().default(3_000),
-    gitBashPath: z.string(),
+    cwd: z.string().volatile(),
+    timeoutMs: z.number().default(120_000).volatile(),
+    maxTimeoutMs: z.number().default(600_000).volatile(),
+    maxOutputBytes: z.number().default(64_000).volatile(),
+    maxSpillBytes: z.number().default(64 * 1024 * 1024).volatile(),
+    graceMs: z.number().default(3_000).volatile(),
+    gitBashPath: z.string().volatile(),
   })
 
   /** The declared executable the current {@link gitBashPath} was resolved from. */
@@ -67,27 +62,19 @@ export class GitBashExecutor extends LocalBashExecutor {
 
   /** The Git Bash executable every command runs through. */
   get gitBashPath(): string {
+    const declared = this.gitBashConfig.gitBashPath.get()
+    if (declared !== this.declaredGitBashPath) {
+      this.resolvedGitBashPath = resolveGitBashPath(declared)
+      this.declaredGitBashPath = declared
+    }
     return this.resolvedGitBashPath
   }
 
   constructor(ctx: Context, config: Config) {
     super(ctx, config)
-    // Schemastery fills these fields before construction; the type does not encode that step.
-    const entry = config as ResolvedConfig
-    this.declaredGitBashPath = entry.gitBashPath
-    this.resolvedGitBashPath = resolveGitBashPath(entry.gitBashPath)
-  }
-
-  /**
-   * Re-probe the executable when a stored `gitBashPath` changes; every other
-   * field is read through the inherited getter at each command, so nothing
-   * else derived needs rebuilding when the document changes.
-   */
-  protected override onSettingsChanged(): void {
-    const declared = (this.config as ResolvedConfig).gitBashPath
-    if (declared === this.declaredGitBashPath) return
-    this.declaredGitBashPath = declared
-    this.resolvedGitBashPath = resolveGitBashPath(declared)
+    this.gitBashConfig = config
+    this.declaredGitBashPath = config.gitBashPath.get()
+    this.resolvedGitBashPath = resolveGitBashPath(this.declaredGitBashPath)
   }
 
   /**
@@ -99,12 +86,8 @@ export class GitBashExecutor extends LocalBashExecutor {
     return [this.gitBashPath, '-c', spec.command]
   }
 
-  override async run(spec: ShellExecSpec): Promise<ShellRunResult> {
-    return this.runArgv(spec, this.argv(spec))
-  }
-
-  override start(spec: ShellExecSpec): ShellProcess {
-    return this.startArgv(spec, this.argv(spec))
+  override async execute(spec: ShellExecSpec): Promise<ShellExecution> {
+    return this.executeArgv(spec, this.argv(spec))
   }
 }
 

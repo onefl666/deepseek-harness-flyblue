@@ -21,7 +21,7 @@ const file = (path: string, name: string, size = 12) => ({ path, name, directory
 const dir = (path: string, name: string) => ({ path, name, directory: true, size: 0 })
 const workspaceState = (path: string | undefined): WorkspaceSnapshot => ({
   items: path === undefined ? [] : [{ workspaceId: 'ws-1' as WorkspaceId, path, title: 'proj', sessionIds: [], createdAt: '2026-08-01', updatedAt: '2026-08-01' }],
-  archivedSessionIds: [], state: 'idle', phase: 'ready', error: null,
+  archivedSessionIds: [], pinnedSessionIds: [], state: 'idle', phase: 'ready', error: null,
 })
 const useWorkspaces: SnapshotSelectorHook<WorkspaceSnapshot> = selector => selector(workspaceState('/work/proj'))
 const rootEntries = [dir('src', 'src'), file('README.md', 'README.md', 2400)]
@@ -47,7 +47,8 @@ function renderSection(verbs: Verbs = {}) {
       useSessions={(() => undefined) as never}
       useWorkspaces={useWorkspaces}
       useResource={(() => ({ status: 'none', value: undefined, failure: undefined, reload: () => {} })) as never}
-      useSessionPendingInteraction={((selector: (value: never) => unknown) => selector(new Map() as never)) as never}
+      useSessionStatus={selector => selector(new Map())}
+      useSessionRetainInfo={() => undefined}
       usePanelInfo={selector => selector({ activePanelId: null })}
       {...resolved}
     />,

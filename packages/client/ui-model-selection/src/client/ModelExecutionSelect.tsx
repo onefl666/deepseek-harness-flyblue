@@ -11,7 +11,7 @@
 import type { ModelSelection } from '@deepseek-ai/dsh-api-remotes/client'
 import type { PlanReviewModelOwnerProps } from '@deepseek-ai/dsh-client-ui-user-questions/client'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
-import { ModelMenu } from './ModelMenu.tsx'
+import { ModelMenu, type ModelApplyResult } from './ModelMenu.tsx'
 import type { ModelExecutionSelectInjected } from './slots.ts'
 import css from './ModelMenu.module.css'
 
@@ -28,9 +28,9 @@ export function ModelExecutionSelect({
   if (!available) return null
   // Staging cannot fail: the card is the only holder of the value, and the
   // Host is asked once, when the approval commits it.
-  const stage = (selection: ModelSelection): Promise<boolean> => {
+  const stage = (selection: ModelSelection): Promise<ModelApplyResult> => {
     onChange(selection)
-    return Promise.resolve(true)
+    return Promise.resolve({ ok: true })
   }
   return (
     <>

@@ -3,30 +3,9 @@ import { tmpdir } from 'node:os'
 import { describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
-import { SettingsProvider } from '@deepseek-ai/dsh-settings'
-import type { SettingsNamespace } from '@deepseek-ai/dsh-settings'
 import CodegraphIndexService, {
-  CODEGRAPH_SETTINGS_NAMESPACE,
   type CodegraphIndexDeps,
 } from '@deepseek-ai/dsh-codegraph-index'
-
-/** In-memory settings provider for autoInit tests. */
-class MemorySettings extends SettingsProvider {
-  doc: Record<string, unknown> = {}
-
-  get writable(): boolean {
-    return true
-  }
-
-  protected load(): Promise<Record<string, unknown>> {
-    return Promise.resolve(structuredClone(this.doc))
-  }
-
-  protected persist(ns: SettingsNamespace, section: Record<string, unknown>): Promise<void> {
-    this.doc = { ...this.doc, [ns]: structuredClone(section) }
-    return Promise.resolve()
-  }
-}
 
 const projectPath = resolve(tmpdir(), 'codegraph-index-proj')
 
@@ -67,19 +46,18 @@ function fakeDeps(options: {
 }
 
 /** Boot the service over a live session store. */
-async function harness(deps: CodegraphIndexDeps, withSettings = true): Promise<{
+async function harness(deps: CodegraphIndexDeps): Promise<{
   ctx: Context
   service: CodegraphIndexService
   create: (cwd?: string) => ReturnType<SessionStore['create']>
+  setAutoInit: (enabled: boolean) => void
 }> {
   const ctx = new Context()
   await ctx.plugin(SessionStore)
-  if (withSettings) {
-    await ctx.plugin(MemorySettings)
-  }
+  let autoInit = false
   class TestService extends CodegraphIndexService {
     constructor(serviceCtx: Context) {
-      super(serviceCtx, {}, deps)
+      super(serviceCtx, { autoInit: { get: () => autoInit } }, deps)
     }
   }
   await ctx.plugin(TestService)
@@ -87,6 +65,7 @@ async function harness(deps: CodegraphIndexDeps, withSettings = true): Promise<{
     ctx,
     service: ctx.codegraphIndex,
     create: cwd => ctx.sessions.create(SessionId(`s-${Math.random()}`), cwd === undefined ? undefined : { meta: { cwd } }),
+    setAutoInit: (enabled) => { autoInit = enabled },
   }
 }
 
@@ -214,8 +193,8 @@ describe('CodegraphIndexService', () => {
     const deps = fakeDeps({
       init: () => new Promise((resolve) => { finish = resolve }),
     })
-    const { ctx, service, create } = await harness(deps)
-    await ctx.settings.update(CODEGRAPH_SETTINGS_NAMESPACE, { autoInit: true })
+    const { ctx, service, create, setAutoInit } = await harness(deps)
+    setAutoInit(true)
     const session = create(projectPath)
     expect(service.status(session.id).indexing).toBe(true)
     expect(deps.runs).toEqual([['init', projectPath]])
@@ -236,8 +215,8 @@ describe('CodegraphIndexService', () => {
 
   it('skips auto-init when the session has no cwd', async () => {
     const deps = fakeDeps()
-    const { ctx, create } = await harness(deps)
-    await ctx.settings.update(CODEGRAPH_SETTINGS_NAMESPACE, { autoInit: true })
+    const { ctx, create, setAutoInit } = await harness(deps)
+    setAutoInit(true)
     create()
     expect(deps.runs).toEqual([])
     await ctx.fiber.dispose()

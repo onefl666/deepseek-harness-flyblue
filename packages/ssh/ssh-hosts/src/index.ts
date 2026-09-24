@@ -1,6 +1,6 @@
 /** SSH host storage and non-replaying command execution. */
 import { readFile } from 'node:fs/promises'
-import type { Context } from '@deepseek-ai/cordis'
+import { Service, type Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { Client } from 'ssh2'
 import { writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
@@ -38,8 +38,14 @@ declare module '@deepseek-ai/cordis' { interface Context { sshHosts: SshService 
 export class SshService extends TypertRemoteService {
   private readonly path = dshHomePath('dsh-ssh.json')
   private store: Store = { version: 1, hosts: [] }
+  private readonly loaded: Promise<void>
   /** @param ctx - Host context. @param config - validated connection limits. */
-  constructor(ctx: Context, private readonly config: Config = {}) { super(ctx, 'sshHosts', { namespace: 'ssh' }); void this.load() }
+  constructor(ctx: Context, private readonly config: Config = {}) {
+    super(ctx, 'sshHosts', { namespace: 'ssh' })
+    this.loaded = this.load()
+  }
+  /** Complete activation only after durable hosts are available. */
+  async [Service.init](): Promise<void> { await this.loaded }
   /**
    * List configured hosts without passwords, passphrases, or key paths.
    * @returns Secret-free copies of the configured host records.

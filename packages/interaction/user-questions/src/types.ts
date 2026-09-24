@@ -2,6 +2,7 @@
 
 import type { Scoped } from '@deepseek-ai/dsh-scope'
 import type { Agent } from '@deepseek-ai/dsh-agent/types'
+import type { ToolCallId } from '@deepseek-ai/dsh-llm/brand'
 
 /** One selectable answer offered to the user. */
 export interface AskUserQuestionOption {
@@ -29,7 +30,7 @@ export type AskUserQuestionIntent = {
    * the verdict from option order. An `approve` entry naming no option of
    * its own question is rejected at `ask()`.
    */
-  approve: string[]
+  approve: string | readonly string[]
   /**
    * Setting names this review collects beside the decision, so a UI renders a
    * control per name it knows and answers the ones it rendered. The asker
@@ -38,6 +39,8 @@ export type AskUserQuestionIntent = {
    * Omit to ask for the decision by itself.
    */
   settings?: readonly string[]
+  /** Logged tool invocation whose arguments contain the reviewed plan. */
+  callId?: ToolCallId
 }
 
 /** One question in a user-questions request. */

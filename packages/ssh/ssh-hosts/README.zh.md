@@ -9,7 +9,9 @@ kind: "package-reference"
 ## 概述
 
 
-由 Host 管理的 SSH 主机存储和单次命令执行服务。`ctx.sshHosts` 通过仅限 loopback 的 `ssh` Typert 命名空间公开 list、put、delete 和 exec 方法；它与 `ctx.ssh` 上的 POSIX 远程运行时互不依赖。主机记录保存在 `$DSH_HOME/dsh-ssh.json`，文件和目录仅允许所有者访问；浏览器列表不返回密码和私钥路径。
+SSH 主机存储与单次命令执行。`ctx.sshHosts` 通过仅限 loopback 的 `ssh` Typert 命名空间提供 list、put、delete 和 exec；`ctx.ssh` 负责独立的 POSIX 远程运行时。主机记录保存在 `$DSH_HOME/dsh-ssh.json`，文件和目录仅允许所有者访问；浏览器列表不返回密码和私钥路径。
+
+插件装载会等待持久化主机加载完成；无效的主机文件会使装载失败。
 
 `exec` 最多分发一次命令。分发前连接失败会拒绝调用。分发后连接丢失或超时会返回 `result: "result-unknown"`，调用方因此可以避免重放远端效果尚不确定的命令。
 
@@ -46,7 +48,6 @@ kind: "package-reference"
 
 - 可以保存私钥路径，但命令连接尚未把它加载到 `ssh2`；当前执行要求服务器支持密码认证。
 - `idleTimeoutMs` 为连接池预留；目前每次调用都会打开并关闭一个连接。
-- 服务构造期间会异步开始加载持久化主机，因此启动时立即得到的空列表不能证明没有已配置主机。
 
 <a id="dev-note"></a>
 ### 开发备注

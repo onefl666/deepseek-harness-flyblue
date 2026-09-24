@@ -72,7 +72,8 @@ describe('skill-manager browser plugin', () => {
     const b = await bench()
     declare(b.slots)
     await b.ctx.plugin({ inject: [...inject], apply }).await()
-    const injected = (b.slots.entries('settings.section')[0]!.inject as unknown as () => SkillManagerSectionInjected)()
+    const entry = b.slots.entries('settings.section')[0]!
+    const injected = (entry.inject as (() => SkillManagerSectionInjected) & NonNullable<typeof entry.inject>)()
     const scope = { kind: 'user' } as const
     const draft = { name: 'fresh', description: 'd', body: 'b' }
 

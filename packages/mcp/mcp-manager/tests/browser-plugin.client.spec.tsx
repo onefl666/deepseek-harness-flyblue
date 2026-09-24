@@ -73,7 +73,8 @@ describe('mcp-manager browser plugin', () => {
     const b = await bench()
     declare(b.slots)
     await b.ctx.plugin({ inject: [...inject], apply }).await()
-    const injected = (b.slots.entries('settings.section')[0]!.inject as unknown as () => McpManagerSectionInjected)()
+    const entry = b.slots.entries('settings.section')[0]!
+    const injected = (entry.inject as (() => McpManagerSectionInjected) & NonNullable<typeof entry.inject>)()
     const scope = { kind: 'user' } as const
     const config = { transport: 'stdio', serverName: 'srv', command: 'echo' } as const
 
@@ -97,7 +98,8 @@ describe('mcp-manager browser plugin', () => {
     const b = await bench()
     declare(b.slots)
     await b.ctx.plugin({ inject: [...inject], apply }).await()
-    const injected = (b.slots.entries('settings.section')[0]!.inject as unknown as () => McpManagerSectionInjected)()
+    const entry = b.slots.entries('settings.section')[0]!
+    const injected = (entry.inject as (() => McpManagerSectionInjected) & NonNullable<typeof entry.inject>)()
 
     const listener = vi.fn()
     const off = injected.subscribeStatus(listener)

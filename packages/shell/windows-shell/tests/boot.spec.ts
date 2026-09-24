@@ -53,6 +53,16 @@ describe('seedWindowsShellEnvironment', () => {
     expect(storedPwsh.env[WINDOWS_SHELL_ENV_KEY]).toBe('gitbash')
   })
 
+  it('uses the active profile preference over a legacy settings document', () => {
+    const legacy = documentOf('windows-shell:\n  shell: pwsh\n')
+    expect(seedWindowsShellEnvironment(legacy.env, legacy.file, 'gitbash')).toBe('gitbash')
+    expect(WINDOWS_SHELL_ENV_KEY in legacy.env).toBe(false)
+
+    const selected = documentOf('windows-shell:\n  shell: gitbash\n')
+    expect(seedWindowsShellEnvironment(selected.env, selected.file, 'pwsh')).toBe('pwsh')
+    expect(selected.env[WINDOWS_SHELL_ENV_KEY]).toBe('pwsh')
+  })
+
   it('ignores a stored value outside the two stacks; the provider registration fails loud later', () => {
     const doc = documentOf('windows-shell:\n  shell: cmd\n')
     expect(seedWindowsShellEnvironment(doc.env, doc.file)).toBe('gitbash')

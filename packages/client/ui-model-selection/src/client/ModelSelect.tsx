@@ -23,5 +23,16 @@ export function ModelSelect(
   ModelSelectInjected & { locked: boolean } & PropsLocale<'model'>,
 ) {
   if (!available) return null
-  return <ModelMenu value={null} store={directory} load={load} apply={select} locked={locked} t={t} />
+  const apply = async (selection: Parameters<typeof select>[0]) => {
+    const result = await select(selection)
+    if (result?.ok === true) return { ok: true as const }
+    if (result?.ok === false) return {
+      ok: false as const,
+      message: result.error.code === 'session/writer-held'
+        ? t('error.sessionInUse')
+        : t('error.action', { message: `${result.error.code}: ${result.error.message}` }),
+    }
+    return { ok: false as const, message: t('error.unavailable') }
+  }
+  return <ModelMenu value={null} store={directory} load={load} apply={apply} locked={locked} t={t} />
 }

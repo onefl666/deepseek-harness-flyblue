@@ -10,7 +10,7 @@ Status: implemented
 
 - **空的 invariant 伴生入口。** 十五个包发布了 `src/invariant.ts`，其 installer 体是 `const install: InvariantInstaller = () => {}`，并附带完整的 `./invariant` 发布接线：`exports` 条目、`files` 条目、`@deepseek-ai/dsh-invariants` 的 peer 与 dev 依赖、`runtime-diagnostics/invariants` 项目引用、`tsdown` 条目，以及 `tsconfig.base.json` 的路径映射。`AGENTS.md` 规定空 installer 无效，且没有可独立观测关系的包必须省略伴生入口及其接线，并在 README 记录原因。
 - **非 MIT 的许可证声明。** `packages/schedule/task-board`、`packages/workspace/workspace-files` 与 `packages/workspace/workspace-git` 声明 `BSD-3-Clause`，`packages/ssh/ssh` 与 `packages/ssh/tool-ssh` 声明 `Apache-2.0`。`verify-dsh-package-licenses` 要求每个 `@deepseek-ai/dsh*` manifest 都声明 MIT。
-- **在模块作用域值导入可选 peer。** `packages/plan/plan-handoff/src/handoff.ts` 以值的形式从 `@deepseek-ai/dsh-compaction` 导入 `ManualCompactionError`，而该 peer 在 `peerDependenciesMeta` 中标记为可选。因此没有 compaction 的树加载规划插件时会直接失败，而不是把该能力报告为不可用。
+- **在模块作用域值导入可选 peer。** `packages/plan/plan-mode/src/handoff.ts` 以值的形式从 `@deepseek-ai/dsh-compaction` 导入 `ManualCompactionError`，而该 peer 在 `peerDependenciesMeta` 中标记为可选。因此没有 compaction 的树加载规划插件时会直接失败，而不是把该能力报告为不可用。
 - **被实体化的符号链接当作配置文件读取。** `apps/cli/tests/profiles/acp/cordis.yml` 在索引中记录为符号链接（mode 120000）。本 checkout 的 `core.symlinks=false`，于是 Git 把链接目标写成 59 字节的文本文件，`verify-cordis-config` 便把那个路径字符串解析成 Loader 文档，并以「根不是数组」拒绝。
 
 ## Decision
@@ -57,4 +57,4 @@ Status: implemented
 
 ## Verification
 
-`pnpm run hygiene` 报告 16 passed、0 failed。`pnpm run typecheck`、`pnpm run lint`（0 warnings、0 errors）与 `pnpm run test:docs`（16 passed）均为绿，`verify-config-catalog`、`verify-cordis-catalog`、`verify-doc-graphs`、`verify-export-jsdoc`、`verify-scoped-events`、`verify-tsconfig-paths`、`verify-package-readme-limitations` 与 `verify-translation-pairing` 各自通过。`@deepseek-ai/dsh-client-ui-git-graph`、`@deepseek-ai/dsh-workspace-git` 与 `@deepseek-ai/dsh-plan-handoff` 的十二个用例文件共 203 个测试通过。
+`pnpm run hygiene` 报告 16 passed、0 failed。`pnpm run typecheck`、`pnpm run lint`（0 warnings、0 errors）与 `pnpm run test:docs`（16 passed）均为绿，`verify-config-catalog`、`verify-cordis-catalog`、`verify-doc-graphs`、`verify-export-jsdoc`、`verify-scoped-events`、`verify-tsconfig-paths`、`verify-package-readme-limitations` 与 `verify-translation-pairing` 各自通过。`@deepseek-ai/dsh-client-ui-git-graph`、`@deepseek-ai/dsh-workspace-git` 与 `@deepseek-ai/dsh-plan-mode` 的十二个用例文件共 203 个测试通过。

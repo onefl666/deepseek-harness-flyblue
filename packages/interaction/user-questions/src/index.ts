@@ -118,8 +118,9 @@ export class UserQuestionService extends Service {
       const intent = question.intent
       if (intent === undefined) continue
       const labels = new Set((question.options ?? []).map(option => option.label))
-      const missing = intent.approve.find(label => !labels.has(label))
-      if (intent.approve.length === 0 || missing !== undefined) {
+      const approve = typeof intent.approve === 'string' ? [intent.approve] : intent.approve
+      const missing = approve.find(label => !labels.has(label))
+      if (approve.length === 0 || missing !== undefined) {
         throw new UserQuestionError(
           `question ${question.id} declares intent ${intent.kind} whose approve label `
           + `${JSON.stringify(missing ?? intent.approve)} names none of its options`,

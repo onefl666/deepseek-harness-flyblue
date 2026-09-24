@@ -11,7 +11,7 @@ export const zh = {
   'nav.cancel': '放弃整组问题',
   'option.recommended': '推荐',
   'custom.placeholder': '输入你的答案',
-  'action.skip': '跳过本题',
+  'action.skip': '跳过',
   'action.next': '下一题',
   'plan.header': '计划待审',
   'plan.approve': '确认执行',
@@ -24,6 +24,7 @@ export const zh = {
   'plan.execution.back': '返回',
   'plan.execution.freshNote': '该预设只用于本次新建的执行会话。',
   'plan.execution.rejected': '模型没能切换成功，计划尚未提交。',
+  'plan.decline': '拒绝',
 } satisfies Record<string, string>
 
 /** The question namespace key union. */
@@ -40,7 +41,7 @@ export const en = {
   'nav.cancel': 'Dismiss all questions',
   'option.recommended': 'Recommended',
   'custom.placeholder': 'Type your answer',
-  'action.skip': 'Skip this question',
+  'action.skip': 'Skip',
   'action.next': 'Next',
   'plan.header': 'Plan review',
   'plan.approve': 'Approve',
@@ -53,4 +54,5 @@ export const en = {
   'plan.execution.back': 'Back',
   'plan.execution.freshNote': 'This preset applies only to the execution session this approval starts.',
   'plan.execution.rejected': 'The model could not be switched, so the plan was not submitted.',
+  'plan.decline': 'Refuse',
 } satisfies Record<QuestionKey, string>

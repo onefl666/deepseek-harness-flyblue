@@ -8,7 +8,7 @@
 import { useEffect, useState } from 'react'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { IconChevronDownOutline14, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconChevronDownOutlineRegular, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { WindowsShellId, WindowsShellRowState } from './settings-store.ts'
 import { WINDOWS_SHELL_IDS } from './settings-store.ts'
 import type { WindowsShellSettingsKey } from './locales.ts'
@@ -89,7 +89,7 @@ export function WindowsShellRow({ load, select, useWindowsShell, t }: WindowsShe
             onClick={() => { setOpen(value => !value) }}
           >
             {label}
-            <IconChevronDownOutline14 className={css.chevron} />
+            <IconChevronDownOutlineRegular size={14} className={css.chevron} />
           </button>
         )}
       />

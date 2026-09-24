@@ -1,12 +1,10 @@
 // Web e2e scenario: the shipped Claude-style effort slider renders exactly the
 // reasoning levels the settings profile declares — no phantom slots from a
-// fixed palette — and the level the user picks is the level that lands in
-// Settings. Zero model calls: declaring, describing, and switching are
-// settings/llm traffic only, so there is no fixture and a stray stream would
+// fixed palette — and the level the user picks is logged in the Session.
+// Zero model calls: declaring, describing, and switching are
+// session selection traffic only, so there is no fixture and a stray stream would
 // fail loud.
-import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
-import { join } from 'node:path'
 import type { Browser, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
@@ -94,7 +92,7 @@ describe.skipIf(MODE === 'record')('web e2e: the effort slider offers exactly th
     await compareOrRefreshGolden(UI_EXPECTED, snapshot, MODE)
 
     // Every stop is a real declared level: walk them with the keyboard. Each
-    // press submits the level it lands on, so the chip and Settings agree.
+    // press submits the level it lands on, so the chip and Session log agree.
     await range.focus()
     await page.keyboard.press('Home')
     await expect.poll(() => range.getAttribute('aria-valuetext'), { timeout: 10_000 }).toBe('关闭')
@@ -106,10 +104,9 @@ describe.skipIf(MODE === 'record')('web e2e: the effort slider offers exactly th
     await expect.poll(() => range.getAttribute('aria-valuetext')).toBe('关闭')
     await page.keyboard.press('ArrowRight')
     await expect.poll(() => range.getAttribute('aria-valuetext')).toBe('高')
-    await expect.poll(
-      async () => readFile(join(scaffold.harnessHome, 'settings.yaml'), 'utf8'),
-      { timeout: 10_000 },
-    ).toContain('reasoningEffort: high')
+    await expect.poll(() => scaffold.ctx.sessions.list()[0]?.snapshotEvents()
+      .filter(event => event.type === 'model/selection').at(-1)?.data)
+      .toMatchObject({ reasoningEffort: 'high' })
     await expect.poll(() => trigger.getAttribute('aria-label'), { timeout: 10_000 })
       .toBe('选择模型，当前 Acme Think，推理等级 高')
 

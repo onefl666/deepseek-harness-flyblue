@@ -3,9 +3,9 @@
 
 import { memo, useMemo, useState } from 'react'
 import {
-  IconApiOutline14,
-  IconChevronDownOutline14,
-  IconChevronRightOutline14,
+  IconApiOutlineRegular,
+  IconChevronDownOutlineRegular,
+  IconChevronRightOutlineRegular,
   MarkdownText,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ChatViewSlotProps } from '../contract/slots.ts'
@@ -26,7 +26,7 @@ export function CompactionRunningRow({ t }: { readonly t: ChatViewSlotProps['t']
       <div className={css.compactionStatus}>
         <span className={css.compactionLeading} aria-hidden>
           <span className={css.compactionContextIcon} data-compaction-icon="context">
-            <IconApiOutline14 />
+            <IconApiOutlineRegular size={14} />
           </span>
         </span>
         <span className={css.compactionTitle}>{t('message.compaction.running')}</span>
@@ -78,13 +78,13 @@ export const CompactionItem = memo(function CompactionItem({
       >
         <span className={css.compactionLeading} aria-hidden>
           <span className={css.compactionContextIcon} data-compaction-icon="context">
-            <IconApiOutline14 />
+            <IconApiOutlineRegular />
           </span>
           <span
             className={css.compactionDisclosureIcon}
             data-compaction-disclosure={open ? 'expanded' : 'collapsed'}
           >
-            {open ? <IconChevronDownOutline14 /> : <IconChevronRightOutline14 />}
+            {open ? <IconChevronDownOutlineRegular /> : <IconChevronRightOutlineRegular />}
           </span>
         </span>
         <span className={css.compactionTitle}>{title ?? t('message.compaction')}</span>

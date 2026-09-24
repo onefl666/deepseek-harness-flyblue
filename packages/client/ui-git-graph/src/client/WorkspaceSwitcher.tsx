@@ -9,7 +9,7 @@
 import { useState } from 'react'
 import type { WorkspaceId, WorkspaceView } from '@deepseek-ai/dsh-api-workspace-controller/client'
 import {
-  IconChevronDownOutline14, IconCheckOutline16, IconFolderOpenOutline16, Menu,
+  IconChevronDownOutlineRegular, IconCheckOutlineRegular, IconFolderOpenOutlineRegular, Menu,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { workspaceNamed } from './workspace-scope.ts'
 import css from './section.module.css'
@@ -55,7 +55,7 @@ export function WorkspaceSwitcher({ workspaces, selected, sessionWorkspaceId, ca
           ),
           // The open session's workspace is marked, because leaving it is the
           // change an operator most often makes by accident.
-          icon: workspace.workspaceId === sessionWorkspaceId ? <IconCheckOutline16 /> : undefined,
+          icon: workspace.workspaceId === sessionWorkspaceId ? <IconCheckOutlineRegular size={16} /> : undefined,
         })),
       ]}
       selectedId={selected.workspaceId}
@@ -71,10 +71,10 @@ export function WorkspaceSwitcher({ workspaces, selected, sessionWorkspaceId, ca
           title={selected.path}
           onClick={() => { setOpen(value => !value) }}
         >
-          <IconFolderOpenOutline16 className={css.switcherIcon} />
+          <IconFolderOpenOutlineRegular size={16} className={css.switcherIcon} />
           <span className={css.switcherCaption}>{caption}</span>
           <span className={css.switcherLabel}>{selected.title}</span>
-          <IconChevronDownOutline14 className={css.switcherChevron} />
+          <IconChevronDownOutlineRegular size={14} className={css.switcherChevron} />
         </button>
       )}
     />

@@ -59,7 +59,7 @@ describe('command-codegraph-init real Loader composition', () => {
         if (!modules.has(specifier)) throw new Error(`unexpected Loader import: ${specifier}`)
         return modules.get(specifier)
       },
-    } as unknown as NonNullable<typeof context.loader.internal>
+    } as Partial<NonNullable<typeof context.loader.internal>> as NonNullable<typeof context.loader.internal>
     await context.loader.create({
       name: 'cordis:include',
       config: { path: pathToFileURL(configPath).href },
@@ -72,7 +72,7 @@ describe('command-codegraph-init real Loader composition', () => {
       status: 'idle',
       options: {},
       reserveTurnAdmission: () => () => undefined,
-    } as unknown as Agent
+    } as Partial<Agent> as Agent
     expect(context.commands.list(agent)).toContainEqual({
       name: 'codegraph-init',
       description: 'Initialize the CodeGraph index for this workspace',

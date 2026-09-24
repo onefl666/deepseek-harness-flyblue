@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { SessionSummary } from '@deepseek-ai/dsh-api-session-controller/client'
+import type { SessionListState, SessionSummary } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { WorkspaceId, WorkspaceSnapshot, WorkspaceView } from '@deepseek-ai/dsh-api-workspace-controller/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots'
@@ -37,7 +37,7 @@ const space = (id: string, path: string, title: string = id): WorkspaceView => (
 })
 
 const workspaceSnapshot = (items: readonly WorkspaceView[]): WorkspaceSnapshot =>
-  ({ items, archivedSessionIds: [], state: 'idle', phase: 'ready', error: null })
+  ({ items, archivedSessionIds: [], pinnedSessionIds: [], state: 'idle', phase: 'ready', error: null })
 
 interface Sessions {
   current?: string
@@ -79,11 +79,15 @@ function renderSection(options: Options = {}): GitGraphInjected {
     discard: options.discard ?? (async () => okValue(undefined)),
   }
   const byId = Object.fromEntries(Object.entries(sessions.byId).map(([id, row]) => [id, {
-    id, displayTitle: id, blank: false, running: false, updatedAt: 0, cwd: row.cwd,
-  }])) as unknown as Readonly<Record<SessionId, SessionSummary>>
+    id: id as SessionId, displayTitle: id, blank: false, running: false, updatedAt: 0,
+    ...(row.cwd === undefined ? {} : { cwd: row.cwd }),
+    retainedBy: id === sessions.current ? { mainView: 1 } : {},
+  } satisfies SessionSummary])) as Record<SessionId, SessionSummary>
+  const sessionList: SessionListState = {
+    ids: Object.keys(byId) as SessionId[], byId, phase: 'ready', projectionsBySession: {},
+  }
   const useWorkspaces: SnapshotSelectorHook<WorkspaceSnapshot> = selector => selector(workspaceSnapshot(workspaces))
-  const useSessions = ((selector: (value: unknown) => unknown) =>
-    selector({ ids: Object.keys(byId), byId, current: sessions.current })) as never
+  const useSessions: SnapshotSelectorHook<SessionListState> = selector => selector(sessionList)
   render(
     <GitGraphSection
       t={t as never}
@@ -91,7 +95,8 @@ function renderSection(options: Options = {}): GitGraphInjected {
       useSessions={useSessions}
       useWorkspaces={useWorkspaces}
       useResource={(() => ({ status: 'none', value: undefined, failure: undefined, reload: () => {} })) as never}
-      useSessionPendingInteraction={((selector: (value: never) => unknown) => selector(new Map() as never)) as never}
+      useSessionStatus={selector => selector(new Map())}
+      useSessionRetainInfo={() => undefined}
       usePanelInfo={selector => selector({ activePanelId: null })}
       {...resolved}
     />,

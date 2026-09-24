@@ -1,55 +1,41 @@
 - dialog "设置":
   - navigation:
     - text: 设置
-    - button "通用设置":
-      - img
-      - text: 通用设置
-    - button "模型":
-      - img
-      - text: 模型
-    - button "插件":
-      - img
-      - text: 插件
-    - button "Agent 预设":
-      - img
-      - text: Agent 预设
-    - button "代码索引":
-      - img
-      - text: 代码索引
+    - button "通用设置"
+    - button "模型"
+    - button "内置插件"
+    - button "Agent 预设"
+    - button "代码索引"
+    - button "技能"
+    - button "MCP 服务器"
+    - button "用量统计"
+    - button "任务看板"
+    - button "Git 图谱"
+    - button "文件检查器"
+    - button "SSH 运维"
   - button "打开配置文件"
-  - button "关闭":
-    - img
-    - text: 关闭
+  - button "关闭"
   - text: 权限 选择新会话的默认权限模式
-  - button "工作区内修改":
-    - text: 工作区内修改
-    - img
+  - button "工作区内修改"
   - text: 语言
-  - button "中文":
-    - text: 中文
-    - img
+  - button "中文"
   - text: 外观
-  - button "浅色":
-    - img
-    - text: 浅色
-  - button "深色":
-    - img
-    - text: 深色
-  - button "跟随系统" [pressed]:
-    - img
-    - text: 跟随系统
+  - button "浅色"
+  - button "深色"
+  - button "跟随系统" [pressed]
   - text: 字号大小 仅影响会话内容的字号 14
-  - button "增大字号":
-    - img
-  - button "减小字号":
-    - img
-  - text: px 对话显示 控制已完成轮次的过程内容
-  - button "紧凑":
-    - text: 紧凑
-    - img
-  - text: 繁忙时的发送行为 智能体运行时 Enter 键和发送按钮的行为；Cmd/Ctrl+Enter 使用另一行为
-  - button "排队发送":
-    - text: 排队发送
-    - img
+  - button "增大字号"
+  - button "减小字号"
+  - text: px 工作步骤展示 选择希望看到多少工具调用细节
+  - button "标准"
+  - text: 性能与用量 选择性能与用量信息展示的详细程度
+  - button "详细"
+  - text: 开发者工具 显示用于调试和排查问题的工具与信息
+  - switch "开发者工具"
   - text: 大肥鱼滑块 用大肥鱼替换滑块按钮
   - switch "大肥鱼滑块"
+  - text: 繁忙时的发送行为 智能体运行时 Enter 键和发送按钮的行为；Cmd/Ctrl+Enter 使用另一行为
+  - button "排队发送"
+  - text: Ultracode 氛围光效 最高推理等级时，为推理面板与输入框加上紫色光效
+  - switch "Ultracode 氛围光效" [checked]
+  - text: 当前版本：{{version}}

@@ -27,7 +27,8 @@ function view(shell: string, revision = 0): SettingsNamespaceView {
     schema: { uid: 1, refs: {} },
     value: { shell },
     base: { shell: 'gitbash' },
-    applies: 'restart',
+    autoGenerate: true,
+    applies: 'live',
     secrets: [],
     revision,
   }
@@ -40,12 +41,10 @@ function ok<T>(value: T) {
 
 const dictionary: Record<string, string> = zh
 const t: WindowsShellRowProps['t'] = key => dictionary[key] ?? key
-type AttentionSnapshot = Parameters<Parameters<WindowsShellRowProps['useSessionPendingInteraction']>[0]>[0]
-const noAttention: AttentionSnapshot = new Map()
-const useSessionPendingInteraction: WindowsShellRowProps['useSessionPendingInteraction'] = selector => selector(noAttention)
 const runtime = {
   useSessions: (() => { throw new Error('unused') }) as never,
-  useSessionPendingInteraction,
+  useSessionStatus: (() => { throw new Error('unused') }) as never,
+  useSessionRetainInfo: (() => undefined) as GlobalStandardProps['useSessionRetainInfo'],
   usePanelInfo, useResource,
   useWorkspaces: (() => { throw new Error('unused') }) as never,
 }

@@ -29,5 +29,5 @@ Since the [gitbash stack note](2026-09-12-gitbash-windows-shell-stack.md), the w
 - Precedence on win32: explicit `DSH_WINDOWS_SHELL` > stored `windows-shell.shell` > Git Bash default.
 - A settings-file provider mounted with an explicit `path` config bypasses the boot seed (the seed reads the default `<harness home>/settings.yaml` location); such a deployment sets the env variable explicitly. Documented in the package README.
 - The seed is deliberately lenient about a stored value outside the two stacks (the provider's registration is the fail-loud authority moments later) and fail-loud about malformed YAML.
-- `packages/bundle/base/tests/base.spec.ts` was repaired in the same change: it had evaluated the shell rows with an env-less scoped `process` since `5604f88834` (`TypeError: Cannot read properties of undefined (reading 'DSH_WINDOWS_SHELL')`), and its expectation table predated the Git Bash default. It now pins platform × env for every shell row plus the new preference row.
+- `packages/bundle/base/tests/base.spec.ts` pins platform and environment selection for every shell row and the Windows preference row.
 - No session event, model-visible input, or tool-surface text changed, so no recorded-session snapshot was added (same verdict as the gitbash stack note); the roster facts are pinned by `windows-shell.spec.ts` and `base.spec.ts`.

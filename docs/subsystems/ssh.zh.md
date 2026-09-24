@@ -1,14 +1,38 @@
-# SSH 主机与执行
+# SSH
 
 [English](ssh.md) | 中文
 
-Host 侧拥有的 SSH 主机记录与一次性远程命令执行。`ctx.sshHosts` 暴露仅限环回的 `list`、`put`、`delete` 与 `exec` 方法；面向模型的工具保留在 [`dsh-tool-ssh`](../../packages/ssh/tool-ssh/README.zh.md)。记录存放在 `$DSH_HOME/dsh-ssh.json`，文件与目录权限仅限属主。
+[SSH 提供方家族](../../packages/ssh/README.zh.md) 通过 `ctx.ssh` 上由部署方持有的 OpenSSH 连接提供远端文件系统／进程环境。Harness、模型传输及 Session 存储留在主机。另有 `ctx.sshHosts` 存储用户主机记录，并通过可选的[工具消费方](../../packages/ssh/tool-ssh/README.zh.md)提供 `ssh_list`/`ssh_exec`；其环回 Typert 命名空间仍为 `ssh`。
+
+## 执行坐标
+
+文件系统身份、可执行文件查找、进程 cwd、沙箱工作区根目录及语言服务器文件 URL 都指向 SSH 主机。提供方在文件实际存在的位置规范化路径，保留文件系统对 `symlink/..` 的解释。策略解析器保留执行环境中的绝对路径写法，不尝试在 Harness 主机上解析远端路径。
+
+`processPath()` 提供配套子进程提供方可用的路径。SSH 的 `processPathFromHostPath()` 仍不可用；安装远端产物不意味着任意主机路径可移植。因此 [`NodePtcRuntime`](../../packages/ptc-runtime/ptc-runtime-node/README.zh.md) 使用显式安装并经过摘要验证的远端引导程序。
+
+## 传输与信任
+
+管理 RPC 使用辅助进程的 SSH exec 流。普通 stdin、stdout、stderr、终端输出及可选 fd 7 控制流使用分别认证的转发 Unix 套接字。每条转发流拥有独立 SSH 通道窗口；暂停的程序输出不与控制或管理消息共用窗口。所有通道仍共享连接带宽及传输失败。
+
+部署认证、已安装产物验证及逐流 TLS 认证属于 [`dsh-ssh`](../../packages/ssh/ssh/README.zh.md)。辅助进程使用远端机器上的可信本地提供方执行文件系统与进程请求。SSH 是传输方式；文件效果限制由所选远端沙箱提供方执行。
+
+## 进程生命周期与取消
+
+进程先预留，再连接流，且启动最多接受一次。`done` 报告直接结果，`waitForExit` 观察远端托管进程范围。终端操作保留共享异步 API。准备阶段取消、已启动进程终止及提供方释放都通过辅助进程释放各自资源。
+
+管理截止时限约束单次 RPC 观察，不替代 Bash 或 PTC 运行时消费方选择的执行截止时限。远端等待可以持续挂起，同时其他请求继续推进。SSH 丢失会使待处理操作失效；辅助进程 EOF、信号及租期到期会启动远端清理。客户端如实报告未确认结果，绝不通过重连重放可能已执行的操作。
+
+## 组合范围
+
+headless 通过已挂载的文件系统提供方记录和检查 Session cwd。因此远端 FS、Bash、终端、LSP 及 PTC 消费方可以共享这些坐标。假定可访问主机文件系统的 Web 工作区视图需要单独集成；仅替换提供方并不会使这些视图支持远端。
+
+替代方案与验证责任见[决策记录](../../.agents/notes/implemented/architecture/2026-09-11-posix-ssh-runtime.zh.md)。
+
+## 用户主机记录
+
+[`dsh-ssh-hosts`](../../packages/ssh/ssh-hosts/README.zh.md) 将凭据存于 `$DSH_HOME/dsh-ssh.json`，文件和目录权限仅限属主。浏览器与模型投影不包含密码或私钥路径。其 `exec` 至多派发一次命令：派发前的失败会拒绝调用；派发后连接中断或超时返回 `result: "result-unknown"`，调用方不得自动重放非幂等命令。
 
 Source: [`packages/ssh/ssh-hosts/src/types.ts`](../../packages/ssh/ssh-hosts/src/types.ts)
-
-## 主机记录
-
-存储的主机携带其凭据；每个浏览器与模型投影都会剥除它们。
 
 ```ts type-equiv
 /** User-owned SSH host configuration. */
@@ -30,15 +54,147 @@ type SshHostSummary = Omit<SshHost, 'password' | 'privateKeyPath'> & {
 }
 ```
 
-## 执行
+该服务验证 `connectTimeoutMs`、`execTimeoutMs`、`outputLimitBytes` 与预留的 `idleTimeoutMs`；默认值和限制见其[包 README](../../packages/ssh/ssh-hosts/README.zh.md)。
 
-`exec` 对一条命令至多派发一次。派发前的失败会拒绝该调用，因此可证明命令从未执行。派发后连接中断或超时则以 `result: "result-unknown"` 返回：调用方得知远端效果不确定，绝不能自动重放非幂等命令。
+## 连接 API
 
-## 配置
+```ts type-equiv
+/** Deployment-owned SSH identity and installed helper; no model argument selects these values. */
+interface Config {
+  /** OpenSSH host alias, including its existing user, key and known-host configuration. */
+  host: string
+  /** Absolute remote Node executable. */
+  node: string
+  /** Absolute path to the installed, bundled helper entry. */
+  helper: string
+  /** SHA-256 of that bundled helper; mismatches refuse the connection. */
+  helperHash: string
+  /** Absolute remote default workspace. */
+  workspace: string
+  /** Optional preinstalled built PTC entry, paired with its expected digest. */
+  bootstrapPath?: string
+  /** SHA-256 of bootstrapPath; both fields must be supplied together. */
+  bootstrapHash?: string
+  /** Connection and administrative-request deadline, at most 2,147,483,647 milliseconds. */
+  requestTimeoutMs?: number
+  /** Maximum JSON payload bytes per helper request or response. */
+  maxFrameBytes?: number
+  /** Maximum ordinary requests; heartbeat and bounded resource cleanup have reserved capacity. */
+  maxPending?: number
+  /** Remote helper lease; loss of heartbeats starts remote managed cleanup. */
+  leaseMs?: number
+}
+```
 
-| 键 | 默认值 | 含义 |
-| --- | --- | --- |
-| `connectTimeoutMs` | `15000` | 建立连接的最长时间。 |
-| `execTimeoutMs` | `60000` | 一条已派发命令的最长耗时。 |
-| `outputLimitBytes` | `2097152` | 分别施加于 stdout 与 stderr 的捕获上限。 |
-| `idleTimeoutMs` | `1800000` | 预留的空闲连接生命周期。 |
+```ts public-api
+/** One non-reconnecting SSH session; loss invalidates all active operations. */
+declare class SshConnection extends Service {
+  static Config: schema<Config>;
+  /** Verified remote helper coordinates; callers must await this before launch. */
+  readonly ready: Promise<Hello>;
+  constructor(ctx: Context, config: Config);
+  /** Hold plugin readiness until the remote identity and helper digest are verified. */
+  async [Service.init](): Promise<void>;
+  /** Verified remote Node executable for the paired PTC runtime. */
+  get nodeExecutable(): string;
+  /** Verified preinstalled PTC entry; unconfigured runtimes fail before program execution. */
+  get bootstrapPath(): string;
+  /**
+     * Send a helper operation; cancellation never replays an ambiguous mutation.
+     * @param method - the private helper operation.
+     * @param params - JSON request fields validated by the helper.
+     * @param result - response validation before returning provider-visible data.
+     * @param signal - cancellation, which does not undo completed remote effects.
+     * @param wait - allow a process observation to outlast the administrative deadline.
+     * @returns the validated remote result.
+     */
+  async request<T>(method: string, params: unknown, result: z.ZodType<T>, signal?: AbortSignal, wait: boolean = false): Promise<T>;
+  /**
+     * Forward one authenticated stream through an independent SSH channel.
+     * @param endpoint - private coordinates issued by this connection's helper.
+     * @param signal - cancellation of allocation and the resulting socket.
+     * @returns a paused socket; attach a consumer before resuming it.
+     */
+  async connectStream(endpoint: SshStreamEndpoint, signal?: AbortSignal): Promise<Socket>;
+  /** Tear down the helper's remote managed ranges before releasing the SSH master when reachable. */
+  dispose(): Promise<void>;
+}
+```
+
+<!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
+
+<a id="cordis-surface"></a>
+
+## Cordis API
+
+Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnpm run verify-cordis-catalog` in doc-sync; regenerate with `pnpm run gen-cordis-catalog`) — the language sides differ only in locale-specific paired document paths. Signature blocks use a `ts cordis-catalog` fence and keep the original source JSDoc; dispatch modes are defined in the [primer](../cordis-primer.zh.md#dispatch-modes), and the framework-inherited `ctx` API lives in [cordis-api/inherited.md](../cordis-api/inherited.md).
+
+<a id="ctxssh--sshconnection"></a>
+
+### `ctx.ssh` — `SshConnection`
+
+One non-reconnecting SSH session; loss invalidates all active operations.
+
+```ts cordis-catalog
+/**
+ * Send a helper operation; cancellation never replays an ambiguous mutation.
+ * @param method - the private helper operation.
+ * @param params - JSON request fields validated by the helper.
+ * @param result - response validation before returning provider-visible data.
+ * @param signal - cancellation, which does not undo completed remote effects.
+ * @param wait - allow a process observation to outlast the administrative deadline.
+ * @returns the validated remote result.
+ */
+async request<T>(method: string, params: unknown, result: z.ZodType<T>, signal?: AbortSignal, wait: boolean = false): Promise<T>
+
+/**
+ * Forward one authenticated stream through an independent SSH channel.
+ * @param endpoint - private coordinates issued by this connection's helper.
+ * @param signal - cancellation of allocation and the resulting socket.
+ * @returns a paused socket; attach a consumer before resuming it.
+ */
+async connectStream(endpoint: SshStreamEndpoint, signal?: AbortSignal): Promise<Socket>
+
+/** Tear down the helper's remote managed ranges before releasing the SSH master when reachable. */
+dispose(): Promise<void>
+```
+
+Source: [`packages/ssh/ssh/src/index.ts`](../../packages/ssh/ssh/src/index.ts)
+
+<a id="ctxsshhosts--sshservice"></a>
+
+### `ctx.sshHosts` — `SshService`
+
+Host SSH service. A connection loss after channel dispatch reports an unknown result and is never replayed.
+
+```ts cordis-catalog
+/**
+ * List configured hosts without passwords, passphrases, or key paths.
+ * @returns Secret-free copies of the configured host records.
+ */
+@Remote list(): SshHostSummary[]
+
+/**
+ * Save a host record. The complete secret-bearing configuration remains local.
+ * @param host - Complete local host configuration to insert or replace.
+ * @returns The saved host with secret fields removed.
+ */
+@Remote async put(host: SshHost): Promise<SshHostSummary>
+
+/**
+ * Remove a host record.
+ * @param id - Stable identifier of the host to remove.
+ */
+@Remote('delete') async delete(id: SshHostId): Promise<void>
+
+/**
+ * Execute one command once. A dropped dispatched channel returns `result-unknown`.
+ * @param id - Stable identifier of the configured host.
+ * @param command - Command text passed to the remote SSH server.
+ * @returns Captured streams, exit status, and whether the dispatched result is known.
+ */
+@Remote async exec(id: SshHostId, command: string): Promise<{ stdout: string; stderr: string; exitCode: number | null; result: 'known' | 'result-unknown' }>
+```
+
+Source: [`packages/ssh/ssh-hosts/src/index.ts`](../../packages/ssh/ssh-hosts/src/index.ts)
+<!-- END GENERATED cordis-surface -->

@@ -29,5 +29,5 @@ Status: implemented
 - win32 上的优先级：显式 `DSH_WINDOWS_SHELL` > 存储的 `windows-shell.shell` > Git Bash 默认。
 - 以显式 `path` 配置挂载的 settings-file provider 会绕过启动播种（播种读取默认的 `<harness home>/settings.yaml` 位置）；此类部署需显式设置环境变量。已在包 README 说明。
 - 播种对超出两个栈的存储值有意宽容（provider 的注册在片刻之后就是 fail-loud 的裁决者），对损坏的 YAML 则 fail-loud。
-- `packages/bundle/base/tests/base.spec.ts` 在同一变更中修复：自 `5604f88834` 起它就用不带 env 的作用域 `process` 求值 shell 行（`TypeError: Cannot read properties of undefined (reading 'DSH_WINDOWS_SHELL')`），且其期望表早于 Git Bash 默认。现在它为全部 shell 行及新增偏好行固定 platform × env 真值。
+- `packages/bundle/base/tests/base.spec.ts` 按平台与环境变量固定全部 shell 行及 Windows 偏好行的选择。
 - 无会话事件、模型可见输入或工具文案变化，故未添加录制会话快照（与 gitbash 栈笔记同判）；roster 事实由 `windows-shell.spec.ts` 与 `base.spec.ts` 固定。

@@ -8,8 +8,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
 import {
-  Button, IconArchiveOutline20, IconChecklistOutline14, IconEditOutline16,
-  IconPlusOutline16, Input, SectionChrome, SegmentedRange,
+  Button, IconArchiveOutlineRegular, IconChecklistOutlineRegular, IconEditOutlineRegular,
+  IconPlusOutlineRegular, Input, SectionChrome, SegmentedRange,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import { randomUUID } from '@deepseek-ai/dsh-util-crypto'
@@ -160,7 +160,7 @@ export function TaskBoardSection({ t, list, create, archive, update, remove }: P
       />
       <form className={css.createForm} onSubmit={submitCreate}>
         <Input
-          icon={<IconPlusOutline16 />}
+          icon={<IconPlusOutlineRegular size={16} />}
           placeholder={t('createPlaceholder')}
           aria-label={t('createAria')}
           value={title}
@@ -193,8 +193,8 @@ export function TaskBoardSection({ t, list, create, archive, update, remove }: P
                 return (
                   <li key={task.id} className={css.row} style={{ '--row-index': index } as CSSProperties}>
                     {tab === 'active'
-                      ? <IconChecklistOutline14 className={css.taskIcon} />
-                      : <IconArchiveOutline20 className={css.taskIcon} />}
+                      ? <IconChecklistOutlineRegular size={14} className={css.taskIcon} />
+                      : <IconArchiveOutlineRegular size={20} className={css.taskIcon} />}
                     {editing
                       ? (
                         <form className={css.editForm} onSubmit={(event) => { event.preventDefault(); saveEdit() }}>
@@ -216,7 +216,7 @@ export function TaskBoardSection({ t, list, create, archive, update, remove }: P
                             {tab === 'active' && (
                               <>
                                 <Button size="sm" variant="ghost" disabled={pending} aria-label={t('rename')} onClick={() => { startEdit(task) }}>
-                                  <IconEditOutline16 />
+                                  <IconEditOutlineRegular size={16} />
                                 </Button>
                                 <Button size="sm" variant="ghost" disabled={pending} onClick={() => { archiveTask(task) }}>
                                   {t('archive')}

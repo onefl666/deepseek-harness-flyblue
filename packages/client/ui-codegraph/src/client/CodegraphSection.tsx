@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
+import type { ConfigForm } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { CodegraphIndexStatus, CodegraphSettings } from '@deepseek-ai/dsh-codegraph-index/client'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
@@ -33,7 +33,7 @@ export interface CodegraphSectionInjected {
   init: (sessionId: SessionId) => Promise<RemoteResult<CodegraphIndexStatus>>
   hooks: {
     /** Bound `codegraph` settings namespace. */
-    codegraphSettings: SettingsScope<CodegraphSettings>
+    codegraphSettings: ConfigForm<CodegraphSettings>
   }
 }
 
@@ -52,7 +52,7 @@ export function CodegraphSection({
   useSessions, t, setAutoInit, status, init, useCodegraphSettings,
 }: CodegraphSectionProps) {
   const list = useSessions(snapshot => snapshot)
-  const currentId = list.current
+  const currentId = Object.values(list.byId).find(summary => (summary.retainedBy.mainView ?? 0) > 0)?.id
   const cwd = currentId === undefined ? undefined : list.byId[currentId]?.cwd
   const settings = useCodegraphSettings(snapshot => snapshot)
   const autoInit = settings.value?.autoInit === true

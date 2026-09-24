@@ -19,7 +19,9 @@ describe('UsageDetails', () => {
     expect(tables[0]?.querySelectorAll('tbody tr')).toHaveLength(2)
     expect(tables[1]?.querySelectorAll('tbody tr')).toHaveLength(7)
     expect(tables[0]?.querySelector('tbody tr')?.textContent).toBe('p1m1401')
-    expect(tables[1]?.querySelector('tbody tr')?.textContent).toBe('2026年9月3日2021')
+    const date = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+      .format(new Date('2026-09-03T00:00:00'))
+    expect(tables[1]?.querySelector('tbody tr')?.textContent).toBe(`${date}2021`)
   })
 
   it('renders no model rows when the range attributed none', () => {

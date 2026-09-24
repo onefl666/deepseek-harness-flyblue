@@ -41,7 +41,6 @@ beforeEach(async () => {
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   fiber = await ctx.plugin(McpManagerGateway, { dshHome: root })
-  // oxlint-disable-next-line typescript/no-unsafe-assignment -- Context merge is declared in the module under test.
   gateway = ctx.get('mcpManager') as McpManagerGateway
 })
 
@@ -251,7 +250,6 @@ describe('McpManagerGateway', () => {
     await second.plugin(ToolRuntime)
     await seed(join(root, 'fresh', 'mcp-servers.json'), [{ enabled: false, config: stdio('from-file') }])
     const secondFiber = await second.plugin(McpManagerGateway, { dshHome: join(root, 'fresh') })
-    // oxlint-disable-next-line typescript/no-unsafe-assignment -- same handle as the bench.
     const secondGateway = second.get('mcpManager') as McpManagerGateway
     const listing = await secondGateway.list({ scope: { kind: 'user' } })
     expect(listing.servers.map(server => server.serverName)).toEqual(['from-file'])

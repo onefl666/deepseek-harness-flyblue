@@ -51,7 +51,7 @@ async function boot(configLines: readonly string[]): Promise<Context> {
       if (!modules.has(specifier)) throw new Error(`unexpected Loader import: ${specifier}`)
       return modules.get(specifier)
     },
-  } as unknown as NonNullable<typeof ctx.loader.internal>
+  } as Partial<NonNullable<typeof ctx.loader.internal>> as NonNullable<typeof ctx.loader.internal>
   await ctx.loader.create({ name: 'cordis:include', config: { path: pathToFileURL(configPath).href } })
   await ctx.loader.await()
   return ctx
@@ -72,6 +72,9 @@ describe('tool-codegraph real Loader composition through cordis.yml', () => {
   }, 30_000)
 
   it('fails loading when extraTools lists an unknown id', async () => {
-    await expect(boot(['    extraTools: [trace]'])).rejects.toThrow(/unknown extraTools entry "trace"/)
+    const ctx = await boot(['    extraTools: [trace]'])
+    const entry = [...ctx.loader.entries()].find(item => item.options.name === '@deepseek-ai/dsh-tool-codegraph')
+    expect(entry?.fiber).toBeDefined()
+    await expect(entry!.fiber!.await()).rejects.toThrow(/unknown extraTools entry "trace"/)
   }, 30_000)
 })

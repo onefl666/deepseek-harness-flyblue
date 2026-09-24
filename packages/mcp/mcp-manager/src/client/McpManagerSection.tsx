@@ -11,7 +11,7 @@
 import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
-  Button, IconEllipsisOutline16, IconPlusOutline16, IconApiOutline14, Menu,
+  Button, IconEllipsisOutlineRegular, IconPlusOutlineRegular, IconApiOutlineRegular, Menu,
   SectionChrome, SectionState, SectionToolbar, StateDot, Switch, Tag, Toast,
   sectionToolbarLabels, useRemoteList, useScopeChoice,
   type MenuItem, type StateDotState, type TagTone,
@@ -115,7 +115,7 @@ export function McpManagerSection({
       />
       <SectionToolbar
         scope={choice}
-        scopeIcon={<IconApiOutline14 />}
+        scopeIcon={<IconApiOutlineRegular size={14} />}
         query={query}
         onQueryChange={setQuery}
         labels={sectionToolbarLabels(t)}
@@ -123,7 +123,7 @@ export function McpManagerSection({
         <Button
           size="sm"
           variant="ghost"
-          icon={<IconPlusOutline16 />}
+          icon={<IconPlusOutlineRegular size={16} />}
           onClick={() => { setDialog({ kind: 'create' }) }}
         >
           {t('create')}
@@ -283,7 +283,7 @@ function ManagedRow({
               aria-expanded={menuOpen}
               onClick={() => { onMenuToggle(!menuOpen) }}
             >
-              <IconEllipsisOutline16 aria-hidden="true" />
+              <IconEllipsisOutlineRegular size={16} aria-hidden="true" />
             </button>
           )}
         />

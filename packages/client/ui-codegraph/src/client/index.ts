@@ -10,7 +10,7 @@ import type { CodegraphSettings } from '@deepseek-ai/dsh-codegraph-index/client'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 // Type-only: conversation.input.dock SlotMap merge.
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
-// Type-only: settings.section SlotMap merge and ctx.settingsScope.
+// Type-only: settings.section SlotMap merge and ctx.configForms.
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 // Type-only: pulls the renderer-owned slots service merge (ctx.slots).
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
@@ -38,7 +38,7 @@ const NS = 'codegraph'
 
 /** Required services for the settings page, dock, Remote, and copy. */
 export const inject = [
-  'slots', 'locale', 'remote', 'remote.codegraphIndex', 'settingsScope',
+  'slots', 'locale', 'remote', 'remote.codegraphIndex', 'configForms',
 ]
 
 /**
@@ -49,7 +49,7 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-codegraph: dictionaries')
 
   const t = ctx.locale.bind(NS)
-  const host = ctx.settingsScope.bind<CodegraphSettings>({ namespace: 'codegraph' })
+  const host = ctx.configForms.get<CodegraphSettings>('codegraph-index')
   const dockStore = createCodegraphDockStore()
   const remote: Pick<CodegraphDockInjected, 'status' | 'init'> = {
     status: sessionId => ctx.remote.codegraphIndex.status(sessionId),

@@ -107,6 +107,7 @@ export function apply(ctx: ClientContext): void {
       children: {
         'question.planReview.model': { kind: 'single', scope: 'session' },
         'question.planReview.agentPreset': { kind: 'single', scope: 'session' },
+        'conversation.plan-review.actions': { kind: 'list', scope: 'session' },
       },
       inject: (sessionId: SessionId): QuestionComposerInjected => ({
         // Bound to the session this entry renders for: the card reports a

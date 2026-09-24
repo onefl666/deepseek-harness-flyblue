@@ -1,9 +1,9 @@
 /**
- * Sandbox-consuming Git Bash executor — the Git Bash twin of
- * `@deepseek-ai/dsh-pwsh-sandbox`. It wraps the exact local Git Bash argv
- * through `ctx.sandbox` (which on Windows resolves to the ACL restricted-token
- * runner chain), inherits local process mechanics, and reports the selected
- * mode, enforcement, and denial facts. Positive runner-executable evidence
+ * Sandbox-consuming Git Bash executor — the gitbash twin of
+ * `@deepseek-ai/dsh-bash-sandbox`. It wraps the exact local gitbash argv through
+ * `ctx.sandbox` (which on Windows resolves to the ACL restricted-token runner
+ * chain), inherits local process mechanics, and reports the selected mode,
+ * enforcement, and denial facts. Positive runner-executable evidence
  * identifies a broken confinement runner: foreground calls throw
  * `SANDBOX_UNAVAILABLE`, while background processes carry `runnerFailed`;
  * other provider rejections retain stage-neutral local-executor semantics. The
@@ -13,7 +13,7 @@
  */
 
 import { Context } from '@deepseek-ai/cordis'
-import type { ShellExecRequest, ShellExecSpec, ShellProcess, ShellRunResult } from '@deepseek-ai/dsh-shell'
+import type { ShellExecRequest, ShellExecSpec, ShellExecution, ShellProcess, ShellRunResult } from '@deepseek-ai/dsh-shell'
 import { SandboxUnavailableError } from '@deepseek-ai/dsh-sandbox'
 import type {
   ConfinedArgv,
@@ -40,14 +40,15 @@ import { classifyDenial, classifyRunnerFailure, isRunnerSpawnFailure, matchesSig
 export type Config = LocalConfig
 
 /**
- * Registers as `ctx.shell` in place of the local Git Bash executor and
- * requires a `ctx.sandbox` provider plus `ctx.sandboxPolicy`; the tool layer
- * carries the sandbox denial rendering and escalation surface. Tool calls pass
- * the calling session's resolved policy; direct calls fall back to deployment
- * policy. `result.sandbox` reports the mode, enforcement, and denial facts the
- * tool renders.
+ * Registers as `ctx.shell` in place of the local gitbash executor and requires a
+ * `ctx.sandbox` provider plus `ctx.sandboxPolicy`; the tool layer carries the
+ * sandbox denial rendering and escalation surface (see the
+ * gitbash-tool-and-executor Agent Note). Tool calls pass the calling session's
+ * resolved policy; direct calls fall back to deployment policy.
+ * `result.sandbox` reports the mode, enforcement, and denial facts the tool
+ * renders.
  */
-/* jscpd:ignore-start -- deliberate call-for-call mirror of pwsh-sandbox's executor (gitbash-windows-shell-stack Agent Note). */
+/* jscpd:ignore-start -- deliberate call-for-call mirror of bash-sandbox's executor (gitbash-tool-and-executor Agent Note) */
 export class SandboxGitBashExecutor extends GitBashExecutor {
   static override inject = ['subprocess', 'sandbox', 'sandboxPolicy']
 
@@ -92,60 +93,69 @@ export class SandboxGitBashExecutor extends GitBashExecutor {
     return { ...super.resolve(request), sandboxPolicy: request.sandboxPolicy ?? this.ctx.sandboxPolicy.resolve() }
   }
 
-  override async run(spec: ShellExecSpec): Promise<ShellRunResult> {
+  override async execute(spec: ShellExecSpec): Promise<ShellExecution> {
     const policy = spec.sandboxPolicy as SandboxExecutionPolicy
     const { mode } = policy
     if (mode === 'danger-full-access') {
-      const result = await super.run(spec)
-      return { ...result, sandbox: { mode, denied: false } }
+      return SandboxGitBashExecutor.decorateResult(
+        await super.execute(spec),
+        result => ({ ...result, sandbox: { mode, denied: false } }),
+      )
     }
-    const confined = this.confine(spec, { ...policy, mode })
-    let result: ShellRunResult
-    try {
-      result = await this.runArgv(spec, confined.argv)
-    } catch (error) {
+    let confined: ConfinedArgv | undefined
+    const ex = await this.executeArgv(spec, async (signal) => {
+      const prepared = await this.confine(spec, { ...policy, mode }, signal)
+      signal.throwIfAborted()
+      confined = prepared
+      return prepared.argv
+    }, (process) => {
+      const facts = confined as ConfinedArgv
+      this.processFacts.set(process, {
+        mode,
+        enforcement: facts.enforcement,
+        denialSignatures: facts.denialSignatures,
+        runnerFailureRules: facts.runnerFailureRules,
+        runnerProgram: facts.argv[0],
+        workdir: spec.workdir,
+      })
+    })
+    return SandboxGitBashExecutor.decorateResult(ex, (result) => {
+      if (confined === undefined) return { ...result, sandbox: { mode, denied: false } }
+      const { enforcement, denialSignatures, runnerFailureRules } = confined
+      // Runner failure outranks denial because the command did not run. Carry
+      // the matched fatal line, not an informational line that preceded it.
+      const runnerFailure = classifyRunnerFailure(result.exitCode, result.stderr.text, runnerFailureRules)
+      if (runnerFailure !== undefined) {
+        throw new SandboxUnavailableError(mode, runnerFailure.detail)
+      }
+      return { ...result, sandbox: { mode, denied: classifyDenial(result, denialSignatures), enforcement } }
+    }, (error) => {
       // An upstream abort remains cancellation even when it prevents spawn.
       if (spec.signal?.aborted === true) spec.signal.throwIfAborted()
-      if (isRunnerSpawnFailure(error, confined.argv[0], spec.workdir)) {
+      if (confined !== undefined && isRunnerSpawnFailure(error, confined.argv[0], spec.workdir)) {
         throw new SandboxUnavailableError(mode, String(error))
       }
       throw error
-    }
-    // Runner failure outranks denial because the command did not run. Carry
-    // the matched fatal line, not an informational line that preceded it.
-    const runnerFailure = classifyRunnerFailure(result.exitCode, result.stderr.text, confined.runnerFailureRules)
-    if (runnerFailure !== undefined) {
-      throw new SandboxUnavailableError(mode, runnerFailure.detail)
-    }
-    return { ...result, sandbox: { mode, denied: classifyDenial(result, confined.denialSignatures), enforcement: confined.enforcement } }
+    })
   }
 
-  override start(spec: ShellExecSpec): ShellProcess {
-    const policy = spec.sandboxPolicy as SandboxExecutionPolicy
-    const { mode } = policy
-    if (mode === 'danger-full-access') return super.start(spec)
-    // Once startArgv returns, install facts synchronously; promise settlement
-    // cannot run before start() returns.
-    const confined = this.confine(spec, { ...policy, mode })
-    let proc: ShellProcess
-    try {
-      proc = this.startArgv(spec, confined.argv)
-    } catch (error) {
-      if (isRunnerSpawnFailure(error, confined.argv[0], spec.workdir)) {
-        throw new SandboxUnavailableError(mode, String(error))
-      }
-      throw error
+  /**
+   * Decorate the handle's foreground projection in place, memoized once. The
+   * handle keeps its identity (never wrapped in a second object) because the
+   * per-process facts and `onProcessDone` key on the exact instance.
+   */
+  private static decorateResult(
+    ex: ShellExecution,
+    map: (result: ShellRunResult) => ShellRunResult,
+    mapError?: (error: unknown) => never,
+  ): ShellExecution {
+    const base = ex.result.bind(ex)
+    let decorated: Promise<ShellRunResult> | undefined
+    ex.result = () => {
+      decorated ??= base().then(map, mapError)
+      return decorated
     }
-    const { enforcement, denialSignatures, runnerFailureRules } = confined
-    this.processFacts.set(proc, {
-      mode,
-      enforcement,
-      denialSignatures,
-      runnerFailureRules,
-      runnerProgram: confined.argv[0],
-      workdir: spec.workdir,
-    })
-    return proc
+    return ex
   }
 
   /**
@@ -173,15 +183,16 @@ export class SandboxGitBashExecutor extends GitBashExecutor {
   }
 
   /**
-   * Wrap one Git Bash invocation via the `ctx.sandbox` provider. Provider
-   * errors propagate unchanged; the returned argv is handed directly to the
-   * local executor's subprocess path.
-   * @param spec - resolved execution spec whose Git Bash argv is confined.
+   * Wrap one gitbash invocation via the `ctx.sandbox` provider. Provider errors
+   * propagate unchanged; the returned argv is handed directly to the local
+   * executor's subprocess path.
+   * @param spec - resolved execution spec whose gitbash argv is confined.
    * @param policy - resolved confined execution policy.
+   * @param signal - cancellation of confinement preparation.
    * @returns the provider's exact argv and settlement-classification facts.
    */
-  private confine(spec: ShellExecSpec, policy: SandboxPolicy): ConfinedArgv {
-    return this.ctx.sandbox.confine(this.argv(spec), policy)
+  private confine(spec: ShellExecSpec, policy: SandboxPolicy, signal?: AbortSignal): Promise<ConfinedArgv> {
+    return this.ctx.sandbox.confine(this.argv(spec), policy, signal)
   }
 }
 /* jscpd:ignore-end */

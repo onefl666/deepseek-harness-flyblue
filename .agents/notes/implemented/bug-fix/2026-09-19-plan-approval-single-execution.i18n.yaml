@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-19-plan-approval-single-execution.md
-2026-09-19-plan-approval-single-execution.md: 85edfe034414b0ce503533b139d91b5b1e559dca
-2026-09-19-plan-approval-single-execution.zh.md: f6404b2092f5ea8d03d1534022017ecce0b483ab
+2026-09-19-plan-approval-single-execution.md: 6d1a23e2948782ff731e46689e46be17f56704da
+2026-09-19-plan-approval-single-execution.zh.md: dc1d90b111331a097a90859a3146e20198b3e9f6

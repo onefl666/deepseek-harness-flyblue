@@ -44,6 +44,8 @@ Stored servers live in `<dshHome>/mcp-servers.json` for user scope and `<project
 
 A row reports `connected`, `reconnecting`, `failed`, `stopped`, or `disabled`, taken from the `mcp/status` events every `dsh-mcp-client` instance emits and cached between calls. A definition whose instance cannot start is reported as a failed row with its message instead of failing the listing, so the page still answers while a server is down.
 
+No runtime invariant companion is published because each listing reconciles the stored definitions with the manager's child mounts before returning their current status.
+
 <a id="understand-the-implementation"></a>
 ## Understand the implementation
 

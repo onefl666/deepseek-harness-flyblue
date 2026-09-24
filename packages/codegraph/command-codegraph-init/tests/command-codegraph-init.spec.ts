@@ -48,7 +48,7 @@ async function harness(): Promise<Harness> {
     status: 'idle',
     options: {},
     reserveTurnAdmission: () => () => undefined,
-  } as unknown as Agent
+  } as Partial<Agent> as Agent
   return { ctx, index, agent, plugin }
 }
 

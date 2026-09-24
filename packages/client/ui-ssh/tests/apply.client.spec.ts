@@ -51,7 +51,7 @@ describe('ui-ssh apply', () => {
     expect(entry.component).toBe(SshSection)
     expect(entry.options).toMatchObject({ id: 'ssh', order: 44 })
     expect(resolveSlotLabel(entry.options.label)).toBe('SSH 运维')
-    const injected = (entry.inject as unknown as () => SshInjected)()
+    const injected = (entry.inject as (() => SshInjected) & NonNullable<typeof entry.inject>)()
     await injected.list()
     expect(list).toHaveBeenCalledTimes(1)
     const record = { id: 'h-1', alias: 'prod', host: '10.0.0.1', port: 22, user: 'root', password: 'secret' }

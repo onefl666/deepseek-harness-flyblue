@@ -21,16 +21,20 @@ const SKIPPED_EXPECTED = join(SNAPSHOT_DIR, 'skipped.expected.md')
 const MODE = webSnapshotMode()
 const now = vi.spyOn(Date, 'now')
 
-function appendUsage(session: Session, date: string, provider: string, model: string, inputTokens: number, outputTokens: number): void {
+function appendUsage(session: Session, turn: number, date: string, provider: string, model: string, inputTokens: number, outputTokens: number): void {
   now.mockReturnValue(new Date(`${date}T12:00:00+08:00`).getTime())
+  session.append('turn/start', { turn })
   session.append('user/message', createUserMessage({ content: [{ type: 'text', text: `${model} prompt` }], source: { kind: 'user' } }), { surfaceOp: 'append' })
+  session.append('step/start', { turn, step: 1 })
   session.append('request/header', { header: { config: { provider, model } }, reason: 'change' })
   session.append('assistant/message', {
-    turn: session.seq, step: 1,
+    turn, step: 1,
     message: createAssistantMessage({ content: [{ type: 'text', text: `${model} answer` }], source: { provider, model } }),
     stream: [] as AssistantStreamRecord[],
     usage: { inputTokens, outputTokens, cacheReadTokens: 3, reasoningTokens: 2 },
   }, { surfaceOp: 'append' })
+  session.append('step/end', { turn, step: 1 })
+  session.append('turn/end', { turn, reason: { kind: 'completed' } })
 }
 
 describe('web e2e: local usage history dashboard', () => {
@@ -48,14 +52,14 @@ describe('web e2e: local usage history dashboard', () => {
     const cold = scaffold.ctx.sessions.prepare(SessionId('usage-cold-unassigned'))
     const detach = scaffold.ctx.sessions.enter(cold)
     scaffold.ctx.sessions.announce(cold)
-    appendUsage(cold, '2026-07-30', 'deepseek', 'deepseek-chat', 90, 20)
+    appendUsage(cold, 1, '2026-07-30', 'deepseek', 'deepseek-chat', 90, 20)
     const coldHandle = await scaffold.ctx.sessionPersistence.create(cold.header)
     await coldHandle.append(cold.snapshotEvents())
     await coldHandle.close()
     detach()
     const live = scaffold.ctx.sessions.create(SessionId('usage-live-unassigned'))
-    appendUsage(live, '2026-08-16', 'deepseek', 'deepseek-reasoner', 50, 15)
-    appendUsage(live, '2026-08-18', 'openai-compatible', 'local-model', 30, 10)
+    appendUsage(live, 1, '2026-08-16', 'deepseek', 'deepseek-reasoner', 50, 15)
+    appendUsage(live, 2, '2026-08-18', 'openai-compatible', 'local-model', 30, 10)
     now.mockReturnValue(new Date('2026-08-18T12:00:00+08:00').getTime())
     browser = await chromium.launch()
     page = await browser.newPage({ viewport: { width: 1680, height: 1000 }, locale: ZH_BROWSER_LOCALE })
@@ -131,7 +135,8 @@ describe('web e2e: local usage history dashboard', () => {
     // them), but `Session.append` has no type for one; cast the erased
     // signature instead of widening the product API. bind() keeps the
     // method's `this` so the append runs against this Session.
-    const forgedAppend = poisoned.append.bind(poisoned) as unknown as (type: string, data: unknown) => unknown
+    const append: unknown = poisoned.append.bind(poisoned)
+    const forgedAppend = append as (type: string, data: unknown) => unknown
     forgedAppend('vision/describe', { url: 'https://example.invalid/a.png' })
     const poisonedHandle = await scaffold.ctx.sessionPersistence.create(poisoned.header)
     await poisonedHandle.append(poisoned.snapshotEvents())

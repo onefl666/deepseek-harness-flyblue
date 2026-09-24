@@ -11,8 +11,8 @@ import type { CSSProperties, FormEvent } from 'react'
 import type { WorkspaceId } from '@deepseek-ai/dsh-api-workspace-controller/client'
 import type { GitBranchEntry, GitGraphEntry, GitGraphView, GitRepositoryView, GitStatusEntry } from '@deepseek-ai/dsh-workspace-git/types'
 import {
-  Button, IconBranchOutline16, IconCopyOutline16, IconLoadingOutline16, IconPlusOutline16,
-  IconRefreshOutline16, Input, Pill, writeClipboard,
+  Button, IconBranchOutlineRegular, IconCopyOutlineRegular, IconLoadingOutlineRegular, IconPlusOutlineRegular,
+  IconRefreshOutlineRegular, Input, Pill, writeClipboard,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
@@ -195,7 +195,8 @@ export function GitGraphSection({
   t, graph, status, branches, createBranch, switchBranch, stage, unstage, discard, useWorkspaces, useSessions,
 }: PropsLocale<'gitgraph'> & InjectFace<GitGraphInjected> & PropsRuntime<'settings.section'>) {
   const workspaces = useWorkspaces(snapshot => snapshot.items)
-  const currentSessionId = useSessions(snapshot => snapshot.current)
+  const currentSessionId = useSessions(snapshot => Object.values(snapshot.byId)
+    .find(summary => (summary.retainedBy.mainView ?? 0) > 0)?.id)
   const sessionsById = useSessions(snapshot => snapshot.byId)
   const [preferred, setPreferred] = useState<WorkspaceId | undefined>(undefined)
   const [panel, setPanel] = useState<PanelState>(IDLE)
@@ -317,7 +318,7 @@ export function GitGraphSection({
           <Button
             variant="ghost"
             size="sm"
-            icon={panel.busy ? <IconLoadingOutline16 className={css.spin} /> : <IconRefreshOutline16 />}
+            icon={panel.busy ? <IconLoadingOutlineRegular size={16} className={css.spin} /> : <IconRefreshOutlineRegular size={16} />}
             disabled={panel.busy || workspaceId === undefined}
             onClick={refresh}
             aria-label={t('refresh')}
@@ -410,7 +411,7 @@ export function GitGraphSection({
                           const switching = switchingBranch === name
                           return (
                             <li key={name} className={css.row} style={{ '--row-index': index } as CSSProperties}>
-                              <IconBranchOutline16 className={current ? css.branchIconCurrent : css.branchIcon} />
+                              <IconBranchOutlineRegular size={16} className={current ? css.branchIconCurrent : css.branchIcon} />
                               <span className={current ? css.branchCurrent : css.branchName}>{name}</span>
                               {current ? <Pill active>{t('currentBranch')}</Pill> : (
                                 <span className={css.actions}>
@@ -426,7 +427,7 @@ export function GitGraphSection({
                     ))}
                   <form className={css.branchForm} onSubmit={(event) => { submitBranch(event, workspaceId) }}>
                     <Input
-                      icon={<IconPlusOutline16 />}
+                      icon={<IconPlusOutlineRegular size={16} />}
                       placeholder={t('branchPlaceholder')}
                       aria-label={t('newBranch')}
                       value={newBranch}
@@ -458,7 +459,7 @@ export function GitGraphSection({
                               aria-label={t('copyHash')}
                               onClick={() => { copyHash(commit.hash) }}
                             >
-                              {copiedHash === commit.hash ? t('copied') : <IconCopyOutline16 />}
+                              {copiedHash === commit.hash ? t('copied') : <IconCopyOutlineRegular size={16} />}
                             </Button>
                           </li>
                         ))}

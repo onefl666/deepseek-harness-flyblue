@@ -53,7 +53,7 @@ describe('ui-workspace-inspector apply', () => {
     expect(entry.component).toBe(WorkspaceInspectorSection)
     expect(entry.options).toMatchObject({ id: 'workspace-inspector', order: 43 })
     expect(resolveSlotLabel(entry.options.label)).toBe('文件检查器')
-    const injected = (entry.inject as unknown as () => WorkspaceInspectorInjected)()
+    const injected = (entry.inject as (() => WorkspaceInspectorInjected) & NonNullable<typeof entry.inject>)()
     await injected.tree('ws-1', 'src')
     expect(tree).toHaveBeenCalledWith('ws-1', 'src')
     await injected.preview('ws-1', 'src/a.ts')

@@ -25,7 +25,7 @@ export type {
 } from './settings-store.ts'
 
 /** Required services (cordis fiber inject). */
-export const inject = ['slots', 'locale', 'remote', 'remote.settings', 'settingsScope']
+export const inject = ['slots', 'locale', 'remote', 'remote.settings', 'configForms']
 
 /**
  * Client plugin body: register the Windows shell row into General settings.
@@ -34,8 +34,7 @@ export const inject = ['slots', 'locale', 'remote', 'remote.settings', 'settings
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register('settings.windows-shell', { zh, en }), 'ui-windows-shell: settings row dictionaries')
 
-  // The shared SettingsScope mirror updates after document commits and reconnects.
-  const controller = new WindowsShellSettingsController(ctx.settingsScope.describe(), ctx)
+  const controller = new WindowsShellSettingsController(ctx.configForms.describe(), ctx)
   const load = (): Promise<void> => controller.load()
   const select = (shell: WindowsShellId): Promise<void> => controller.select(shell)
   const injected = (): WindowsShellRowInjected => ({

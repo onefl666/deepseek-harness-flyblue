@@ -3,9 +3,8 @@
  * transport that matches its discriminant.
  */
 import { describe, expect, it } from 'vitest'
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js'
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
+import { SSEClientTransport, StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
+import { StdioClientTransport } from '@modelcontextprotocol/client/stdio'
 import { createTransport } from '@deepseek-ai/dsh-mcp-client/src/transport.ts'
 import { Config as ConfigSchema } from '@deepseek-ai/dsh-mcp-client/src/index.ts'
 

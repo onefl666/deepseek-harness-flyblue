@@ -26,7 +26,7 @@ One package provides the whole plan-mode feature; the subsystem reference owns t
 
 | Package | Role | ctx key |
 |---|---|---|
-| [`plan-mode/`](plan-handoff/README.md) | Provides plan mode: `/plan` enters and leaves it, deployment guidance steers the agent while planning, and `exit_plan_mode` presents the finished plan for your review | `ctx.planMode` |
+| [`plan-mode/`](plan-mode/README.md) | Provides plan mode: `/plan` enters and leaves it, deployment guidance steers the agent while planning, and `exit_plan_mode` presents the finished plan for your review | `ctx.planMode` |
 
 -----
 

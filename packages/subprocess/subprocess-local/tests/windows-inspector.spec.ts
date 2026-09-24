@@ -1,5 +1,5 @@
 import { spawnSync as nodeSpawnSync } from 'node:child_process'
-import { describe, expect, it, vi, type Mock } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   createWindowsProcessInspector,
   isInvalidHandle,
@@ -24,7 +24,7 @@ vi.mock('node:child_process', async (importOriginal) => {
 vi.mock('koffi', async (importOriginal) => {
   const actual = await importOriginal<{ default: typeof import('koffi') }>()
   const real = actual.default
-  const alloc = (...args: Parameters<typeof real.alloc>): unknown => real.alloc(...args) as unknown
+  const alloc = (...args: Parameters<typeof real.alloc>): unknown => real.alloc(...args)
   const free = (...args: Parameters<typeof real.free>): void => { real.free(...args) }
   return {
     default: Object.assign(Object.create(real) as typeof real, {
@@ -214,10 +214,8 @@ win32('WindowsProcessInspector over the real koffi bindings', () => {
   })
 
   it('frees every native allocation one tree question makes', async () => {
-    const koffi = (await import('koffi')).default as unknown as {
-      alloc: Mock
-      free: Mock
-    }
+    const real = (await import('koffi')).default
+    const koffi = { alloc: vi.mocked(real.alloc), free: vi.mocked(real.free) }
     const inspector = createWindowsProcessInspector()
     koffi.alloc.mockClear()
     koffi.free.mockClear()
