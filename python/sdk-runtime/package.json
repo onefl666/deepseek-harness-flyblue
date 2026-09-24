@@ -87,7 +87,7 @@
     "@deepseek-ai/dsh-skill": "workspace:^",
     "@deepseek-ai/dsh-skill-filesystem": "workspace:^",
     "@deepseek-ai/dsh-spill": "workspace:^",
-    "@deepseek-ai/dsh-ssh": "workspace:^",
+    "@deepseek-ai/dsh-ssh-hosts": "workspace:^",
     "@deepseek-ai/dsh-subagent": "workspace:^",
     "@deepseek-ai/dsh-subagent-acp": "workspace:^",
     "@deepseek-ai/dsh-subagent-fork-in-process": "workspace:^",

@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 ## Summary
 
 
-Optional model-facing consumer of `ctx.ssh`. When the SSH service is present, the plugin registers `ssh_list` for secret-free host discovery and `ssh_exec` for one-shot remote command execution. When the service is absent, it registers no tools.
+Optional model-facing consumer of `ctx.sshHosts`. When the SSH service is present, the plugin registers `ssh_list` for secret-free host discovery and `ssh_exec` for one-shot remote command execution. When the service is absent, it registers no tools.
 
 `ssh_exec` forwards one configured host id and command to the service. It returns captured stdout followed by stderr and appends `[result unknown]` when the connection is lost after dispatch. That marker instructs callers not to repeat a potentially non-idempotent command automatically.
 
@@ -27,7 +27,7 @@ Optional model-facing consumer of `ctx.ssh`. When the SSH service is present, th
 
 #### What the model sees
 
-The model sees the generated [`ssh_list` and `ssh_exec` schemas](../../../docs/tool-catalog.md#deepseek-aidsh-tool-ssh) only while `ctx.ssh` is available.
+The model sees the generated [`ssh_list` and `ssh_exec` schemas](../../../docs/tool-catalog.md#deepseek-aidsh-tool-ssh) only while `ctx.sshHosts` is available.
 
 #### Token effect
 

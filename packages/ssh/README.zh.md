@@ -8,11 +8,11 @@ kind: "package-group"
 [English](README.md) | 中文
 
 ## 概述
-SSH 主机存储与一次性命令执行，分为 Host 能力与面向模型的消费方。`ssh` Typert 服务拥有含凭据的主机记录，并保证每条命令至多派发一次；工具插件只在该服务挂载时注册 `ssh_list`/`ssh_exec`。
+SSH 主机存储与一次性命令执行，分为 Host 能力与面向模型的消费方。`ctx.sshHosts` 拥有含凭据的主机记录，并保证每条命令至多派发一次；Typert 命名空间仍为 `ssh`。工具插件只在该服务挂载时注册 `ssh_list`/`ssh_exec`。
 
 | 包 | 职责 | ctx 键 |
 |---|---|---|
-| [`ssh/`](ssh/README.zh.md) | Host 侧主机存储与一次性执行。 | `ssh` |
+| [`ssh-hosts/`](ssh-hosts/README.zh.md) | Host 侧主机存储与一次性执行。 | `sshHosts` |
 | [`tool-ssh/`](tool-ssh/README.zh.md) | 在 `ctx.tools` 上注册 `ssh_list` 与 `ssh_exec`。 | （注册到 `ctx.tools`） |
 
 能力侧负责凭据存储与至多一次规则；工具插件负责面向模型的 schema，服务缺席时不注册任何工具。

@@ -29,7 +29,7 @@ export const Config: z<Config> = z.object({
   idleTimeoutMs: z.natural().min(1).default(1_800_000),
 })
 interface Store { version: 1; hosts: SshHost[] }
-declare module '@deepseek-ai/cordis' { interface Context { ssh: SshService } }
+declare module '@deepseek-ai/cordis' { interface Context { sshHosts: SshService } }
 
 /**
  * Host SSH service. A connection loss after channel dispatch reports an unknown result and is never replayed.
@@ -39,7 +39,7 @@ export class SshService extends TypertRemoteService {
   private readonly path = dshHomePath('dsh-ssh.json')
   private store: Store = { version: 1, hosts: [] }
   /** @param ctx - Host context. @param config - validated connection limits. */
-  constructor(ctx: Context, private readonly config: Config = {}) { super(ctx, 'ssh'); void this.load() }
+  constructor(ctx: Context, private readonly config: Config = {}) { super(ctx, 'sshHosts', { namespace: 'ssh' }); void this.load() }
   /**
    * List configured hosts without passwords, passphrases, or key paths.
    * @returns Secret-free copies of the configured host records.

@@ -28,12 +28,12 @@
   "license": "MIT",
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:^",
-    "@deepseek-ai/dsh-ssh": "workspace:^",
+    "@deepseek-ai/dsh-ssh-hosts": "workspace:^",
     "@deepseek-ai/dsh-tools": "workspace:^"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:^",
-    "@deepseek-ai/dsh-ssh": "workspace:^",
+    "@deepseek-ai/dsh-ssh-hosts": "workspace:^",
     "@deepseek-ai/dsh-tools": "workspace:^"
   }
 }

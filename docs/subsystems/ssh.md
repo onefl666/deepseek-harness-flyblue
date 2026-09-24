@@ -2,9 +2,9 @@
 
 English | [中文](ssh.zh.md)
 
-Host-owned SSH host records and one-shot remote command execution. `ctx.ssh` exposes loopback-only `list`, `put`, `delete`, and `exec` methods; the model-facing tools stay in [`dsh-tool-ssh`](../../packages/ssh/tool-ssh/README.md). Records live in `$DSH_HOME/dsh-ssh.json` with owner-only file and directory modes.
+Host-owned SSH host records and one-shot remote command execution. `ctx.sshHosts` exposes loopback-only `list`, `put`, `delete`, and `exec` methods; the model-facing tools stay in [`dsh-tool-ssh`](../../packages/ssh/tool-ssh/README.md). Records live in `$DSH_HOME/dsh-ssh.json` with owner-only file and directory modes.
 
-Source: [`packages/ssh/ssh/src/types.ts`](../../packages/ssh/ssh/src/types.ts)
+Source: [`packages/ssh/ssh-hosts/src/types.ts`](../../packages/ssh/ssh-hosts/src/types.ts)
 
 ## Host records
 

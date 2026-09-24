@@ -306,7 +306,7 @@ Source: [`packages/shell/shell-env/src/index.ts`](../../packages/shell/shell-env
 
 <a id="ctxssh--sshservice"></a>
 
-### `ctx.ssh` — `SshService`
+### `ctx.sshHosts` — `SshService`
 
 Host SSH service. A connection loss after channel dispatch reports an unknown result and is never replayed.
 
@@ -339,5 +339,5 @@ Host SSH service. A connection loss after channel dispatch reports an unknown re
 @Remote async exec(id: SshHostId, command: string): Promise<{ stdout: string; stderr: string; exitCode: number | null; result: 'known' | 'result-unknown' }>
 ```
 
-Source: [`packages/ssh/ssh/src/index.ts`](../../packages/ssh/ssh/src/index.ts)
+Source: [`packages/ssh/ssh-hosts/src/index.ts`](../../packages/ssh/ssh-hosts/src/index.ts)
 <!-- END GENERATED cordis-surface -->

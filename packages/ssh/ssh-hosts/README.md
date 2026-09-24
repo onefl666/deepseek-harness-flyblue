@@ -2,14 +2,14 @@
 description: "SSH host inventory and command execution capability; for users and maintainers of the SSH subsystem."
 kind: "package-reference"
 ---
-# @deepseek-ai/dsh-ssh
+# @deepseek-ai/dsh-ssh-hosts
 
 English | [中文](README.zh.md)
 
 ## Summary
 
 
-Host-owned SSH host storage and one-shot command execution. The `ssh` Typert service exposes loopback-only list, put, delete, and exec methods. Host records are stored in `$DSH_HOME/dsh-ssh.json` with owner-only file and directory modes; browser listings omit passwords and private-key paths.
+Host-owned SSH host storage and one-shot command execution. `ctx.sshHosts` exposes the loopback-only `ssh` Typert namespace with list, put, delete, and exec methods; it is independent of the POSIX remote runtime on `ctx.ssh`. Host records are stored in `$DSH_HOME/dsh-ssh.json` with owner-only file and directory modes; browser listings omit passwords and private-key paths.
 
 `exec` dispatches a command at most once. A connection failure before dispatch rejects the call. A lost connection or timeout after dispatch returns `result: "result-unknown"`, so a caller can avoid replaying a command whose remote effect is uncertain.
 

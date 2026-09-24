@@ -100,8 +100,8 @@
     - id: workspace-inspector
       name: '@deepseek-ai/dsh-workspace-files'
 
-    - id: ssh
-      name: '@deepseek-ai/dsh-ssh'
+    - id: ssh-hosts
+      name: '@deepseek-ai/dsh-ssh-hosts'
 
     # Whole-log turn outline for the chat turn rail (the turnOutline
     # projection key): every turn stays navigable before its events page in.

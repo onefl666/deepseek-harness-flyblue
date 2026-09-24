@@ -231,7 +231,7 @@ flowchart LR
   svc_taskBoard["ctx.taskBoard<br/>Durable task-board ledger"]
   pkg_client_ui_task_board["client-ui-task-board"]
   pkg_ssh["ssh"]
-  svc_ssh["ctx.ssh<br/>SSH host operations"]
+  svc_ssh["ctx.sshHosts<br/>SSH host operations"]
   pkg_tool_ssh["tool-ssh"]
   pkg_client_ui_ssh["client-ui-ssh"]
   pkg_usage_stats["usage-stats"]
@@ -582,7 +582,7 @@ flowchart LR
 | `ctx.lsp` | `seam` | [`lsp`](../packages/lsp/lsp) | [`lsp-stdio`](../packages/lsp/lsp-stdio) | [`tool-lsp`](../packages/lsp/tool-lsp) | - | 提供方注册与选择，加上恰好四种操作的标准化查询执行；该 seam 不提供协议逃生口，后端必须转换为标准化请求和结果。 |
 | `ctx.codegraphIndex` | `core` | [`codegraph-index`](../packages/codegraph/codegraph-index) | - | [`client-ui-codegraph`](../packages/client/ui-codegraph), [`command-codegraph-init`](../packages/codegraph/command-codegraph-init) | - | status 与 init 读取 session.header.cwd 并启动 codegraph init；/codegraph-init 是面向人的命令消费方；面向模型的工具插件从不执行。 |
 | `ctx.taskBoard` | `core` | [`task-board`](../packages/schedule/task-board) | - | [`client-ui-task-board`](../packages/client/ui-task-board) | - | 拥有任务持久化与请求 ID 幂等性；浏览器设置区段消费其 Remote 方法。 |
-| `ctx.ssh` | `core` | [`ssh`](../packages/ssh/ssh) | - | [`tool-ssh`](../packages/ssh/tool-ssh), [`client-ui-ssh`](../packages/client/ui-ssh) | - | 拥有携带密钥的主机记录与至多一次的命令分派；模型与浏览器消费方接收不含密钥的投影。 |
+| `ctx.sshHosts` | `core` | [`ssh`](../packages/ssh/ssh-hosts) | - | [`tool-ssh`](../packages/ssh/tool-ssh), [`client-ui-ssh`](../packages/client/ui-ssh) | - | 拥有携带密钥的主机记录与至多一次的命令分派；模型与浏览器消费方接收不含密钥的投影。 |
 | `ctx.usageStats` | `core` | [`usage-stats`](../packages/session/usage-stats) | - | [`client-ui-usage-stats`](../packages/client/ui-usage-stats) | - | 从活动会话与已持久化的本机会话的并集派生带缓存的每日和模型聚合数据。 |
 | `ctx.workspaceInspector` | `core` | [`workspace-files`](../packages/workspace/workspace-files) | - | [`client-ui-workspace-inspector`](../packages/client/ui-workspace-inspector) | - | 每项读取与变更都通过已登记的工作区 ID 解析，并拒绝路径穿越、Git 内部路径和逃出工作区的链接。 |
 | `ctx.workspaceGit` | `core` | [`workspace-git`](../packages/workspace/workspace-git) | - | [`client-ui-git-graph`](../packages/client/ui-git-graph) | - | 拥有有界的 Git 子进程，以及针对已登记工作区的受保护分支、索引和 worktree 变更。 |

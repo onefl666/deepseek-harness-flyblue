@@ -23,7 +23,7 @@ import usageStatsRemote from '@deepseek-ai/dsh-usage-stats/remote'
 import taskBoardRemote from '@deepseek-ai/dsh-task-board/remote'
 import workspaceGitRemote from '@deepseek-ai/dsh-workspace-git/remote'
 import workspaceInspectorRemote from '@deepseek-ai/dsh-workspace-files/remote'
-import sshRemote from '@deepseek-ai/dsh-ssh/remote'
+import sshRemote from '@deepseek-ai/dsh-ssh-hosts/remote'
 import type { ClientRemote } from '@deepseek-ai/dsh-api-gateway/client'
 
 export type { ClientRemote } from '@deepseek-ai/dsh-api-gateway/client'
@@ -56,7 +56,7 @@ export type {} from '@deepseek-ai/dsh-usage-stats/remote'
 export type {} from '@deepseek-ai/dsh-task-board/remote'
 export type {} from '@deepseek-ai/dsh-workspace-git/remote'
 export type {} from '@deepseek-ai/dsh-workspace-files/remote'
-export type {} from '@deepseek-ai/dsh-ssh/remote'
+export type {} from '@deepseek-ai/dsh-ssh-hosts/remote'
 export type { SessionJob as JobView } from '@deepseek-ai/dsh-api-session-controller/types'
 // The forwarded-event allowlist's selection seat: without it in the consumer's
 // compilation face `TypertRemoteEvent` is `never` and every `$on` call fails.

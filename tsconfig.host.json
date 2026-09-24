@@ -347,7 +347,7 @@
     { "path": "./packages/workspace/workspace-files" },
     { "path": "./packages/workspace/workspace-git" },
     { "path": "./packages/schedule/task-board" },
-    { "path": "./packages/ssh/ssh" },
+    { "path": "./packages/ssh/ssh-hosts" },
     { "path": "./packages/ssh/tool-ssh" },
     { "path": "./packages/codegraph/tool-codegraph" },
     { "path": "./packages/codegraph/codegraph-index" },

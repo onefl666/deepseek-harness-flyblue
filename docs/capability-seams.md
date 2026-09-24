@@ -229,7 +229,7 @@ flowchart LR
   svc_taskBoard["ctx.taskBoard<br/>Durable task-board ledger"]
   pkg_client_ui_task_board["client-ui-task-board"]
   pkg_ssh["ssh"]
-  svc_ssh["ctx.ssh<br/>SSH host operations"]
+  svc_ssh["ctx.sshHosts<br/>SSH host operations"]
   pkg_tool_ssh["tool-ssh"]
   pkg_client_ui_ssh["client-ui-ssh"]
   pkg_usage_stats["usage-stats"]
@@ -580,7 +580,7 @@ flowchart LR
 | `ctx.lsp` | `seam` | [`lsp`](../packages/lsp/lsp) | [`lsp-stdio`](../packages/lsp/lsp-stdio) | [`tool-lsp`](../packages/lsp/tool-lsp) | - | Provider registration and selection plus normalized query execution over exactly four operations; the seam offers no protocol escape hatch, so a backend translates into the normalized request and result. |
 | `ctx.codegraphIndex` | `core` | [`codegraph-index`](../packages/codegraph/codegraph-index) | - | [`client-ui-codegraph`](../packages/client/ui-codegraph), [`command-codegraph-init`](../packages/codegraph/command-codegraph-init) | - | status and init read session.header.cwd and start codegraph init; /codegraph-init is the human command consumer; the model-facing tool plugin never does. |
 | `ctx.taskBoard` | `core` | [`task-board`](../packages/schedule/task-board) | - | [`client-ui-task-board`](../packages/client/ui-task-board) | - | Owns task persistence and request-id idempotence; the browser settings section consumes its Remote methods. |
-| `ctx.ssh` | `core` | [`ssh`](../packages/ssh/ssh) | - | [`tool-ssh`](../packages/ssh/tool-ssh), [`client-ui-ssh`](../packages/client/ui-ssh) | - | Owns secret-bearing host records and at-most-once command dispatch; model and browser consumers receive secret-free projections. |
+| `ctx.sshHosts` | `core` | [`ssh`](../packages/ssh/ssh-hosts) | - | [`tool-ssh`](../packages/ssh/tool-ssh), [`client-ui-ssh`](../packages/client/ui-ssh) | - | Owns secret-bearing host records and at-most-once command dispatch; model and browser consumers receive secret-free projections. |
 | `ctx.usageStats` | `core` | [`usage-stats`](../packages/session/usage-stats) | - | [`client-ui-usage-stats`](../packages/client/ui-usage-stats) | - | Derives cached daily and model aggregates from the union of live and persisted local sessions. |
 | `ctx.workspaceInspector` | `core` | [`workspace-files`](../packages/workspace/workspace-files) | - | [`client-ui-workspace-inspector`](../packages/client/ui-workspace-inspector) | - | Resolves every read and mutation through a registered workspace id and rejects traversal, Git internals, and escaping links. |
 | `ctx.workspaceGit` | `core` | [`workspace-git`](../packages/workspace/workspace-git) | - | [`client-ui-git-graph`](../packages/client/ui-git-graph) | - | Owns bounded Git subprocesses and guarded branch, index, and worktree mutations for registered workspaces. |

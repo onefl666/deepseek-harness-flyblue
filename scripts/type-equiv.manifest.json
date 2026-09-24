@@ -2119,12 +2119,12 @@
     {
       "doc": "docs/subsystems/ssh.md",
       "symbol": "SshHost",
-      "source": "packages/ssh/ssh/src/types.ts"
+      "source": "packages/ssh/ssh-hosts/src/types.ts"
     },
     {
       "doc": "docs/subsystems/ssh.md",
       "symbol": "SshHostSummary",
-      "source": "packages/ssh/ssh/src/types.ts"
+      "source": "packages/ssh/ssh-hosts/src/types.ts"
     }
   ]
 }

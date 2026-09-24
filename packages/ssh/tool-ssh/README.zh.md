@@ -9,7 +9,7 @@ kind: "package-reference"
 ## 概述
 
 
-`ctx.ssh` 的可选模型消费者。SSH 服务存在时，插件注册用于无密钥主机发现的 `ssh_list` 和用于单次远程命令执行的 `ssh_exec`；服务不存在时不注册任何工具。
+`ctx.sshHosts` 的可选模型消费者。SSH 服务存在时，插件注册用于无密钥主机发现的 `ssh_list` 和用于单次远程命令执行的 `ssh_exec`；服务不存在时不注册任何工具。
 
 `ssh_exec` 把一个已配置主机 ID 和命令转发给服务。它依次返回捕获的 stdout 与 stderr；如果连接在分发后丢失，还会追加 `[result unknown]`。该标记提示调用方不要自动重复可能非幂等的命令。
 
@@ -28,7 +28,7 @@ kind: "package-reference"
 
 #### 模型看到的内容
 
-只有 `ctx.ssh` 可用时，模型才会看到生成的 [`ssh_list` 和 `ssh_exec` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-ssh)。
+只有 `ctx.sshHosts` 可用时，模型才会看到生成的 [`ssh_list` 和 `ssh_exec` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-ssh)。
 
 #### Token 影响
 

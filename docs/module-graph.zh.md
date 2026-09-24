@@ -1375,7 +1375,7 @@ flowchart TD
 | [`anonymous-user-id`](../packages/identity/anonymous-user-id) | `identity` | [`brand`](../packages/util/brand), [`home-paths`](../packages/util/home-paths) |
 | [`lsp`](../packages/lsp/lsp) | `lsp` | [`brand`](../packages/util/brand), [`llm`](../packages/llm/llm) |
 | [`task-board`](../packages/schedule/task-board) | `schedule` | [`atomic-write`](../packages/util/atomic-write), [`brand`](../packages/util/brand), [`home-paths`](../packages/util/home-paths), [`typert-protocol`](../packages/typert/protocol) |
-| [`ssh`](../packages/ssh/ssh) | `ssh` | [`atomic-write`](../packages/util/atomic-write), [`brand`](../packages/util/brand), [`home-paths`](../packages/util/home-paths), [`typert-protocol`](../packages/typert/protocol) |
+| [`ssh`](../packages/ssh/ssh-hosts) | `ssh` | [`atomic-write`](../packages/util/atomic-write), [`brand`](../packages/util/brand), [`home-paths`](../packages/util/home-paths), [`typert-protocol`](../packages/typert/protocol) |
 | [`storage-domain`](../packages/storage/storage-domain) | `storage` | [`invariants`](../packages/runtime-diagnostics/invariants), [`storage`](../packages/storage/storage) |
 | [`storage-json`](../packages/storage/storage-json) | `storage` | [`storage`](../packages/storage/storage) |
 | [`storage-sqlite`](../packages/storage/storage-sqlite) | `storage` | [`storage`](../packages/storage/storage) |
@@ -1499,7 +1499,7 @@ flowchart TD
 | [`shell-env`](../packages/shell/shell-env) | `shell` | [`home-paths`](../packages/util/home-paths), [`shell`](../packages/shell/shell), [`tools`](../packages/core/tools) |
 | [`tool-bash-persistent`](../packages/shell/tool-bash-persistent) | `shell` | [`agent`](../packages/core/agent), [`terminal`](../packages/terminal/terminal), [`timeout`](../packages/util/timeout), [`tools`](../packages/core/tools) |
 | [`tool-pwsh-persistent`](../packages/shell/tool-pwsh-persistent) | `shell` | [`agent`](../packages/core/agent), [`terminal`](../packages/terminal/terminal), [`timeout`](../packages/util/timeout), [`tools`](../packages/core/tools) |
-| [`tool-ssh`](../packages/ssh/tool-ssh) | `ssh` | [`ssh`](../packages/ssh/ssh), [`tools`](../packages/core/tools) |
+| [`tool-ssh`](../packages/ssh/tool-ssh) | `ssh` | [`ssh`](../packages/ssh/ssh-hosts), [`tools`](../packages/core/tools) |
 | [`tool-terminal`](../packages/terminal/tool-terminal) | `terminal` | [`agent`](../packages/core/agent), [`jobs`](../packages/jobs/jobs), [`llm`](../packages/llm/llm), [`output-retention`](../packages/util/output-retention), [`system-prompt`](../packages/core/system-prompt), [`terminal`](../packages/terminal/terminal), [`tools`](../packages/core/tools) |
 | [`llm-replay`](../packages/test-support/llm-replay) | `test-support` | [`compaction`](../packages/compaction/compaction), [`deepseek-llm-api-extensions`](../packages/llm/deepseek-llm-api-extensions), [`llm`](../packages/llm/llm), [`session`](../packages/core/session) |
 | [`tool-workflow`](../packages/workflow/tool-workflow) | `workflow` | [`agent`](../packages/core/agent), [`invariants`](../packages/runtime-diagnostics/invariants), [`llm`](../packages/llm/llm), [`session`](../packages/core/session), [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools), [`workflow`](../packages/workflow/workflow) |

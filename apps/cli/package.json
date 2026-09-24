@@ -64,7 +64,7 @@
     "@deepseek-ai/dsh-schedule": "workspace:^",
     "@deepseek-ai/dsh-sdk-app": "workspace:^",
     "@deepseek-ai/dsh-sdk-minimal": "workspace:^",
-    "@deepseek-ai/dsh-ssh": "workspace:^",
+    "@deepseek-ai/dsh-ssh-hosts": "workspace:^",
     "@deepseek-ai/dsh-tool-codegraph": "workspace:^",
     "@deepseek-ai/dsh-tool-ssh": "workspace:^",
     "@deepseek-ai/dsh-session-projection": "workspace:^",

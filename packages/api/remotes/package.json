@@ -92,7 +92,7 @@
     "@deepseek-ai/dsh-task-board": "workspace:^",
     "@deepseek-ai/dsh-workspace-git": "workspace:^",
     "@deepseek-ai/dsh-workspace-files": "workspace:^",
-    "@deepseek-ai/dsh-ssh": "workspace:^",
+    "@deepseek-ai/dsh-ssh-hosts": "workspace:^",
     "zod": "^4.4.3",
     "@deepseek-ai/dsh-command-feedback": "workspace:^"
   }

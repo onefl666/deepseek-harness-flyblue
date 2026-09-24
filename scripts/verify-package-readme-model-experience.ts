@@ -171,7 +171,7 @@ const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
   'packages/session-query/session-query-sqlite': { kind: 'none', reason: 'The search backend returns hits only to callers and registers nothing model-facing.' },
   'packages/settings/settings': { kind: 'indirect', reason: 'The seam stores and resolves user settings; consumer plugins own any model-facing content fed by a value.' },
   'packages/settings/settings-file': { kind: 'indirect', reason: 'The file provider stores and publishes namespace sections; consumers of ctx.settings own any model-facing behavior.' },
-  'packages/ssh/ssh': { kind: 'indirect', reason: 'The host service delegates model rendering to dsh-tool-ssh.' },
+  'packages/ssh/ssh-hosts': { kind: 'indirect', reason: 'The host service delegates model rendering to dsh-tool-ssh.' },
   'packages/credentials/credentials': { kind: 'indirect', reason: 'The seam resolves credential references; the consuming adapter owns every model-facing use a value authorizes.' },
   'packages/credentials/credentials-local': { kind: 'indirect', reason: 'The file/environment provider stores credential values; consumers of ctx.credentials own any model-facing behavior.' },
   'packages/credentials/authorization': { kind: 'none', reason: 'A configuration-time conversation with a human; no flow, notice, or prompt reaches a model request.' },

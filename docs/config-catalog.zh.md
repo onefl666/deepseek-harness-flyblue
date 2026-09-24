@@ -2409,7 +2409,7 @@ export interface Config {
 
 <a id="deepseek-aidsh-ssh"></a>
 
-## `@deepseek-ai/dsh-ssh`
+## `@deepseek-ai/dsh-ssh-hosts`
 
 ```ts config-catalog
 /** Configures SSH connection and output bounds. */
@@ -2425,7 +2425,7 @@ export interface Config {
 }
 ```
 
-来源：[`packages/ssh/ssh/src/index.ts:14`](../packages/ssh/ssh/src/index.ts)
+来源：[`packages/ssh/ssh-hosts/src/index.ts:14`](../packages/ssh/ssh-hosts/src/index.ts)
 
 <a id="deepseek-aidsh-storage-domain"></a>
 

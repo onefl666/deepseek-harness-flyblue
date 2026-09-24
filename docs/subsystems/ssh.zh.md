@@ -2,9 +2,9 @@
 
 [English](ssh.md) | 中文
 
-Host 侧拥有的 SSH 主机记录与一次性远程命令执行。`ctx.ssh` 暴露仅限环回的 `list`、`put`、`delete` 与 `exec` 方法；面向模型的工具保留在 [`dsh-tool-ssh`](../../packages/ssh/tool-ssh/README.zh.md)。记录存放在 `$DSH_HOME/dsh-ssh.json`，文件与目录权限仅限属主。
+Host 侧拥有的 SSH 主机记录与一次性远程命令执行。`ctx.sshHosts` 暴露仅限环回的 `list`、`put`、`delete` 与 `exec` 方法；面向模型的工具保留在 [`dsh-tool-ssh`](../../packages/ssh/tool-ssh/README.zh.md)。记录存放在 `$DSH_HOME/dsh-ssh.json`，文件与目录权限仅限属主。
 
-Source: [`packages/ssh/ssh/src/types.ts`](../../packages/ssh/ssh/src/types.ts)
+Source: [`packages/ssh/ssh-hosts/src/types.ts`](../../packages/ssh/ssh-hosts/src/types.ts)
 
 ## 主机记录
 

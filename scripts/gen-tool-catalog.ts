@@ -59,7 +59,7 @@ import Lsp from '@deepseek-ai/dsh-lsp'
 import * as ToolLsp from '@deepseek-ai/dsh-tool-lsp'
 import * as ToolSkill from '@deepseek-ai/dsh-tool-skill'
 import * as ToolSessionQuery from '@deepseek-ai/dsh-tool-session-query'
-import SshService from '@deepseek-ai/dsh-ssh'
+import SshService from '@deepseek-ai/dsh-ssh-hosts'
 import * as ToolSsh from '@deepseek-ai/dsh-tool-ssh'
 import * as ToolTasks from '@deepseek-ai/dsh-tool-jobs'
 import type TeamService from '@deepseek-ai/dsh-experimental-agent-team'
@@ -485,7 +485,7 @@ const TOOL_PACKAGES: ToolPackage[] = [
     pkg: '@deepseek-ai/dsh-tool-ssh',
     dir: 'tool-ssh',
     source: 'packages/ssh/tool-ssh/src/index.ts',
-    requires: ['ctx.tools', 'ctx.ssh'],
+    requires: ['ctx.tools', 'ctx.sshHosts'],
     writes: ['tool/call', 'tool/result', 'one remote SSH command for ssh_exec'],
     async mount(ctx) {
       await ctx.plugin(SshService)

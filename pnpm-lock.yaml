@@ -254,9 +254,9 @@ importers:
       '@deepseek-ai/dsh-skill-filesystem':
         specifier: workspace:^
         version: link:../../packages/skill/skill-filesystem
-      '@deepseek-ai/dsh-ssh':
+      '@deepseek-ai/dsh-ssh-hosts':
         specifier: workspace:^
-        version: link:../../packages/ssh/ssh
+        version: link:../../packages/ssh/ssh-hosts
       '@deepseek-ai/dsh-terminal':
         specifier: workspace:^
         version: link:../../packages/terminal/terminal
@@ -975,9 +975,9 @@ importers:
       '@deepseek-ai/dsh-skill-manager':
         specifier: workspace:^
         version: link:../../skill/skill-manager
-      '@deepseek-ai/dsh-ssh':
+      '@deepseek-ai/dsh-ssh-hosts':
         specifier: workspace:^
-        version: link:../../ssh/ssh
+        version: link:../../ssh/ssh-hosts
       '@deepseek-ai/dsh-subagent':
         specifier: workspace:^
         version: link:../../subagent/subagent
@@ -2051,9 +2051,9 @@ importers:
       '@deepseek-ai/dsh-skill-manager':
         specifier: workspace:^
         version: link:../../skill/skill-manager
-      '@deepseek-ai/dsh-ssh':
+      '@deepseek-ai/dsh-ssh-hosts':
         specifier: workspace:^
-        version: link:../../ssh/ssh
+        version: link:../../ssh/ssh-hosts
       '@deepseek-ai/dsh-subprocess':
         specifier: workspace:^
         version: link:../../subprocess/subprocess
@@ -9901,7 +9901,7 @@ importers:
         specifier: workspace:^
         version: link:../../core/tools
 
-  packages/ssh/ssh:
+  packages/ssh/ssh-hosts:
     dependencies:
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
@@ -9937,9 +9937,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
-      '@deepseek-ai/dsh-ssh':
+      '@deepseek-ai/dsh-ssh-hosts':
         specifier: workspace:^
-        version: link:../ssh
+        version: link:../ssh-hosts
       '@deepseek-ai/dsh-tools':
         specifier: workspace:^
         version: link:../../core/tools
@@ -12085,9 +12085,9 @@ importers:
       '@deepseek-ai/dsh-spill':
         specifier: workspace:^
         version: link:../../packages/spill/spill
-      '@deepseek-ai/dsh-ssh':
+      '@deepseek-ai/dsh-ssh-hosts':
         specifier: workspace:^
-        version: link:../../packages/ssh/ssh
+        version: link:../../packages/ssh/ssh-hosts
       '@deepseek-ai/dsh-subagent':
         specifier: workspace:^
         version: link:../../packages/subagent/subagent
