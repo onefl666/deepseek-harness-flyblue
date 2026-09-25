@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-windows-shell",
   "description": "Windows shell stack preference row in General settings: writes the durable windows-shell namespace the next launch composes from",
-  "version": "0.1.7-rc.1",
+  "version": "0.1.7-rc.2",
   "publishConfig": {
     "access": "public"
   },

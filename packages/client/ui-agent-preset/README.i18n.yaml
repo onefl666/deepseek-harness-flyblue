@@ -1,6 +1,43 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/client/ui-agent-preset/README.md
-README.md: b3ed689005e2b971ac88eb64d753ff173ecca477
-README.zh.md: 7f68571d201e7a7167f3b8c4610c482e949e2eaa
+/:
+  en: 03dc41b8fb76229e
+  zh: a66439c4378fc6fc
+/deepseek-ai-dsh-client-ui-agent-preset:
+  en: e1743eaa8f8847d0
+  zh: 8cf1ba5beb7ad8ed
+/deepseek-ai-dsh-client-ui-agent-preset/summary:
+  en: c8e6afa69edbf68c
+  zh: d5526bbd3ca0ee33
+/deepseek-ai-dsh-client-ui-agent-preset/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: b3ad7867f23dad1c
+/deepseek-ai-dsh-client-ui-agent-preset/use-this-package:
+  en: 453b80e40ff78053
+  zh: 8afef90652e2e1f9
+/deepseek-ai-dsh-client-ui-agent-preset/use-this-package/the-plan-review-choice:
+  en: 03db3e6eb3f0f6e0
+  zh: 299702129e3f85bb
+/deepseek-ai-dsh-client-ui-agent-preset/use-this-package/the-conversational-entry:
+  en: 6aaf4a2429294639
+  zh: 89f44d19c029b096
+/deepseek-ai-dsh-client-ui-agent-preset/understand-the-implementation:
+  en: 7813f0063c15e241
+  zh: 6eabc242edfc45ec
+/deepseek-ai-dsh-client-ui-agent-preset/further-exploration:
+  en: bbae8d79844bc481
+  zh: 4302107fd1f460e6
+/deepseek-ai-dsh-client-ui-agent-preset/model-experience:
+  en: ff77436515de40ff
+  zh: 6c6a23f85ba318bc
+/deepseek-ai-dsh-client-ui-agent-preset/model-experience/kv-cache-effect:
+  en: 713c6916c3dd7360
+  zh: 9c582f94b926d51b
+/deepseek-ai-dsh-client-ui-agent-preset/known-limitations-and-deferred-work:
+  en: 2c5e994e86b1ae4a
+  zh: 8bc5a90d3a2133ba
+/deepseek-ai-dsh-client-ui-agent-preset/known-limitations-and-deferred-work/dev-note:
+  en: 6ce953763f1dc0f0
+  zh: 2d8cabb28ccd151b

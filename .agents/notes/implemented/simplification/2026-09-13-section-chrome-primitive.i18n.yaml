@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-13-section-chrome-primitive.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/simplification/2026-09-13-section-chrome-primitive.md
-2026-09-13-section-chrome-primitive.md: 9988f50643033510ae5d47c659963a31bbafe75b
-2026-09-13-section-chrome-primitive.zh.md: b7a6027cc5791372b97d0bc5a2162a0a85912117
+/agent-note-sectionchrome-owns-the-settings-section-top-matter:
+  en: 37b3bebf3fa59102
+  zh: 6b8943f047cc04ec
+/agent-note-sectionchrome-owns-the-settings-section-top-matter/problem:
+  en: c91d7d46c4a755d5
+  zh: fe7599a998591071
+/agent-note-sectionchrome-owns-the-settings-section-top-matter/decision:
+  en: 52e0a65a2630b769
+  zh: 6c2ac8f134890cbc
+/agent-note-sectionchrome-owns-the-settings-section-top-matter/consequences:
+  en: e9cbcd006e8cc7b0
+  zh: da2753bbc98e7e63
+/agent-note-sectionchrome-owns-the-settings-section-top-matter/alternatives-considered:
+  en: f4563dbf621523f3
+  zh: 44e62bc6e5504836

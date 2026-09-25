@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-12-flyblue-codegraph-tools.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-12-flyblue-codegraph-tools.md
-2026-08-12-flyblue-codegraph-tools.md: 2be1ab27bf53e2b9c0f2886e33aabcbb29723a9c
-2026-08-12-flyblue-codegraph-tools.zh.md: 919dbfd1ebc427e953068f783a99af8a81d70f35
+/agent-note-flyblue-ships-native-codegraph-tools-in-the-three-full-presets:
+  en: 52d4c26afc775d55
+  zh: 0f6fc87dee51e2da
+/agent-note-flyblue-ships-native-codegraph-tools-in-the-three-full-presets/problem:
+  en: 5681b3fb18f30a95
+  zh: e98b6692344f39fb
+/agent-note-flyblue-ships-native-codegraph-tools-in-the-three-full-presets/decision:
+  en: d5b924205aeb4a59
+  zh: 9fe358534aab3c05
+/agent-note-flyblue-ships-native-codegraph-tools-in-the-three-full-presets/alternatives-considered:
+  en: 172ffd806176e3a8
+  zh: 459f7935be7a8b6f
+/agent-note-flyblue-ships-native-codegraph-tools-in-the-three-full-presets/consequences:
+  en: 4e717aee13b13cb1
+  zh: f0e1e38761b502dc
+/agent-note-flyblue-ships-native-codegraph-tools-in-the-three-full-presets/testing:
+  en: 215ab955efe2c88a
+  zh: d8b01ab55d9766ae
+/agent-note-flyblue-ships-native-codegraph-tools-in-the-three-full-presets/related:
+  en: bd0eb4fa3efcc0f4
+  zh: e4e9f8b0acab6d1d

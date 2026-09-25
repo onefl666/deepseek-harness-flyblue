@@ -1,6 +1,43 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/codegraph/command-codegraph-init/README.md
-README.md: 91925b5aece6735f79c8dfb907412470ce9f5580
-README.zh.md: 6c6c6b03571a7f53d942e891bf4a3be58ceda5fa
+/:
+  en: 82a9cca972e28519
+  zh: 496eca9916cdea00
+/deepseek-ai-dsh-command-codegraph-init:
+  en: 45fdb73548feef97
+  zh: 09335b247d0ed185
+/deepseek-ai-dsh-command-codegraph-init/summary:
+  en: 601e7982703b6b0a
+  zh: 5c6e0115bde858db
+/deepseek-ai-dsh-command-codegraph-init/table-of-contents:
+  en: 87838e0fd7d7b07c
+  zh: 03c7394ef80b9198
+/deepseek-ai-dsh-command-codegraph-init/command-contract:
+  en: 8a00c3731061ea06
+  zh: 1491c2e7f1ff0843
+/deepseek-ai-dsh-command-codegraph-init/composition:
+  en: 85a14f9f58d0e366
+  zh: 6b528f401807fe96
+/deepseek-ai-dsh-command-codegraph-init/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-command-codegraph-init/model-experience/human-codegraph-init-control:
+  en: 175ed6aad813fceb
+  zh: 9c36a7d2e972f201
+/deepseek-ai-dsh-command-codegraph-init/model-experience/human-codegraph-init-control/what-the-model-sees:
+  en: ae09f8808a51c568
+  zh: 308c40ada3d27757
+/deepseek-ai-dsh-command-codegraph-init/model-experience/human-codegraph-init-control/token-effect:
+  en: 745e83a26f006973
+  zh: 95d88cf6d37415bb
+/deepseek-ai-dsh-command-codegraph-init/model-experience/human-codegraph-init-control/kv-cache-effect:
+  en: ca4f40bd5ca10eb8
+  zh: 6e25191f0235c89b
+/deepseek-ai-dsh-command-codegraph-init/known-limitations-and-deferred-work:
+  en: 78195a9a500fac2a
+  zh: b91c70b740c707eb
+/deepseek-ai-dsh-command-codegraph-init/known-limitations-and-deferred-work/dev-note:
+  en: 03e6a7c5adf683bc
+  zh: 4cab9a913aed7454

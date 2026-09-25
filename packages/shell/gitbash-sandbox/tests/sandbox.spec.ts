@@ -270,7 +270,7 @@ describe.skipIf(!gitBashAvailable())('SandboxGitBashExecutor', () => {
       .rejects.toThrow('sync-emfile')
   }, 30_000)
 
-  it('a SYNCHRONOUS spawn rejection in start() follows the same attribution split', async () => {
+  it('a SYNCHRONOUS spawn rejection in start() carries the same attribution split on the handle', async () => {
     const attributable = Object.assign(new Error('sync-enoent-start'), { code: 'ENOENT', syscall: 'spawn node', path: 'node' })
     const { executor: closed } = await setup(() => ({
       argv: ['node', '--', 'bash'],
@@ -278,13 +278,17 @@ describe.skipIf(!gitBashAvailable())('SandboxGitBashExecutor', () => {
       denialSignatures: [],
       runnerFailureRules: [{ fatalSignatures: ['fake-runner: '] }],
     }), throwingSubprocessRuntime(attributable))
-    await expect(start(closed, closed.resolve({ command: 'echo never', sandboxPolicy: RO })))
-      .rejects.toThrow(SandboxUnavailableError)
+    const closedHandle = await start(closed, closed.resolve({ command: 'echo never', sandboxPolicy: RO }))
+    await expect(closedHandle.done).resolves.toBeUndefined()
+    expect(closedHandle.sandbox).toMatchObject({ mode: 'read-only', runnerFailed: true })
+    await expect(closedHandle.result()).rejects.toThrow(SandboxUnavailableError)
 
     const foreign = Object.assign(new Error('sync-emfile-start'), { code: 'EMFILE', syscall: 'spawn', path: 'node' })
     const { executor: passthroughError } = await setup(undefined, throwingSubprocessRuntime(foreign))
-    await expect(start(passthroughError, passthroughError.resolve({ command: 'echo never', sandboxPolicy: RO })))
-      .rejects.toThrow('sync-emfile-start')
+    const foreignHandle = await start(passthroughError, passthroughError.resolve({ command: 'echo never', sandboxPolicy: RO }))
+    await expect(foreignHandle.done).resolves.toBeUndefined()
+    expect(foreignHandle.sandbox?.runnerFailed).toBeUndefined()
+    await expect(foreignHandle.result()).rejects.toThrow('sync-emfile-start')
   }, 30_000)
 
   it('a runner that REFUSES at runtime (fatal signature, nonzero exit) fails closed too', async () => {

@@ -29,6 +29,7 @@ describe('SectionChrome.module.css', () => {
   it('paints only through --dsw-alias tokens and carries no literal color', () => {
     expect(css).not.toMatch(/#[\da-f]{3,8}\b|\b(?:rgb|rgba|hsl|hsla)\(|\btransparent\b/i)
     const named = [...css.matchAll(/var\((--dsw-[a-z0-9-]+)/g)].map(match => match[1])
-    expect(named.every(name => name?.startsWith('--dsw-alias-'))).toBe(true)
+    expect(named.every(name => name?.startsWith('--dsw-alias-')
+      || name?.startsWith('--dsw-radius-'))).toBe(true)
   })
 })

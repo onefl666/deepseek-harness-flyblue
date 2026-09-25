@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-gitbash-local",
   "description": "Local Git Bash implementation of the DeepSeek Harness bash executor seam (Windows)",
-  "version": "0.1.7-rc.1",
+  "version": "0.1.7-rc.2",
   "publishConfig": {
     "access": "public"
   },

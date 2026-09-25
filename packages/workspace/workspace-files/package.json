@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-workspace-files",
   "description": "Workspace-ID scoped file inspection and versioned edits for the dsh Web workbench",
-  "version": "0.1.7-rc.1",
+  "version": "0.1.7-rc.2",
   "publishConfig": {
     "access": "public"
   },

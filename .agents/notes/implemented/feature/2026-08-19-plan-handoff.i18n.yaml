@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-19-plan-handoff.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-19-plan-handoff.md
-2026-08-19-plan-handoff.md: 2a1ed9aa8f25504936ae0757202f249548559570
-2026-08-19-plan-handoff.zh.md: 4fc785ab6f825ebc835fbc5776fcc5ac0e6967c5
+/agent-note-plan-handoff-after-review:
+  en: 7715dd423e447643
+  zh: ce44350f98f1da4e
+/agent-note-plan-handoff-after-review/problem:
+  en: f9303ff4269fafa9
+  zh: 5d1979c13e8a734a
+/agent-note-plan-handoff-after-review/decision:
+  en: d84fd3aa83719979
+  zh: f67d92a55d43d9b9
+/agent-note-plan-handoff-after-review/alternatives-considered:
+  en: 182d1ac29be9a1e1
+  zh: 3524bc79fcc36123
+/agent-note-plan-handoff-after-review/consequences:
+  en: 3b06dc0c121d4d0a
+  zh: 718f18815e02ba15
+/agent-note-plan-handoff-after-review/testing:
+  en: ab6cd6bf8730f148
+  zh: 47ad0c4ee07e0c22

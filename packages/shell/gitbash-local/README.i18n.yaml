@@ -1,6 +1,64 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/shell/gitbash-local/README.md
-README.md: 66ac7dd5056c5651eb893d7c90c7dc14aef86fc1
-README.zh.md: e47d55e36ebac0fa850a1d6e6fc89d273d81181a
+/:
+  en: 7d3fb80a4e3e05ab
+  zh: f399f72f05389bd2
+/deepseek-ai-dsh-gitbash-local:
+  en: 8b10064ed2279466
+  zh: f07f955871c45cde
+/deepseek-ai-dsh-gitbash-local/summary:
+  en: 384762b7b4734afd
+  zh: c1d3d32489c3f13b
+/deepseek-ai-dsh-gitbash-local/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 82bbd1ae631975a1
+/deepseek-ai-dsh-gitbash-local/use-this-package:
+  en: 2c351c917d0a52c8
+  zh: c34732e36e507d52
+/deepseek-ai-dsh-gitbash-local/use-this-package/when-to-choose-it:
+  en: f83bafb2e373b986
+  zh: ca6d7ddbaf265b1d
+/deepseek-ai-dsh-gitbash-local/use-this-package/minimal-configuration:
+  en: 3f8bea0b12b07def
+  zh: 067d7e21692957ff
+/deepseek-ai-dsh-gitbash-local/use-this-package/running-commands:
+  en: 623aad545da41101
+  zh: 6db3998d1b8b8f9c
+/deepseek-ai-dsh-gitbash-local/use-this-package/background-processes:
+  en: 373243770f2a00a0
+  zh: 8519653b683d31a8
+/deepseek-ai-dsh-gitbash-local/use-this-package/adjusting-budgets-at-runtime:
+  en: 3ab7d8dda28a3790
+  zh: 04c61988e6bc9dac
+/deepseek-ai-dsh-gitbash-local/understand-the-implementation:
+  en: 05e2abe4a25886fd
+  zh: dfd4224b1cb5603f
+/deepseek-ai-dsh-gitbash-local/understand-the-implementation/design-concept:
+  en: 574803cedbaadf08
+  zh: 0f976eac88d2c01d
+/deepseek-ai-dsh-gitbash-local/understand-the-implementation/source-map:
+  en: d8d427f3039a42c6
+  zh: dbb3b600fd24371e
+/deepseek-ai-dsh-gitbash-local/understand-the-implementation/main-flow:
+  en: a30e70b31c072b04
+  zh: c290229fc7be1753
+/deepseek-ai-dsh-gitbash-local/understand-the-implementation/invariants-and-ownership:
+  en: 78b204ca4ac4b1e0
+  zh: 2708d95e9170901f
+/deepseek-ai-dsh-gitbash-local/further-exploration:
+  en: df9b243b57ada32c
+  zh: bb1a729c1781f14a
+/deepseek-ai-dsh-gitbash-local/model-experience:
+  en: 348dec54a58941c6
+  zh: 63599d08bd9005c1
+/deepseek-ai-dsh-gitbash-local/model-experience/kv-cache-effect:
+  en: 40294c1c31b74824
+  zh: 29c087348e1f9a96
+/deepseek-ai-dsh-gitbash-local/known-limitations-and-deferred-work:
+  en: 254d3225c37a4397
+  zh: 587cddc6fb5c0262
+/deepseek-ai-dsh-gitbash-local/known-limitations-and-deferred-work/dev-note:
+  en: 00babcf23437ac15
+  zh: dc6786a3a4cb063f

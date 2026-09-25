@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-17-codegraph-explore-query-contract.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-17-codegraph-explore-query-contract.md
-2026-08-17-codegraph-explore-query-contract.md: 3d889c83fc1c8a1f592c899c192d1ef839240f1e
-2026-08-17-codegraph-explore-query-contract.zh.md: 2cf7d08d3b68e2ed96bceda39c3f4089e1b4e733
+/agent-note-codegraph-explore-query-contract:
+  en: 715f30d9c739907e
+  zh: d80db4eb185d1e6c
+/agent-note-codegraph-explore-query-contract/problem:
+  en: df413fcff7b645ba
+  zh: c513bf55a8234504
+/agent-note-codegraph-explore-query-contract/decision:
+  en: 074959d917a09032
+  zh: 1394c6ed7e0cf315
+/agent-note-codegraph-explore-query-contract/alternatives-considered:
+  en: 9df3648b2fffea48
+  zh: 411eca94a22154de
+/agent-note-codegraph-explore-query-contract/consequences:
+  en: 6a663ffe266def08
+  zh: 5f0639a314deef7e
+/agent-note-codegraph-explore-query-contract/testing:
+  en: 720ff6d08a9ba630
+  zh: 7ef0214d87c2fa33
+/agent-note-codegraph-explore-query-contract/related:
+  en: 96c4f82cdbc8ded5
+  zh: 3e2a7afb2ce5979f

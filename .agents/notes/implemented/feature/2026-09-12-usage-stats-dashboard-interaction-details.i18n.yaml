@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-12-usage-stats-dashboard-interaction-details.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-12-usage-stats-dashboard-interaction-details.md
-2026-09-12-usage-stats-dashboard-interaction-details.md: 608e5994a0350489f664bc9924d6da272ae707c7
-2026-09-12-usage-stats-dashboard-interaction-details.zh.md: 20d60602f165af001d2ffa375a9244d5667c6489
+/agent-note-reveal-each-charted-figure-on-the-usage-dashboard:
+  en: 326bdbf6a0146d09
+  zh: 2e292ab7ca93eda2
+/agent-note-reveal-each-charted-figure-on-the-usage-dashboard/problem:
+  en: 35ad4455e1317783
+  zh: 9b5e7d28784b948e
+/agent-note-reveal-each-charted-figure-on-the-usage-dashboard/decision:
+  en: cdbc0240f97b1039
+  zh: 50a2da0ebf8c5f47
+/agent-note-reveal-each-charted-figure-on-the-usage-dashboard/alternatives-considered:
+  en: 99f4a74866f10955
+  zh: 184749e90c2e6078
+/agent-note-reveal-each-charted-figure-on-the-usage-dashboard/consequences:
+  en: a5f049cba6aa8481
+  zh: aa5c46390617c11a

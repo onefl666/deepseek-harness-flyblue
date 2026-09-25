@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-12-gitbash-windows-shell-stack.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-12-gitbash-windows-shell-stack.md
-2026-09-12-gitbash-windows-shell-stack.md: 10064f994b979467cc7eb20b9e2f275468e9a237
-2026-09-12-gitbash-windows-shell-stack.zh.md: d759ba32ffa8ba3686b29d9bf0663510ac83a5a3
+/agent-note-windows-defaults-to-the-git-bash-shell-stack-behind-dsh-windows-shell:
+  en: 8cd9f07bbd8f0594
+  zh: d086e8804f0ca0db
+/agent-note-windows-defaults-to-the-git-bash-shell-stack-behind-dsh-windows-shell/problem:
+  en: 63164b17745c1fed
+  zh: 5917f4a42b859ad3
+/agent-note-windows-defaults-to-the-git-bash-shell-stack-behind-dsh-windows-shell/decision:
+  en: 7411e9339dd9d172
+  zh: 0708a6af056d2f97
+/agent-note-windows-defaults-to-the-git-bash-shell-stack-behind-dsh-windows-shell/the-msys-confinement-spike-why-the-default-stack-is-unconfined:
+  en: e6c33409d6537305
+  zh: 5d7a2b5eddbae9f8
+/agent-note-windows-defaults-to-the-git-bash-shell-stack-behind-dsh-windows-shell/the-permission-adaptation:
+  en: e83d0f777028c361
+  zh: bcbf2486c76d5776
+/agent-note-windows-defaults-to-the-git-bash-shell-stack-behind-dsh-windows-shell/alternatives-considered:
+  en: 9a7a94d3ea85eff3
+  zh: 5162b6ff99c3ac08
+/agent-note-windows-defaults-to-the-git-bash-shell-stack-behind-dsh-windows-shell/consequences:
+  en: 2fc4449d8e137945
+  zh: ee6eed4c4c041534

@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-20-workspace-cycle-warning-suppression.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-09-20-workspace-cycle-warning-suppression.md
-2026-09-20-workspace-cycle-warning-suppression.md: c1b33c0130643ce09df28a11c842b22f72cae693
-2026-09-20-workspace-cycle-warning-suppression.zh.md: f36d14dce7578969b51826bc33c9b45bb7f2abbd
+/agent-note-suppressing-the-workspace-cycle-warning-with-a-release-family-guard:
+  en: 659b17e4539521ad
+  zh: 3a9f025290867a09
+/agent-note-suppressing-the-workspace-cycle-warning-with-a-release-family-guard/problem:
+  en: 1c6bb864b465ff54
+  zh: ce664332cb580439
+/agent-note-suppressing-the-workspace-cycle-warning-with-a-release-family-guard/decision:
+  en: 08074b6679baaf79
+  zh: b5b243e1a74bc855
+/agent-note-suppressing-the-workspace-cycle-warning-with-a-release-family-guard/alternatives-considered:
+  en: 4ef2f3f67dea1b98
+  zh: b26150cca30fd0f4
+/agent-note-suppressing-the-workspace-cycle-warning-with-a-release-family-guard/consequences:
+  en: cfe613e1511680b7
+  zh: ecea54df1056c2c3
+/agent-note-suppressing-the-workspace-cycle-warning-with-a-release-family-guard/verification:
+  en: 10fc31a427efdfeb
+  zh: cb73445d64bd1cc1

@@ -1,6 +1,13 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for codegraph.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/subsystems/codegraph.md
-codegraph.md: 67ffd1a6b823b1fc78498c4a07473ac3bb651b14
-codegraph.zh.md: 5c834dc33a107f2d05f38f5d3bac3f776d8747e7
+/codegraph-index:
+  en: def0e0055c211c0c
+  zh: 7a5df29ee2867ce5
+/codegraph-index/status:
+  en: 42ac2d7db634cb4e
+  zh: 11da3d83acf1a30c
+/codegraph-index/settings:
+  en: e2647202f9cdf442
+  zh: 33e125a6201d7a19

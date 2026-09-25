@@ -1,6 +1,82 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/plan/plan-mode/README.md
-README.md: c6f853a16f491a0696b64fa5699c6d0d88568caa
-README.zh.md: 38e36416bd2e3521eeee96d7615cfc0d9f9a383a
+/:
+  en: 4319848b5be248be
+  zh: d44624c7b7cd77f2
+/deepseek-ai-dsh-plan-mode:
+  en: bec45b226b0c8de7
+  zh: 4058bc63ef4cf091
+/deepseek-ai-dsh-plan-mode/summary:
+  en: 3f97fa286507bec2
+  zh: 66394f2e0b660849
+/deepseek-ai-dsh-plan-mode/table-of-contents:
+  en: 5932a7cae3829576
+  zh: aa77a6bae9034204
+/deepseek-ai-dsh-plan-mode/use-this-package:
+  en: 811e4e6d5a5500c2
+  zh: d512b6e129f2a33c
+/deepseek-ai-dsh-plan-mode/use-this-package/durable-state:
+  en: 903e59ab3ada9dfb
+  zh: 699c5d248bd50a0c
+/deepseek-ai-dsh-plan-mode/use-this-package/review-and-execution:
+  en: 4760230851542f3c
+  zh: 4c97e757471e1949
+/deepseek-ai-dsh-plan-mode/use-this-package/configuration:
+  en: e905f1064d40382a
+  zh: 58c28181deaeb122
+/deepseek-ai-dsh-plan-mode/understand-the-implementation:
+  en: 805848579639ba8b
+  zh: 2feedb3627ae46cd
+/deepseek-ai-dsh-plan-mode/further-exploration:
+  en: b1afbdc5fe234aff
+  zh: 3b49e9a01589797e
+/deepseek-ai-dsh-plan-mode/model-experience:
+  en: 215e7ba838619b7b
+  zh: 215e7ba838619b7b
+/deepseek-ai-dsh-plan-mode/model-experience/plan-policy-system-prompt:
+  en: 28219e680bcadc65
+  zh: 28219e680bcadc65
+/deepseek-ai-dsh-plan-mode/model-experience/plan-policy-system-prompt/what-the-model-sees:
+  en: eb497838794267a3
+  zh: 2d1760dceb414e95
+/deepseek-ai-dsh-plan-mode/model-experience/plan-policy-system-prompt/what-the-model-sees/plan-policy:
+  en: 24d7ed7d6b783a69
+  zh: 24d7ed7d6b783a69
+/deepseek-ai-dsh-plan-mode/model-experience/plan-policy-system-prompt/token-effect:
+  en: 4e339015c4c0dff8
+  zh: 94000ee6aeb17175
+/deepseek-ai-dsh-plan-mode/model-experience/plan-policy-system-prompt/kv-cache-effect:
+  en: 3ac33139cfdf0b10
+  zh: 80f6f45bc6478b89
+/deepseek-ai-dsh-plan-mode/model-experience/human-command:
+  en: 4d1ec2182c2ac7ec
+  zh: 4d1ec2182c2ac7ec
+/deepseek-ai-dsh-plan-mode/model-experience/human-command/what-the-model-sees:
+  en: bd2d181200dba065
+  zh: df9dae7cc0e5180d
+/deepseek-ai-dsh-plan-mode/model-experience/human-command/token-effect:
+  en: 7d970cdfef889d8f
+  zh: 26350981f6aa9366
+/deepseek-ai-dsh-plan-mode/model-experience/human-command/kv-cache-effect:
+  en: 7fee79d6a8090a67
+  zh: b55b70e2a5dea3f1
+/deepseek-ai-dsh-plan-mode/model-experience/exit-tool-and-execution-prompt:
+  en: 6096e5571d49967f
+  zh: 6096e5571d49967f
+/deepseek-ai-dsh-plan-mode/model-experience/exit-tool-and-execution-prompt/what-the-model-sees:
+  en: 82d44a62d47fd4a4
+  zh: c1ea72711f28440b
+/deepseek-ai-dsh-plan-mode/model-experience/exit-tool-and-execution-prompt/token-effect:
+  en: 96bc7654aac94394
+  zh: 9c1f3d1df6e3d7db
+/deepseek-ai-dsh-plan-mode/model-experience/exit-tool-and-execution-prompt/kv-cache-effect:
+  en: a019d65221734fc8
+  zh: 9f63eb724ecd3bbf
+/deepseek-ai-dsh-plan-mode/known-limitations-and-deferred-work:
+  en: 2ef222c94640c3b2
+  zh: 4ecd9850c86d3f08
+/deepseek-ai-dsh-plan-mode/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: b2ee0fbaa165910d

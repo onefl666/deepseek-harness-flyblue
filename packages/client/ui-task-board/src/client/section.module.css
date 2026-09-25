@@ -45,7 +45,7 @@
   padding: 4px 10px;
   box-sizing: border-box;
   border: 0.5px solid var(--dsw-alias-border-l1);
-  border-radius: 12px;
+  border-radius: var(--dsw-radius-md);
   background: var(--dsw-alias-bg-layer-2);
   transition: background-color 120ms var(--ds-ease-in-out), border-color 120ms var(--ds-ease-in-out);
   animation: dsh-task-board-row-in 240ms var(--ds-ease-in-out) backwards;
@@ -130,7 +130,7 @@
 
 .skeletonRow {
   height: 40px;
-  border-radius: 12px;
+  border-radius: var(--dsw-radius-md);
   background: var(--dsw-alias-bg-layer-1);
   animation: dsh-task-board-pulse var(--ds-transition-duration-slow) var(--ds-ease-in-out) infinite alternate;
 }

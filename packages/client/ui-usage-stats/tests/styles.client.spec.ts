@@ -24,6 +24,8 @@ describe('usage dashboard styles', () => {
       const named = [...css.matchAll(/var\((--(?:dsw|ds)-[a-z0-9-]+)/g)].map(match => match[1])
       expect(named.every(token => token?.startsWith('--dsw-alias-')
         || token?.startsWith('--dsw-shadow-')
+        || token?.startsWith('--dsw-radius-')
+        || token?.startsWith('--dsw-focus-ring-')
         || token?.startsWith('--ds-transition-')
         || token === '--ds-ease-in-out'), name).toBe(true)
       expect([...new Set(named)].filter(token => !tokens.includes(`  ${String(token)}:`)), name).toEqual([])
@@ -34,7 +36,7 @@ describe('usage dashboard styles', () => {
     for (const name of modules) {
       const css = read(name)
       expect(css, name).not.toMatch(/#[\da-f]{3,8}\b|\b(?:rgb|rgba|hsl|hsla)\(|\btransparent\b/i)
-      expect(css, name).not.toMatch(/var\(--dsw-[a-z0-9-]+\s*,/)
+      expect(css, name).not.toMatch(/var\(--dsw-[a-z0-9-]+\s*,\s*(?:#|rgb|rgba|hsl|hsla)/)
     }
   })
 

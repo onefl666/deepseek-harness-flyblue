@@ -32,7 +32,7 @@
   min-height: 0;
   padding: 10px;
   border: 0.5px solid var(--dsw-alias-border-l2);
-  border-radius: 12px;
+  border-radius: var(--dsw-radius-md);
   background: var(--dsw-alias-bg-layer-2);
   --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
   --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
@@ -63,7 +63,7 @@
 .crumb {
   padding: 1px 6px;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--dsw-radius-sm);
   background: none;
   color: var(--dsw-alias-label-secondary);
   font: inherit;
@@ -80,7 +80,7 @@
 .crumb:focus-visible,
 .entry:focus-visible,
 .entryActive:focus-visible {
-  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
   outline-offset: 2px;
 }
 
@@ -119,7 +119,7 @@
   padding: 4px 8px;
   box-sizing: border-box;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--dsw-radius-sm);
   background: none;
   font: inherit;
   text-align: left;
@@ -204,7 +204,7 @@
   margin: 0;
   padding: 10px;
   overflow: auto;
-  border-radius: 8px;
+  border-radius: var(--dsw-radius-sm);
   background: var(--dsw-alias-markdown-code-block);
   color: var(--dsw-alias-label-primary);
   font-family: var(--ds-font-family-code);
@@ -221,7 +221,7 @@
 
 .skeletonPane {
   height: 220px;
-  border-radius: 12px;
+  border-radius: var(--dsw-radius-md);
   background: var(--dsw-alias-bg-layer-1);
   animation: dsh-inspector-pulse var(--ds-transition-duration-slow) var(--ds-ease-in-out) infinite alternate;
 }

@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-13-effort-slider-declared-levels.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-13-effort-slider-declared-levels.md
-2026-09-13-effort-slider-declared-levels.md: aa88f9585e0f3973fdfa161e140accd443e30c85
-2026-09-13-effort-slider-declared-levels.zh.md: fcdd57feba125d60cf16627bd5d20ebf1d3fbd21
+/agent-note-the-effort-slider-follows-the-model-s-declared-reasoning-levels:
+  en: 65a2a0cc4a9532ce
+  zh: 34392c78e87d3714
+/agent-note-the-effort-slider-follows-the-model-s-declared-reasoning-levels/problem:
+  en: 482c6e9493321403
+  zh: ed47e4e681811279
+/agent-note-the-effort-slider-follows-the-model-s-declared-reasoning-levels/decision:
+  en: 7dc16559ac1e33ac
+  zh: 76a0d74f6b31ff55
+/agent-note-the-effort-slider-follows-the-model-s-declared-reasoning-levels/alternatives-considered:
+  en: 6e4a2b1b0f7f7989
+  zh: dfb54a76b0ca2827
+/agent-note-the-effort-slider-follows-the-model-s-declared-reasoning-levels/consequences:
+  en: 064d2aa6754875ad
+  zh: 55a74f26a40e653d
+/agent-note-the-effort-slider-follows-the-model-s-declared-reasoning-levels/testing:
+  en: 03e6ba3f45e4a441
+  zh: 96ba955d2615d7c9
+/agent-note-the-effort-slider-follows-the-model-s-declared-reasoning-levels/related:
+  en: a2255a124f9288ab
+  zh: fe86ee6fe6e571b0

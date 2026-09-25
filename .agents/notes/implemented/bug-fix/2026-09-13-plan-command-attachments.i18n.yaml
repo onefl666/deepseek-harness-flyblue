@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-13-plan-command-attachments.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-13-plan-command-attachments.md
-2026-09-13-plan-command-attachments.md: 9393c8cd377507dc4653499fa5e4f3d0ba48b90f
-2026-09-13-plan-command-attachments.zh.md: cf43b5016ad6bdef3f304d1ff9e6cea162fd8315
+/agent-note-plan-command-attachments:
+  en: 980f1641206c1d06
+  zh: 2e12c37d8271d5f8
+/agent-note-plan-command-attachments/problem:
+  en: 17647833279a5e69
+  zh: 29bcdcb4750a42de
+/agent-note-plan-command-attachments/decision:
+  en: e0000a230ac15cca
+  zh: 121c79f5dbf945ea
+/agent-note-plan-command-attachments/alternatives-considered:
+  en: 1c1143abb044c7a5
+  zh: 577decc201184350
+/agent-note-plan-command-attachments/consequences:
+  en: ab7757a08ad05dcf
+  zh: e2fadd18c46f7f90
+/agent-note-plan-command-attachments/testing:
+  en: cc7c48db4b52a08c
+  zh: 8483108222e386f1

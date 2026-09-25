@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-codegraph",
   "description": "CodeGraph index settings page and blank-session dock prompt",
-  "version": "0.1.7-rc.1",
+  "version": "0.1.7-rc.2",
   "publishConfig": {
     "access": "public"
   },

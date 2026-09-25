@@ -81,10 +81,14 @@ export const CUSTOM_PRESET = 'custom'
 /** Canonical identity of the experimental per-call review preset. */
 export const AUTO_PRESET = 'auto'
 
-/** Fixed execution bundle for the live Auto integration. */
+/**
+ * Fixed execution bundle for the live Auto integration. `ask` routes reviewer
+ * denials to the user; a stored Auto identity also matches `never`, which a
+ * delegated child pins so its reviewer denials stay final.
+ */
 const AUTO_PRESET_SPEC: PresetSpec = {
   sandbox: 'danger-full-access',
-  approval: 'never',
+  approval: 'ask',
 }
 
 /**
@@ -337,7 +341,8 @@ export class PermissionPresetService extends TypertRemoteService {
 
   /**
    * Resolve the preset matching the effective knob values. A still-matching
-   * last selection wins shared-bundle ties; otherwise the first configured
+   * last selection wins shared-bundle ties, and a still-selected Auto also
+   * matches the `never` approval policy; otherwise the first configured
    * match wins. Returns
    * {@link CUSTOM_PRESET} when no available preset matches.
    * @param session - the session whose knob state is read.
@@ -349,12 +354,15 @@ export class PermissionPresetService extends TypertRemoteService {
 
   /** Resolve the preset for one folded knob state (the shared mathematics of `current` and the projection unit). */
   private derive(state: KnobState): string {
-    const sandbox = state.sandbox ?? this.ctx.shell.sandboxMode
+    // An unconfined executor enforces only danger-full-access; the constructor
+    // refuses every other table, so that is the effective fallback here.
+    const sandbox = state.sandbox ?? this.ctx.shell.sandboxMode ?? 'danger-full-access'
     const approval = state.approval ?? this.ctx.approval.config.policy ?? 'ask'
     const matches = (spec: PresetSpec): boolean => spec.sandbox === sandbox && spec.approval === approval
     if (state.preset !== null) {
       const spec = this.specOf(state.preset)
       if (spec !== undefined && matches(spec)) return state.preset
+      if (state.preset === AUTO_PRESET && spec?.sandbox === sandbox && approval === 'never') return AUTO_PRESET
     }
     for (const [name, spec] of Object.entries(this.presets)) {
       if (matches(spec)) return name
@@ -408,7 +416,7 @@ export class PermissionPresetService extends TypertRemoteService {
     const current = this.current(session)
     const knobs = this.permissionState(session)
     const updateKnobs = (): void => {
-      if (spec.sandbox !== (knobs.sandbox ?? this.ctx.shell.sandboxMode)) {
+      if (spec.sandbox !== (knobs.sandbox ?? this.ctx.shell.sandboxMode ?? 'danger-full-access')) {
         setSandboxMode(session, spec.sandbox)
       }
       if (spec.approval !== (knobs.approval ?? this.ctx.approval.config.policy ?? 'ask')) {
@@ -450,7 +458,7 @@ export class PermissionPresetService extends TypertRemoteService {
       session.append('permission/preset', { preset: effective })
     }
     if (sandbox === null) {
-      setSandboxMode(session, this.ctx.shell.sandboxMode as SandboxMode)
+      setSandboxMode(session, this.ctx.shell.sandboxMode ?? 'danger-full-access')
     }
     if (approval === null) {
       setApprovalPolicy(session, this.ctx.approval.config.policy ?? 'ask')

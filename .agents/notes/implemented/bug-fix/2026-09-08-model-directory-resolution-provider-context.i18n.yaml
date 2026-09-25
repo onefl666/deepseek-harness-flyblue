@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-08-model-directory-resolution-provider-context.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-08-model-directory-resolution-provider-context.md
-2026-09-08-model-directory-resolution-provider-context.md: 3bdf661f6e213b621ae160818e2228b7f8bf2b2c
-2026-09-08-model-directory-resolution-provider-context.zh.md: d0bf6c07d713ee820c0a564128c01fb87a29c780
+/agent-note-resolve-the-model-directory-through-the-providing-context:
+  en: 6d4e56a9354c356d
+  zh: 2d5e1d2f2dc57415
+/agent-note-resolve-the-model-directory-through-the-providing-context/problem:
+  en: a16ade1f0e33db3d
+  zh: 96b6056e4c63ac31
+/agent-note-resolve-the-model-directory-through-the-providing-context/decision:
+  en: 77214b6e1c6a70b0
+  zh: 03cb7f96f4aa27ed
+/agent-note-resolve-the-model-directory-through-the-providing-context/alternatives-considered:
+  en: 41a4c8fbdc03594a
+  zh: e0b35155df4f5d2b
+/agent-note-resolve-the-model-directory-through-the-providing-context/consequences:
+  en: 15ae55ab3467b526
+  zh: 4635d4c5bda3b4c8

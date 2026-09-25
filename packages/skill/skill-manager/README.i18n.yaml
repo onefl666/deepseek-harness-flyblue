@@ -1,6 +1,49 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/skill/skill-manager/README.md
-README.md: fefe129d151ff84637b890c0571c2a3788a4f0f0
-README.zh.md: 4f9c9142c77ab4cc4bcbec9b3d5c9586563ca6b5
+/:
+  en: 552202b154ee41c6
+  zh: 104ebdccfcfd53b1
+/deepseek-ai-dsh-skill-manager:
+  en: d8b3b8dd7eed5d64
+  zh: ce385d7b3ebcbd2c
+/deepseek-ai-dsh-skill-manager/summary:
+  en: 20472f8d43eb911e
+  zh: d5042a4d48119ded
+/deepseek-ai-dsh-skill-manager/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 09388d293f9be9cb
+/deepseek-ai-dsh-skill-manager/use-this-package:
+  en: e8431fd7acb9585b
+  zh: 73a0cd1b84d4d78a
+/deepseek-ai-dsh-skill-manager/use-this-package/failures:
+  en: 35b0351f98a94a25
+  zh: 0825270e3af8baff
+/deepseek-ai-dsh-skill-manager/understand-the-implementation:
+  en: 2bc52017e24e1364
+  zh: 769c78af90a1d789
+/deepseek-ai-dsh-skill-manager/further-exploration:
+  en: d15d199337727706
+  zh: cd34f823a4fb4a87
+/deepseek-ai-dsh-skill-manager/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-skill-manager/model-experience/management-mutations:
+  en: 5645db91f885772b
+  zh: c94318914397d7b4
+/deepseek-ai-dsh-skill-manager/model-experience/management-mutations/what-the-model-sees:
+  en: 9f67e4f23a82ed29
+  zh: e40bd39c5e725a51
+/deepseek-ai-dsh-skill-manager/model-experience/management-mutations/token-effect:
+  en: ea5b11b05697ea52
+  zh: c38ffc6b0a57d426
+/deepseek-ai-dsh-skill-manager/model-experience/management-mutations/kv-cache-effect:
+  en: 791191c8bca98c0c
+  zh: f3e5055b1743f700
+/deepseek-ai-dsh-skill-manager/known-limitations-and-deferred-work:
+  en: 95f996d1a36606da
+  zh: 0fc6a419c506a50e
+/deepseek-ai-dsh-skill-manager/known-limitations-and-deferred-work/dev-note:
+  en: 3dc7643089acda46
+  zh: c8edd590fd7da268

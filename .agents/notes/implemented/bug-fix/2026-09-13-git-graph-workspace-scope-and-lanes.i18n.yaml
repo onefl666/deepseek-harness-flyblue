@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-13-git-graph-workspace-scope-and-lanes.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-13-git-graph-workspace-scope-and-lanes.md
-2026-09-13-git-graph-workspace-scope-and-lanes.md: 30f6dab328fdd3726e6677731b371779251ff52e
-2026-09-13-git-graph-workspace-scope-and-lanes.zh.md: 12b1180ac75d8bdf6eacdbca80364d676655a631
+/agent-note-the-git-graph-panel-resolves-its-own-workspace-and-draws-lanes-as-svg:
+  en: f640581109713545
+  zh: fe8f7f9826bafa34
+/agent-note-the-git-graph-panel-resolves-its-own-workspace-and-draws-lanes-as-svg/problem:
+  en: 5d3d46f37c5dd3ba
+  zh: 126e3ffd911330c0
+/agent-note-the-git-graph-panel-resolves-its-own-workspace-and-draws-lanes-as-svg/decision:
+  en: 9072d38be5bd1d88
+  zh: d424bf278a2b7b4a
+/agent-note-the-git-graph-panel-resolves-its-own-workspace-and-draws-lanes-as-svg/alternatives-considered:
+  en: 8c0de104c63609a6
+  zh: f6559ea55f1e5271
+/agent-note-the-git-graph-panel-resolves-its-own-workspace-and-draws-lanes-as-svg/consequences:
+  en: 1db765f635754f38
+  zh: 7315a2fb35abb12b
+/agent-note-the-git-graph-panel-resolves-its-own-workspace-and-draws-lanes-as-svg/testing:
+  en: e45d9ce79088e3fe
+  zh: 3ce0a3328fd757a9

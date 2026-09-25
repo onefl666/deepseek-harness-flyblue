@@ -1,6 +1,34 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/shell/windows-shell/README.md
-README.md: 6b0d6795574f482f0b8552d5b309e7d9d1aad5e9
-README.zh.md: bb7c1b52f4742f0873bbfbcc3fcdc98c36925c75
+/:
+  en: e863c0c3136d5585
+  zh: adaac66324e594ff
+/deepseek-ai-dsh-windows-shell:
+  en: 9ab5c220ce26bec3
+  zh: 6b57f674941dc32c
+/deepseek-ai-dsh-windows-shell/summary:
+  en: 012ae7b497e91a28
+  zh: 116229a733585898
+/deepseek-ai-dsh-windows-shell/table-of-contents:
+  en: 76368b6b1da79c80
+  zh: 52384aee991ac542
+/deepseek-ai-dsh-windows-shell/use-this-package:
+  en: 1f09c4aa7b5267a2
+  zh: 916f5e169086af11
+/deepseek-ai-dsh-windows-shell/understand-the-implementation:
+  en: ec0564fa2aaae964
+  zh: 56fd5d4f1f28b5f1
+/deepseek-ai-dsh-windows-shell/model-experience:
+  en: d988abbc931e3375
+  zh: 0a537553384759a2
+/deepseek-ai-dsh-windows-shell/model-experience/kv-cache-effect:
+  en: 7156b8beb557bb5b
+  zh: f23ffad42e270c9f
+/deepseek-ai-dsh-windows-shell/known-limitations-and-deferred-work:
+  en: 20bc5555cfe6d469
+  zh: 297ad7e92648dbd5
+/deepseek-ai-dsh-windows-shell/known-limitations-and-deferred-work/dev-note:
+  en: 2908efc74b8dff36
+  zh: b893c28a4c13f5bb

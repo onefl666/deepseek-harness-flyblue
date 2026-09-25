@@ -1,6 +1,61 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/ssh/tool-ssh/README.md
-README.md: 8e2f18edede57ab59920d08aa1bee1a60bb0c6da
-README.zh.md: 4eb09f4f42dc7e1ed1aa2ae817ffcd2a99af5e8c
+/:
+  en: 78002358c2331749
+  zh: f672aded8a427945
+/deepseek-ai-dsh-tool-ssh:
+  en: 13dfd1fe52ed2871
+  zh: eb22a4a2c9e7be26
+/deepseek-ai-dsh-tool-ssh/summary:
+  en: 5e990b3f3b19c3eb
+  zh: edcd4a1d8e798140
+/deepseek-ai-dsh-tool-ssh/table-of-contents:
+  en: 39ea06d23555080a
+  zh: 0c283c30060714e7
+/deepseek-ai-dsh-tool-ssh/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-tool-ssh/model-experience/tool-schemas:
+  en: 3039bc5e7a796b21
+  zh: 6b7a9eaf69c9ea53
+/deepseek-ai-dsh-tool-ssh/model-experience/tool-schemas/what-the-model-sees:
+  en: e89819a37063183c
+  zh: ce8777126fa58ec1
+/deepseek-ai-dsh-tool-ssh/model-experience/tool-schemas/token-effect:
+  en: b891044371a987a3
+  zh: 3e5661f694db95ad
+/deepseek-ai-dsh-tool-ssh/model-experience/tool-schemas/kv-cache-effect:
+  en: cfa9289f5afefa8d
+  zh: a69723cf31765176
+/deepseek-ai-dsh-tool-ssh/model-experience/tool-results:
+  en: beaabb79f229692a
+  zh: 8573891441963be4
+/deepseek-ai-dsh-tool-ssh/model-experience/tool-results/what-the-model-sees:
+  en: 8fa1fe8379288234
+  zh: 82676fdd1da3986f
+/deepseek-ai-dsh-tool-ssh/model-experience/tool-results/token-effect:
+  en: c65790a63fb3c005
+  zh: 7fa71856ee7b7851
+/deepseek-ai-dsh-tool-ssh/model-experience/tool-results/kv-cache-effect:
+  en: 9066617f92cf6f41
+  zh: a483c096885dd13e
+/deepseek-ai-dsh-tool-ssh/model-experience/ui-presentation:
+  en: 8dafa00fd9733662
+  zh: 0247f0b45739dbf7
+/deepseek-ai-dsh-tool-ssh/model-experience/ui-presentation/what-the-model-sees:
+  en: 7748e460d99955a1
+  zh: cc495ce9927f776c
+/deepseek-ai-dsh-tool-ssh/model-experience/ui-presentation/token-effect:
+  en: f30f2b2497778650
+  zh: d54b764eb00f4261
+/deepseek-ai-dsh-tool-ssh/model-experience/ui-presentation/kv-cache-effect:
+  en: eabdce686776b12b
+  zh: fbaec01435c7bba4
+/deepseek-ai-dsh-tool-ssh/known-limitations-and-deferred-work:
+  en: 9b5ebd132f4f0d13
+  zh: 6152946abca44db8
+/deepseek-ai-dsh-tool-ssh/known-limitations-and-deferred-work/dev-note:
+  en: 9ac1448c84d4b6b1
+  zh: 5cfb8a104f5cdc80

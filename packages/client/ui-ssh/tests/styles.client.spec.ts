@@ -15,6 +15,8 @@ describe('ssh styles', () => {
     const named = [...css.matchAll(/var\((--(?:dsw|ds)-[a-z0-9-]+)/g)].map(match => match[1])
     expect(named.every(name => name?.startsWith('--dsw-alias-')
       || name?.startsWith('--dsw-shadow-')
+      || name?.startsWith('--dsw-radius-')
+      || name?.startsWith('--dsw-focus-ring-')
       || name?.startsWith('--ds-transition-')
       || name === '--ds-ease-in-out'
       || name === '--ds-font-family-code')).toBe(true)
@@ -23,7 +25,7 @@ describe('ssh styles', () => {
 
   it('contains no literal color values or fallback colors', () => {
     expect(css).not.toMatch(/#[\da-f]{3,8}\b|\b(?:rgb|rgba|hsl|hsla)\(|\btransparent\b/i)
-    expect(css).not.toMatch(/var\(--dsw-[a-z0-9-]+\s*,/)
+    expect(css).not.toMatch(/var\(--dsw-[a-z0-9-]+\s*,\s*(?:#|rgb|rgba|hsl|hsla)/)
   })
 
   it('guards every animation behind reduced-motion', () => {

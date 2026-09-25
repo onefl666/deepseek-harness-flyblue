@@ -417,13 +417,20 @@ describe.skipIf(!hasGitBash)('GitBashExecutor.run', () => {
   })
 
   it('rejects invalid numeric config and timeout overrides', async () => {
-    await expect(setup({ timeoutMs: Number.NaN })).rejects.toThrow(/timeoutMs/)
-    await expect(setup({ maxTimeoutMs: 0 })).rejects.toThrow(/maxTimeoutMs/)
-    await expect(setup({ maxOutputBytes: -1 })).rejects.toThrow(/maxOutputBytes/)
-    await expect(setup({ maxSpillBytes: 0 })).rejects.toThrow(/maxSpillBytes/)
-    await expect(setup({ graceMs: 0 })).rejects.toThrow(/graceMs/)
-    await expect(setup({ graceMs: MAX_TIMER_DELAY_MS + 1 }))
-      .rejects.toThrow(`graceMs must be no greater than ${MAX_TIMER_DELAY_MS}`)
+    // Volatile Config is projected from settings after mount, so serviceability
+    // is asserted when a command resolves rather than at plugin construction.
+    const cases: readonly [Parameters<typeof GitBashExecutor.Config>[0], RegExp | string][] = [
+      [{ timeoutMs: Number.NaN }, /timeoutMs/],
+      [{ maxTimeoutMs: 0 }, /maxTimeoutMs/],
+      [{ maxOutputBytes: -1 }, /maxOutputBytes/],
+      [{ maxSpillBytes: 0 }, /maxSpillBytes/],
+      [{ graceMs: 0 }, /graceMs/],
+      [{ graceMs: MAX_TIMER_DELAY_MS + 1 }, `graceMs must be no greater than ${MAX_TIMER_DELAY_MS}`],
+    ]
+    for (const [config, expected] of cases) {
+      const { bash } = await setup(config)
+      expect(() => bash.resolve({ command: 'true' })).toThrow(expected)
+    }
 
     const { bash } = await setup()
     expect(() => bash.resolve({ command: 'true', timeoutMs: Number.NaN })).toThrow(/request\.timeoutMs/)

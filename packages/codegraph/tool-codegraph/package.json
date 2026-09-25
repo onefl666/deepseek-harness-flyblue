@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-tool-codegraph",
   "description": "Model-facing CodeGraph tools over the bundled @colbymchenry/codegraph engine",
-  "version": "0.1.7-rc.1",
+  "version": "0.1.7-rc.2",
   "publishConfig": {
     "access": "public"
   },

@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-19-segmented-range-interruptible-thumb.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-19-segmented-range-interruptible-thumb.md
-2026-08-19-segmented-range-interruptible-thumb.md: e6e239aedfba513d598f72a7902deb3678857fe6
-2026-08-19-segmented-range-interruptible-thumb.zh.md: 3e221af1af41a7bc5b80437403f999b59f646146
+/agent-note-interruptible-sliding-thumb-for-settings-segmented-ranges:
+  en: fad8373ad8bff2f7
+  zh: c5d84e305f1ce625
+/agent-note-interruptible-sliding-thumb-for-settings-segmented-ranges/problem:
+  en: 3cad0a79d6fb4b2b
+  zh: 849f93d973558dea
+/agent-note-interruptible-sliding-thumb-for-settings-segmented-ranges/decision:
+  en: 2fe809a5ef3d40fa
+  zh: a8f30e667b71a9e5
+/agent-note-interruptible-sliding-thumb-for-settings-segmented-ranges/alternatives-considered:
+  en: 35197e233032366e
+  zh: f10cfa60e3db3bec
+/agent-note-interruptible-sliding-thumb-for-settings-segmented-ranges/consequences:
+  en: 4dd84d27c2be44a8
+  zh: a0ee6312288dee6f
+/agent-note-interruptible-sliding-thumb-for-settings-segmented-ranges/testing:
+  en: 8c6201bb666b7721
+  zh: cfede24e7d332ff1

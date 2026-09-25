@@ -1,6 +1,28 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-24-fork-plan-events.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/persistence-changes/2026-09-24-fork-plan-events.md
-2026-09-24-fork-plan-events.md: 3b8726428e83f70ac57ea75576e1e71168cd03f3
-2026-09-24-fork-plan-events.zh.md: e89923000fe45a419ac48fbd970000b1161bbe01
+/:
+  en: 3d5a424ae7d7e46b
+  zh: c22a8e4a62d8cc1a
+/2026-09-24-fork-plan-events:
+  en: 3fabef903992b70d
+  zh: 2ee849af9ebd9df1
+/2026-09-24-fork-plan-events/summary:
+  en: d31d2f07da6f639d
+  zh: 123f65850743ec13
+/2026-09-24-fork-plan-events/table-of-contents:
+  en: 6cf314a069ceb451
+  zh: 9adff678e9ecab3b
+/2026-09-24-fork-plan-events/declaration:
+  en: 6907136f28e48c90
+  zh: 02f8298485f3d8e7
+/2026-09-24-fork-plan-events/compatibility:
+  en: e91c081f2fcbdaa3
+  zh: 6fbf97d363df5cad
+/2026-09-24-fork-plan-events/verification:
+  en: 68f2a3da80618f8b
+  zh: 67209be5b696cabf
+/2026-09-24-fork-plan-events/dev-note:
+  en: b75c8458928b72b9
+  zh: 003ba4e17b4b5269

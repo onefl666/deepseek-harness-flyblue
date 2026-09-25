@@ -8,7 +8,7 @@
 
 .skeletonRow {
   height: 52px;
-  border-radius: 10px;
+  border-radius: var(--dsw-radius-sm);
   background: var(--dsw-alias-bg-layer-1);
   animation: dsh-section-state-pulse var(--ds-transition-duration-slow) var(--ds-ease-in-out) infinite alternate;
 }

@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-windows-shell",
   "description": "Durable Windows shell preference: the settings namespace the win32 shell rows gate on and the boot-time environment seed",
-  "version": "0.1.7-rc.1",
+  "version": "0.1.7-rc.2",
   "publishConfig": {
     "access": "public"
   },

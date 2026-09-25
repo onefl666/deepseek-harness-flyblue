@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-13-retire-empty-invariant-companions.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/simplification/2026-09-13-retire-empty-invariant-companions.md
-2026-09-13-retire-empty-invariant-companions.md: 2c3839934056c7d42afbb18b39e41f51d4dcf5a8
-2026-09-13-retire-empty-invariant-companions.zh.md: 7bfd26642011f85037111af3d2ffc53ceac088eb
+/agent-note-the-fork-retires-its-fifteen-empty-invariant-companions-and-declares-mit:
+  en: 9cca2d77c1cf26cb
+  zh: 219b5da0d28fa419
+/agent-note-the-fork-retires-its-fifteen-empty-invariant-companions-and-declares-mit/problem:
+  en: d8be44bafa97fb8e
+  zh: 58ee91f23bc3204f
+/agent-note-the-fork-retires-its-fifteen-empty-invariant-companions-and-declares-mit/decision:
+  en: a65ff0e08a3dca9c
+  zh: e10ab57a125a4711
+/agent-note-the-fork-retires-its-fifteen-empty-invariant-companions-and-declares-mit/alternatives-considered:
+  en: c9299e981d78cfd6
+  zh: 60af870dcb01d2ae
+/agent-note-the-fork-retires-its-fifteen-empty-invariant-companions-and-declares-mit/consequences:
+  en: 70dd00d1ce9e4b8d
+  zh: 8659ac71ea5b1878
+/agent-note-the-fork-retires-its-fifteen-empty-invariant-companions-and-declares-mit/verification:
+  en: ed5d9d525049e882
+  zh: 2bbac1875b330554

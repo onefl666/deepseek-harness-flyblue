@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-30-skill-and-mcp-management.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-30-skill-and-mcp-management.md
-2026-09-30-skill-and-mcp-management.md: d47d6ac0e67527fc944443be0807161a30bcf8b8
-2026-09-30-skill-and-mcp-management.zh.md: 1acdc7987d4cf013e0b4b23cef90e7c656e275e4
+/agent-note-built-in-skill-and-mcp-server-management:
+  en: b3e9f68bcfcd4761
+  zh: b061a383762a1f44
+/agent-note-built-in-skill-and-mcp-server-management/problem:
+  en: b382d988e37f5988
+  zh: bab32272dd8c85e0
+/agent-note-built-in-skill-and-mcp-server-management/decision:
+  en: 7e7047c3968e2ac1
+  zh: 373c0228e2c753c4
+/agent-note-built-in-skill-and-mcp-server-management/alternatives-considered:
+  en: be41d8092d00434f
+  zh: 28d555f082aab300
+/agent-note-built-in-skill-and-mcp-server-management/consequences:
+  en: 40707b947a67c39c
+  zh: 59935c82cc2a35ae

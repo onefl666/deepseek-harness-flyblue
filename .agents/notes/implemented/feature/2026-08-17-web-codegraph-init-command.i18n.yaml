@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-17-web-codegraph-init-command.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-17-web-codegraph-init-command.md
-2026-08-17-web-codegraph-init-command.md: f76c54446971be9927df386c5ff3c703615a847d
-2026-08-17-web-codegraph-init-command.zh.md: 40a37c4baf7fc03aef76525099710669bcde979e
+/agent-note-web-codegraph-init-starts-host-plane-codegraph-indexing:
+  en: a5febc95464c3c40
+  zh: c6a64fa10012f582
+/agent-note-web-codegraph-init-starts-host-plane-codegraph-indexing/problem:
+  en: 559be4a835109a91
+  zh: 9e95923491b8efe7
+/agent-note-web-codegraph-init-starts-host-plane-codegraph-indexing/decision:
+  en: 3c302d91990773f3
+  zh: f5eafd14378fc511
+/agent-note-web-codegraph-init-starts-host-plane-codegraph-indexing/alternatives-considered:
+  en: b5ce70fc82506dcb
+  zh: b9887e770b59bdff
+/agent-note-web-codegraph-init-starts-host-plane-codegraph-indexing/consequences:
+  en: 7ea146cf4e3e661c
+  zh: f7ca448c861e9c9d
+/agent-note-web-codegraph-init-starts-host-plane-codegraph-indexing/testing:
+  en: cf81f5fe0b07d0c2
+  zh: 58e968dbe97adc01
+/agent-note-web-codegraph-init-starts-host-plane-codegraph-indexing/related:
+  en: 62c76e12f6057dad
+  zh: d87c190cc57d09fd

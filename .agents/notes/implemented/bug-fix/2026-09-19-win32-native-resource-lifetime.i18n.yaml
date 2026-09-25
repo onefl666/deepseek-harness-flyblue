@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-19-win32-native-resource-lifetime.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-19-win32-native-resource-lifetime.md
-2026-09-19-win32-native-resource-lifetime.md: d163a58b3638eb2099cc01e07389ba699b3355c0
-2026-09-19-win32-native-resource-lifetime.zh.md: a0461da11800b0ef19848c7fda482a062d66300b
+/agent-note-win32-native-allocation-and-handle-lifetime:
+  en: c3e031a7ccb0aea7
+  zh: 301257861787a888
+/agent-note-win32-native-allocation-and-handle-lifetime/problem:
+  en: f6622c9d5c94bb6a
+  zh: aa2b1f48603594e9
+/agent-note-win32-native-allocation-and-handle-lifetime/decision:
+  en: 95635cb9415c41e1
+  zh: 8cb6fd5b8483ccd1
+/agent-note-win32-native-allocation-and-handle-lifetime/alternatives-considered:
+  en: b8413a34c7831382
+  zh: 298470104494c151
+/agent-note-win32-native-allocation-and-handle-lifetime/consequences:
+  en: d4c045ad04ac6950
+  zh: 1e396ab336d252fc
+/agent-note-win32-native-allocation-and-handle-lifetime/testing:
+  en: 8a55408397866947
+  zh: d6f18c632fc5589e
+/agent-note-win32-native-allocation-and-handle-lifetime/related:
+  en: 109550fc38dafcbe
+  zh: a53dde96d7ab60d8

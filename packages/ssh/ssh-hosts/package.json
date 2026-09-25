@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-ssh-hosts",
   "description": "Host-owned SSH configuration, pooled command execution, and remote operations",
-  "version": "0.1.7-rc.1",
+  "version": "0.1.7-rc.2",
   "publishConfig": {
     "access": "public"
   },

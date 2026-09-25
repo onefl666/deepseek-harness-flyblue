@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-21-usage-stats-skips-unreadable-sessions.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-21-usage-stats-skips-unreadable-sessions.md
-2026-08-21-usage-stats-skips-unreadable-sessions.md: 19db67727e61da671395248a6370e7dcf70b74da
-2026-08-21-usage-stats-skips-unreadable-sessions.zh.md: 9ebb5e2b8ea9528e9fcf23bbb81bef496b0af336
+/agent-note-usage-statistics-skip-unreadable-sessions-and-report-them:
+  en: 9f0cf023a70dd900
+  zh: 2ffb853b6ed90ab1
+/agent-note-usage-statistics-skip-unreadable-sessions-and-report-them/problem:
+  en: 7e5238ef06e42a3c
+  zh: 13f201f4e840cfce
+/agent-note-usage-statistics-skip-unreadable-sessions-and-report-them/decision:
+  en: 56144680e290e411
+  zh: c5e64a1c95400316
+/agent-note-usage-statistics-skip-unreadable-sessions-and-report-them/alternatives-considered:
+  en: cdfbc403f5864201
+  zh: f6c3df6e57230f70
+/agent-note-usage-statistics-skip-unreadable-sessions-and-report-them/consequences:
+  en: 8308dc4805ba31cb
+  zh: 8926871d4391df1f

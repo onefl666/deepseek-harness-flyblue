@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-20-manager-section-toolkit.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/simplification/2026-09-20-manager-section-toolkit.md
-2026-09-20-manager-section-toolkit.md: fa1d45ac062e0263ed836f266e441d013ffafff7
-2026-09-20-manager-section-toolkit.zh.md: d9882b5850a447ac310251644ecb31b992940f36
+/agent-note-one-toolkit-for-manager-settings-sections:
+  en: 31077fde239a54b1
+  zh: cd2507f12672a0da
+/agent-note-one-toolkit-for-manager-settings-sections/problem:
+  en: 2129954459b7647c
+  zh: 0f8f223920219852
+/agent-note-one-toolkit-for-manager-settings-sections/decision:
+  en: 07bd76f67f0e7867
+  zh: 94c4f904d4c310d0
+/agent-note-one-toolkit-for-manager-settings-sections/alternatives-considered:
+  en: ac6073fad79c9c35
+  zh: e116d2606f715f0b
+/agent-note-one-toolkit-for-manager-settings-sections/consequences:
+  en: 430d2a357ef34b76
+  zh: e6347691b2bd7206
+/agent-note-one-toolkit-for-manager-settings-sections/testing:
+  en: 51c2fee616d40862
+  zh: e95a1e9c534cb148

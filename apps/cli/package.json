@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh",
   "description": "dsh CLI: profile launch, plugin management, and configuration inspection",
-  "version": "0.1.7-rc.1",
+  "version": "0.1.7-rc.2",
   "publishConfig": {
     "access": "public"
   },
@@ -105,7 +105,8 @@
     "@deepseek-ai/dsh-ssh-hosts": "workspace:*",
     "@deepseek-ai/dsh-tool-codegraph": "workspace:*",
     "@deepseek-ai/dsh-tool-ssh": "workspace:*",
-    "@deepseek-ai/dsh-windows-shell": "workspace:*"
+    "@deepseek-ai/dsh-windows-shell": "workspace:*",
+    "@deepseek-ai/dsh-experimental-auto-review": "workspace:*"
   },
   "devDependencies": {
     "@agentclientprotocol/sdk": "1.4.0",
@@ -152,7 +153,10 @@
     "ajv": "^8.20.0",
     "execa": "^10.0.0",
     "ws": "8.21.0",
-    "@deepseek-ai/dsh-experimental-agent-team-profile": "workspace:*"
+    "@deepseek-ai/dsh-experimental-agent-team-profile": "workspace:*",
+    "@deepseek-ai/dsh-llm-deepseek-api-key": "workspace:*",
+    "@deepseek-ai/dsh-llm-deepseek-account": "workspace:*",
+    "@deepseek-ai/dsh-sdk-client": "workspace:*"
   },
   "exports": {
     "./profile-boot": {

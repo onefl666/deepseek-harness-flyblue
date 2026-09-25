@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-17-web-effort-slider-default.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-17-web-effort-slider-default.md
-2026-08-17-web-effort-slider-default.md: b2df5bf1d3e65d102d8dded7fffe261f148ecee1
-2026-08-17-web-effort-slider-default.zh.md: 91cef83d265383fe5a1d32bd4a0a459b52080fb0
+/agent-note-web-ships-the-claude-style-reasoning-slider-by-default:
+  en: 684da30551d6f912
+  zh: 64e83cfd41089df7
+/agent-note-web-ships-the-claude-style-reasoning-slider-by-default/problem:
+  en: 5e8a8dce182b06e3
+  zh: a8a5a0686e9d1b86
+/agent-note-web-ships-the-claude-style-reasoning-slider-by-default/decision:
+  en: 72c3a6ec128f7541
+  zh: 75f3015234ff34fb
+/agent-note-web-ships-the-claude-style-reasoning-slider-by-default/alternatives-considered:
+  en: 574e0625f2d68671
+  zh: 3062c86e890c6036
+/agent-note-web-ships-the-claude-style-reasoning-slider-by-default/consequences:
+  en: e58b2344098193af
+  zh: 7c13bba79e625b55
+/agent-note-web-ships-the-claude-style-reasoning-slider-by-default/testing:
+  en: 4e184d5931960aed
+  zh: 0c8e529562b0afd3
+/agent-note-web-ships-the-claude-style-reasoning-slider-by-default/related:
+  en: d603ab09df4bec23
+  zh: 9ed1eed7dcd39836

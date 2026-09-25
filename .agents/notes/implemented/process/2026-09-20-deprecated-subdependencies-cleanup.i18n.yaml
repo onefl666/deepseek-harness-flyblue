@@ -1,6 +1,31 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-20-deprecated-subdependencies-cleanup.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-09-20-deprecated-subdependencies-cleanup.md
-2026-09-20-deprecated-subdependencies-cleanup.md: 1c7fdf3423b11d90b28f9d02f8c010e25c09c75a
-2026-09-20-deprecated-subdependencies-cleanup.zh.md: 91c6186d1f30b9c068ca2c75165bd7c9d060812c
+/agent-note-clearing-deprecated-subdependency-warnings:
+  en: 9cd1e1f444d8dc0f
+  zh: 0086b7b1f128f855
+/agent-note-clearing-deprecated-subdependency-warnings/problem:
+  en: 53709f0435fa1ec9
+  zh: caa5ce69f900cb03
+/agent-note-clearing-deprecated-subdependency-warnings/decision:
+  en: 247243b2ae3d06d9
+  zh: d62cd2cd681368aa
+/agent-note-clearing-deprecated-subdependency-warnings/decision/eliminated-versions:
+  en: 4b83cc9a3bcf8a51
+  zh: 56317603c8180f5c
+/agent-note-clearing-deprecated-subdependency-warnings/decision/remaining-allowlist:
+  en: c7986b74720d2c73
+  zh: 4a786f79447f6e83
+/agent-note-clearing-deprecated-subdependency-warnings/decision/plugin-timings:
+  en: b739a392a61cc49c
+  zh: 0c21ee286dcfbf58
+/agent-note-clearing-deprecated-subdependency-warnings/alternatives-considered:
+  en: 7c716d887c9cd999
+  zh: 5bbb84671a87ad0d
+/agent-note-clearing-deprecated-subdependency-warnings/consequences:
+  en: 9abca3a2e2978ad8
+  zh: 1f78014b93813f34
+/agent-note-clearing-deprecated-subdependency-warnings/verification:
+  en: d6b45f3f5a0acfcb
+  zh: 9468ee808a665f62

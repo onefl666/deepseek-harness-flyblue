@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-13-windows-shell-preference.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-13-windows-shell-preference.md
-2026-09-13-windows-shell-preference.md: dde0b1f26ee138593782786ce92ea91debd51a5e
-2026-09-13-windows-shell-preference.zh.md: 895a4a53425c2d2d235cb07197b927bf72f4d42c
+/agent-note-the-windows-shell-preference-a-settings-namespace-and-settings-row-that-seed-dsh-windows-shell-at-the-next-launch:
+  en: 9704cb311df6d5a1
+  zh: 8ab553f8d0453e9a
+/agent-note-the-windows-shell-preference-a-settings-namespace-and-settings-row-that-seed-dsh-windows-shell-at-the-next-launch/problem:
+  en: bc1a057553986d1b
+  zh: b2182a8a952464d7
+/agent-note-the-windows-shell-preference-a-settings-namespace-and-settings-row-that-seed-dsh-windows-shell-at-the-next-launch/decision:
+  en: 6fc13f02c89676b4
+  zh: d4d168cbd83fde52
+/agent-note-the-windows-shell-preference-a-settings-namespace-and-settings-row-that-seed-dsh-windows-shell-at-the-next-launch/alternatives-considered:
+  en: 736d0cf52d2447af
+  zh: 88dc9aacd1c5309a
+/agent-note-the-windows-shell-preference-a-settings-namespace-and-settings-row-that-seed-dsh-windows-shell-at-the-next-launch/consequences:
+  en: f464ebf14108ab4b
+  zh: fd16c7bfca984ea3

@@ -34,6 +34,7 @@ function state(overrides: Partial<ModelDirectoryState> = {}): ModelDirectoryStat
     }],
     failures: [],
     status: 'ready',
+    pending: null,
     error: null,
     ...overrides,
   }

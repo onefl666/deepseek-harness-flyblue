@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-19-win32-snapshot-corpus-launch.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-19-win32-snapshot-corpus-launch.md
-2026-09-19-win32-snapshot-corpus-launch.md: c17ac3c480ab4b2bb1720241838c29d622879aac
-2026-09-19-win32-snapshot-corpus-launch.zh.md: df8a1348c338b56876c06b8ed6095ff666834cb1
+/agent-note-recorded-session-corpora-on-the-win32-stack:
+  en: d7fd74cf8bd08d86
+  zh: 5d426c3e4b9f7823
+/agent-note-recorded-session-corpora-on-the-win32-stack/problem:
+  en: 69e7b4ebe76d2151
+  zh: d9ccfbaa417ea180
+/agent-note-recorded-session-corpora-on-the-win32-stack/decision:
+  en: a3bd97ec893019dd
+  zh: 1fe10208a41dbd6a
+/agent-note-recorded-session-corpora-on-the-win32-stack/alternatives-considered:
+  en: b5f6714310998663
+  zh: 780f2161b16ea926
+/agent-note-recorded-session-corpora-on-the-win32-stack/consequences:
+  en: 12b3c7f942305c57
+  zh: 9ff0fe71a908ee73
+/agent-note-recorded-session-corpora-on-the-win32-stack/testing:
+  en: 1ce201df3fae3251
+  zh: 7920d69e5c45975a

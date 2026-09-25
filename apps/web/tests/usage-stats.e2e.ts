@@ -21,7 +21,10 @@ const SKIPPED_EXPECTED = join(SNAPSHOT_DIR, 'skipped.expected.md')
 const MODE = webSnapshotMode()
 const now = vi.spyOn(Date, 'now')
 
-function appendUsage(session: Session, turn: number, date: string, provider: string, model: string, inputTokens: number, outputTokens: number): void {
+function appendUsage(
+  session: Session, turn: number, date: string,
+  provider: string, model: string, inputTokens: number, outputTokens: number,
+): void {
   now.mockReturnValue(new Date(`${date}T12:00:00+08:00`).getTime())
   session.append('turn/start', { turn })
   session.append('user/message', createUserMessage({ content: [{ type: 'text', text: `${model} prompt` }], source: { kind: 'user' } }), { surfaceOp: 'append' })

@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-codegraph-index",
   "description": "Host-plane CodeGraph index lifecycle: status, user-triggered init, and optional auto-init",
-  "version": "0.1.7-rc.1",
+  "version": "0.1.7-rc.2",
   "publishConfig": {
     "access": "public"
   },

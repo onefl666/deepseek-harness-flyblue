@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-18-settings-workbench-sections.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-18-settings-workbench-sections.md
-2026-08-18-settings-workbench-sections.md: c63405259ad851b03ce4c748cee746f8a0cfd9f7
-2026-08-18-settings-workbench-sections.zh.md: c223ccf85dd10f0d10daa857ebcd9af3ff8c210a
+/agent-note-settings-workbench-sections-tokenized-presentation-and-existing-remotes:
+  en: aab887c2ffa40e1b
+  zh: 3b66a4a958eaa4ac
+/agent-note-settings-workbench-sections-tokenized-presentation-and-existing-remotes/problem:
+  en: e3ce6340f58654dd
+  zh: de338ed3f84e43ff
+/agent-note-settings-workbench-sections-tokenized-presentation-and-existing-remotes/decision:
+  en: 38a62aef0488b34c
+  zh: ffc3a7b224197060
+/agent-note-settings-workbench-sections-tokenized-presentation-and-existing-remotes/alternatives-considered:
+  en: 0ce061df9daab0c6
+  zh: 798d71444c8cc58d
+/agent-note-settings-workbench-sections-tokenized-presentation-and-existing-remotes/consequences:
+  en: 42dfcb82a05aa540
+  zh: 091e6ac54a42506a
